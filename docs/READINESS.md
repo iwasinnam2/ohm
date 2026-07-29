@@ -22,7 +22,8 @@ Public distribution readiness for **Ohm**. Towers can be walked; the roadway is 
 - [x] ASCII-safe logo: [`brand/ohm-icon.svg`](../brand/ohm-icon.svg), [`site/public/ohm-icon.svg`](../site/public/ohm-icon.svg), [`assets/logo.svg`](../assets/logo.svg)
 - [x] PNG: [`brand/ohm-icon-360.png`](../brand/ohm-icon-360.png) → `https://withohm.dev/ohm-icon-360.png` after site deploy
 - [x] Cursor plugin shape: [`.cursor-plugin/plugin.json`](../.cursor-plugin/plugin.json) + [`mcp.json`](../mcp.json)
-- [ ] Public GitHub push (repo URL for marketplace “global repo link”)
+- [x] Local git root commit (`master`)
+- [ ] Public GitHub push — see [GITHUB_PUSH.md](GITHUB_PUSH.md) (`gh auth login` then `gh repo create ohm --public --source=. --remote=origin --push`)
 
 Logotype URLs for Cursor submit:
 
