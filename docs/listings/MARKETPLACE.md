@@ -9,16 +9,16 @@ Paste / adapt into https://cursor.com/marketplace/publish
 ## Short description (≤160 chars)
 
 ```
-BYOK model ingress for Cursor: prompt cache replay, compliant web fetch, usage meters. Change one attach — keep your keys.
+withOhm (ohm): BYOK Cursor MCP — prompt cache replay, compliant web fetch, OpenAI-compatible ingress.
 ```
 
 ## Long description
 
 ```
-withOhm is an AI traffic utility for Cursor.
+withOhm is an AI traffic utility for Cursor (search: ohm, withOhm, prompt-cache, web-fetch).
 
 Attach once via MCP and get:
-• ohm_chat — OpenAI-compatible chat through Ohm’s pipe (Redis prompt replay on identical prompts)
+• ohm_chat — OpenAI-compatible chat through Ohm’s pipe (Redis prompt replay)
 • ohm_fetch_web — purpose-bound public URL scrape → markdown or JSON for agents
 • ohm_usage — cache hits, fetches, and estimated pipe rent
 
@@ -30,13 +30,14 @@ Getting started
 3. Or apply as a founding design partner (90-day complimentary): https://withohm.dev/design-partners
 
 Docs: https://withohm.dev/docs/cursor
+Discovery notes: https://github.com/iwasinnam2/ohm/blob/master/docs/CURSOR_DISCOVERY.md
 API: https://api.withohm.dev/v1
 Support: partners@withohm.dev
 ```
 
 ## Keywords
 
-`mcp`, `ohm`, `cache`, `web-fetch`, `byok`, `openai-compatible`, `prompt-cache`
+`ohm`, `withohm`, `withOhm`, `mcp`, `prompt-cache`, `web-fetch`, `web-scrape`, `byok`, `openai-compatible`, `agent-browse`, `url-context`
 
 ## Logo
 

@@ -1,10 +1,7 @@
 ---
 name: ohm-fetch-web
-description: >
-  Compliant public URL scrape via withOhm MCP ohm_fetch_web (markdown or JSON).
-  Use when the user or agent needs page content from public URLs, web context for
-  coding agents, docs scrape, catalog pages, or browse-without-browser — withOhm,
-  ohm, web-fetch, web-scrape, URL context.
+description: Compliant Ohm URL scrape via MCP ohm_fetch_web (markdown or JSON).
+disable-model-invocation: true
 ---
 
 # Ohm fetch web
