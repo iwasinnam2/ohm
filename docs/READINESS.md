@@ -12,8 +12,8 @@ Public distribution readiness for **Ohm**. Towers can be walked; the roadway is 
 | Cursor deeplink CTA | Standing |
 | Public GitHub origin | Required for marketplace |
 | Valid logotype SVG/PNG | Required for marketplace |
-| Public API deck (`api.withohm.dev`) | **Open** — NLB + Global Accelerator ready (`v0.1.0-railgun`) |
-| Multi-region / Anycast | **Standing** — edges us-west-2 + eu-west-2; GA DNS pending cutover |
+| Public API deck (`api.withohm.dev`) | **Open** — public miss/hit via GA (`v0.1.0-railgun` / `v0.1.1-mesh`) |
+| Multi-region / Anycast | **Open** — edges us-west-2 + eu-west-2; `api` → GA DNS |
 
 **Allow global traffic** only after public chat miss/hit on `https://api.withohm.dev`, Stripe lifecycle green on that host, and a public repo for trust + Cursor submit.
 
@@ -54,7 +54,8 @@ Logotype URLs for Cursor submit:
 
 ## After first traffic
 
-- [ ] Tag `v0.1.0-railgun`
+- [x] Tag `v0.1.0-railgun` (single-region public deck)
+- [x] Tag `v0.1.1-mesh` (Global Datastore + two edges + Anycast on `api.withohm.dev`)
 - [ ] Cursor Marketplace submit / refresh: https://cursor.com/marketplace/publish — copy in [listings/MARKETPLACE.md](listings/MARKETPLACE.md)
 - [ ] cursor.directory listing — [listings/CURSOR_DIRECTORY.md](listings/CURSOR_DIRECTORY.md)
 - [ ] Daily partner fishing loop — [LAUNCH_GTM.md](LAUNCH_GTM.md) + [OUTREACH_TEMPLATES.md](OUTREACH_TEMPLATES.md)

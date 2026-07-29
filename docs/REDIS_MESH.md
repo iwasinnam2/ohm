@@ -6,14 +6,14 @@ Source of truth for leader/replica/global distribution. Consistency rules: [CONS
 
 | Phase | Goal | In-repo | Live traffic |
 |-------|------|---------|--------------|
-| 0 | Single-region public deck Redis | Templates ready | Blocked on [GO_LIVE.md](../infra/runbooks/GO_LIVE.md) API cutover |
+| 0 | Single-region public deck Redis | Templates ready | **Live** — `v0.1.0-railgun` / public `api.withohm.dev` |
 | 1 | Local primary+replica split + lag smoke | Compose + `scripts/redis_replica_smoke.ps1` | Local only |
-| 2 | Leader `REDIS_URL`=reader, `REDIS_WRITE_URL`=primary | Secrets + outputs | After Section C apply |
+| 2 | Leader `REDIS_URL`=reader, `REDIS_WRITE_URL`=primary | Secrets + outputs | Leader live |
 | 3 | Global Datastore secondaries + edge env | Terraform when `enable_edges=true` | **Live** `ldgnf-ohm`; edges us-west-2 + eu-west-2 |
 | 4 | `AT_RS_REDIS_WRITE` on gateway-rs | Implemented | Edges wired; Rust still fail-fast until TLS RESP |
-| 5 | Anycast | GA Terraform gated on NLB ARNs | **GA live** — flip DNS per [DNS_CUTOVER_PHASE2_GA.md](../infra/runbooks/DNS_CUTOVER_PHASE2_GA.md) |
+| 5 | Anycast | GA Terraform + DNS | **Charged** — `api` → `a8d1c391c281079a4.awsglobalaccelerator.com` (`v0.1.1-mesh`) |
 
-Lag drill (us-west-2 in-cluster): **PASS (~0–1000ms budget)**. Edge NLBs + all three GA endpoint groups **HEALTHY**.
+Lag drill (us-west-2 in-cluster): **PASS (~0–1000ms budget)**. Edge NLBs + all three GA endpoint groups **HEALTHY**. Railgun Phase 3–5 charge complete (merge + tag + region-drain).
 
 ## Env pattern
 
