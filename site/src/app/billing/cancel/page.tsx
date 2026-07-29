@@ -18,7 +18,7 @@ export default function BillingCancelPage() {
         </p>
       </header>
       <p>
-        <Link href="/billing">Return to billing</Link> ·{" "}
+        <Link href="/billing/intermediate">Return to Intermediate</Link> ·{" "}
         <Link href="/subscriptions">Subscriptions</Link>
       </p>
     </>

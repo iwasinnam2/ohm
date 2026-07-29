@@ -90,8 +90,8 @@ export default function BillingSuccessPage() {
         <div className="postpay__cta-block">
           <p className="billing-form__error">
             withOhm key missing from this browser session. Start again from{" "}
-            <Link href="/billing">billing</Link> so we can wire the one-click
-            install.
+            <Link href="/billing/intermediate">Intermediate checkout</Link> so we
+            can wire the one-click install.
           </p>
         </div>
       )}
