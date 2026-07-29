@@ -50,7 +50,7 @@ export default function BillingSuccessPage() {
       <p className="postpay__lede">
         One click opens Cursor’s MCP installer with your withOhm seat already wired.
         No JSON to paste. Confirm once — then work with cache replay and
-        compliant web context on the pipe.
+        compliant fetch for agents on the pipe.
       </p>
 
       <div className="postpay__contrast" aria-label="Before and after withOhm">
@@ -109,6 +109,24 @@ export default function BillingSuccessPage() {
           <p>Key was only shown at checkout in this browser.</p>
         )}
       </details>
+
+      <div className="postpay__share">
+        <p className="postpay__share-label">Viral unit — paste to a teammate</p>
+        <pre className="postpay__share-line">
+          Add withOhm MCP from https://withohm.dev/i
+        </pre>
+        <p className="postpay__cta-note">
+          They get their own $0 Intermediate seat, then duplicate this attach.
+          Design partners are optional icing — Intermediate is the growth loop.
+        </p>
+        <p>
+          <Link href="/fetch">Try compliant fetch toy</Link>
+          {" · "}
+          <Link href="/templates">Steal cursor-agent-with-web</Link>
+          {" · "}
+          <Link href="/bounty">Artifact bounty ($29 credit)</Link>
+        </p>
+      </div>
     </section>
   );
 }

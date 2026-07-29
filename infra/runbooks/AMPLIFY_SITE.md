@@ -36,11 +36,14 @@ Build spec: repo-root [`amplify.yml`](../amplify.yml) with `appRoot: site`.
 
 ## Custom domain
 
-After first green deploy on `https://master.<appId>.amplifyapp.com`:
+After first green deploy on `https://master.<appId>.amplifyapp.com` or the feature branch URL:
 
-1. Amplify Console → Domain management → add `withohm.dev` + `www`
+1. Amplify Console → Domain management → add `withohm.dev` + `www` + optional `fetch.withohm.dev`
 2. Update GoDaddy CNAMEs from Vercel → Amplify DNS records
-3. See [APEX_CUTOVER.md](runbooks/APEX_CUTOVER.md) (replace Vercel targets)
+3. `fetch.withohm.dev` → same Amplify app (middleware rewrites `/` → `/fetch`)
+4. See [APEX_CUTOVER.md](runbooks/APEX_CUTOVER.md) (replace Vercel targets)
+
+Optional env: `OHM_DEMO_API_KEY` — public `/api/public-fetch` uses the live Ohm pipe when set.
 
 ## Cost (ballpark)
 

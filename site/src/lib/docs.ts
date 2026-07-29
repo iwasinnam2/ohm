@@ -17,7 +17,12 @@ export const DOC_INDEX: DocMeta[] = [
   {
     slug: "cursor",
     title: "Cursor / MCP",
-    description: "Attach withOhm as invisible plumbing in Cursor.",
+    description: "Compliant fetch for agents — attach withOhm in Cursor.",
+  },
+  {
+    slug: "steal-kit",
+    title: "Steal-kit",
+    description: "Templates, /i line, bounty — distribution without pitches.",
   },
   {
     slug: "examples",
