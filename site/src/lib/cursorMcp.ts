@@ -12,7 +12,7 @@ export function ohmMcpConfig(env: OhmMcpEnv): Record<string, unknown> {
     command: "python",
     args: ["-m", "ohm_mcp"],
     env: {
-      OHM_BASE_URL: env.baseUrl || "http://127.0.0.1:8081/v1",
+      OHM_BASE_URL: env.baseUrl || "https://api.withohm.dev/v1",
       OHM_API_KEY: env.apiKey,
       OHM_UPSTREAM_KEY: env.upstreamKey || "",
     },

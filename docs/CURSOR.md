@@ -21,7 +21,7 @@ cursor://anysphere.cursor-deeplink/mcp/install?name=ohm&config=<base64>
       "command": "python",
       "args": ["-m", "ohm_mcp"],
       "env": {
-        "OHM_BASE_URL": "http://127.0.0.1:8081/v1",
+        "OHM_BASE_URL": "https://api.withohm.dev/v1",
         "OHM_API_KEY": "sk-at-dev",
         "OHM_UPSTREAM_KEY": ""
       }
@@ -69,7 +69,7 @@ No params. Returns cache hit ratio, fetches, and web attach rate.
 
 | Var | Role |
 |-----|------|
-| `OHM_BASE_URL` | Edge `/v1` (default `http://127.0.0.1:8081/v1`) |
+| `OHM_BASE_URL` | Edge `/v1` (default `https://api.withohm.dev/v1`; local smoke `http://127.0.0.1:8081/v1`) |
 | `OHM_API_KEY` | Tenant key (`sk-at-…`) |
 | `OHM_UPSTREAM_KEY` | Optional BYOK for cache misses |
 

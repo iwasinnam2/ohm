@@ -55,9 +55,11 @@ Logotype URLs for Cursor submit:
 ## After first traffic
 
 - [ ] Tag `v0.1.0-railgun`
-- [ ] Cursor Marketplace submit: https://cursor.com/marketplace/publish
+- [ ] Cursor Marketplace submit / refresh: https://cursor.com/marketplace/publish — copy in [listings/MARKETPLACE.md](listings/MARKETPLACE.md)
+- [ ] cursor.directory listing — [listings/CURSOR_DIRECTORY.md](listings/CURSOR_DIRECTORY.md)
+- [ ] Daily partner fishing loop — [LAUNCH_GTM.md](LAUNCH_GTM.md) + [OUTREACH_TEMPLATES.md](OUTREACH_TEMPLATES.md)
 - [ ] SDK publish ([PLATFORM.md](PLATFORM.md)) only after public smoke
-- [ ] Design-partner quotes on homepage
+- [ ] Design-partner quotes on homepage (inbound via [/design-partners](https://withohm.dev/design-partners))
 
 ## Deferred (do not claim yet)
 

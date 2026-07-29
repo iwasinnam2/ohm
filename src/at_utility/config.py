@@ -58,14 +58,24 @@ class Settings(BaseSettings):
     at_enterprise_monthly_usd: float = 2500.0
     # When true, env OPENAI/ANTHROPIC keys may fill in if X-Ohm-Upstream-Key is absent
     at_byok_allow_env_fallback: bool = True
+    # local | staging | production — production fails closed if meter Prices missing
+    at_env: str = "local"
+    # Soft daily web-fetch cap until invoice.paid / usage spend unlocks Intermediate
+    at_free_tier_fetch_cap_day: int = 100
+    # Days after first payment_failed before API hard-suspends (align with Stripe dunning window)
+    at_delinquent_suspend_days: int = 14
+    # Force meter Prices on Intermediate checkout even outside production
+    at_require_meter_prices: bool = False
 
     at_admin_api_keys: str = ""
     stripe_secret_key: str = ""
     stripe_webhook_secret: str = ""
-    # Recurring seat Price IDs
+    # Recurring seat Price IDs ($0 Intermediate membership recommended)
     stripe_price_payg: str = ""
     stripe_price_enterprise: str = ""
-    # Metered Prices attached to Billing Meters (optional until created in Dashboard)
+    # Optional $29 prepaid meter credit pack (not the growth hero seat)
+    stripe_price_credit_pack: str = ""
+    # Metered Prices attached to Billing Meters (required for Intermediate in production)
     stripe_price_meter_web_fetch: str = ""
     stripe_price_meter_cache_hit: str = ""
     stripe_price_meter_cache_miss: str = ""
