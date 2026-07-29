@@ -6,8 +6,7 @@ import Link from "next/link";
 const KEY_STORAGE = "ohm_api_key";
 
 export function BillingCheckoutForm() {
-  const [plan, setPlan] = useState<"payg" | "enterprise">("payg");
-  const [label, setLabel] = useState("");
+  const [organisation, setOrganisation] = useState("");
   const [email, setEmail] = useState("");
   const [termsAck, setTermsAck] = useState(false);
   const [dpaAck, setDpaAck] = useState(false);
@@ -24,11 +23,13 @@ export function BillingCheckoutForm() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          plan,
-          label,
+          plan: "payg",
+          label: organisation,
           email,
           terms_ack: termsAck,
           dpa_ack: dpaAck,
+          cancel_url: `${window.location.origin}/billing/cancel`,
+          success_url: `${window.location.origin}/billing/success?session_id={CHECKOUT_SESSION_ID}`,
         }),
       });
       const data = await res.json();
@@ -54,7 +55,9 @@ export function BillingCheckoutForm() {
         window.location.href = url;
         return;
       }
-      throw new Error("Checkout URL missing — Stripe may be unconfigured on the API.");
+      throw new Error(
+        "Checkout URL missing — Stripe may be unconfigured on the API.",
+      );
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
       setBusy(false);
@@ -64,17 +67,6 @@ export function BillingCheckoutForm() {
   return (
     <form className="billing-form" onSubmit={onSubmit}>
       <label className="billing-form__field">
-        <span>Plan</span>
-        <select
-          value={plan}
-          onChange={(e) => setPlan(e.target.value as "payg" | "enterprise")}
-          disabled={busy}
-        >
-          <option value="payg">PAYG seat — pipe access</option>
-          <option value="enterprise">Enterprise — managed capacity</option>
-        </select>
-      </label>
-      <label className="billing-form__field">
         <span>Work email</span>
         <input
           type="email"
@@ -82,16 +74,19 @@ export function BillingCheckoutForm() {
           onChange={(e) => setEmail(e.target.value)}
           placeholder="you@company.com"
           autoComplete="email"
+          required
           disabled={busy}
         />
       </label>
       <label className="billing-form__field">
-        <span>Label (optional)</span>
+        <span>Organisation name</span>
         <input
           type="text"
-          value={label}
-          onChange={(e) => setLabel(e.target.value)}
-          placeholder="team name"
+          value={organisation}
+          onChange={(e) => setOrganisation(e.target.value)}
+          placeholder="Acme Labs"
+          autoComplete="organization"
+          required
           disabled={busy}
         />
       </label>
@@ -125,7 +120,11 @@ export function BillingCheckoutForm() {
           withOhm key (store now): <code>{issuedKey}</code>
         </p>
       ) : null}
-      <button type="submit" className="btn btn--primary" disabled={busy || !termsAck || !dpaAck}>
+      <button
+        type="submit"
+        className="btn btn--primary"
+        disabled={busy || !termsAck || !dpaAck}
+      >
         {busy ? "Redirecting…" : "Continue to Checkout"}
       </button>
       <p className="billing-form__note">

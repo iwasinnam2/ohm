@@ -1,7 +1,31 @@
+"use client";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { OhmMark } from "./OhmMark";
 
+function navCurrent(
+  pathname: string,
+  href: string,
+): boolean {
+  if (href === "/") return pathname === "/";
+  if (href === "/subscriptions") {
+    return (
+      pathname === "/subscriptions" || pathname.startsWith("/billing")
+    );
+  }
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
+
 export function SiteHeader() {
+  const pathname = usePathname() || "/";
+
+  const links = [
+    { href: "/docs", label: "Docs" },
+    { href: "/subscriptions", label: "Billing" },
+    { href: "/", label: "Home" },
+  ] as const;
+
   return (
     <header className="site-header">
       <Link href="/" className="site-header__brand">
@@ -9,11 +33,18 @@ export function SiteHeader() {
         <span className="site-header__name">withOhm</span>
       </Link>
       <nav className="site-header__nav" aria-label="Primary">
-        <Link href="/docs">Docs</Link>
-        <Link href="/billing">Billing</Link>
-        <Link href="/" className="site-header__cta">
-          Home
-        </Link>
+        {links.map((link) => {
+          const current = navCurrent(pathname, link.href);
+          return (
+            <Link
+              key={link.href + link.label}
+              href={link.href}
+              aria-current={current ? "page" : undefined}
+            >
+              {link.label}
+            </Link>
+          );
+        })}
       </nav>
     </header>
   );

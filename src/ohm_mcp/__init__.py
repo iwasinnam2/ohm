@@ -45,19 +45,32 @@ async def ohm_fetch_web(
     urls: list[str],
     purpose: str = "public_web_retrieval",
     query: str = "",
+    format: str = "markdown",
 ) -> str:
     """
-    Fetch public web pages through Ohm's compliant ingest and return redacted
-    markdown context. Allowed purposes: public_web_retrieval, business_catalog,
-    public_company_info, job_listings. This is metered (ohm_web_fetch).
+    Compliant public-web fetch via Ohm ingest (metered ohm_web_fetch).
+
+    Args:
+      urls: Public http(s) pages to fetch.
+      purpose: One of public_web_retrieval, business_catalog,
+        public_company_info, job_listings.
+      query: Optional focus question for the model summarizer.
+      format: markdown (default) or json — json returns title/text/meta/json_ld
+        structure injected as context.
+
+    Returns redacted markdown or JSON-shaped context (model summary when via chat).
     """
     base, _, _ = _cfg()
+    fmt = (format or "markdown").strip().lower()
+    if fmt not in ("markdown", "json"):
+        fmt = "markdown"
     body: dict[str, Any] = {
         "model": "mock",
         "messages": [{"role": "user", "content": query or "Summarize the web context."}],
         "fetch_web_context": True,
         "web_purpose": purpose,
         "web_urls": urls,
+        "web_format": fmt,
         "web_compliance_ack": True,
         "terms_ack": True,
         "dpa_ack": True,
@@ -81,7 +94,7 @@ async def ohm_fetch_web(
 
 @mcp.tool()
 async def ohm_usage() -> str:
-    """Return Ohm usage snapshot: cache hit ratio, fetches, web attach rate."""
+    """Return Ohm usage snapshot: cache hit ratio, fetches, web attach rate (GET /v1/usage)."""
     base, _, _ = _cfg()
     async with httpx.AsyncClient(timeout=30.0) as client:
         res = await client.get(f"{base}/usage", headers=_headers())
@@ -98,8 +111,13 @@ async def ohm_chat(
 ) -> str:
     """
     Chat through Ohm (OpenAI-compatible). Identical prompts hit Redis cache.
-    Pass fetch_urls to attach compliant public web context. For gpt/claude
-    models, set OHM_UPSTREAM_KEY or upstream_api_key (BYOK).
+
+    Args:
+      prompt: User message.
+      model: Upstream model id (mock for local; gpt/claude need BYOK).
+      fetch_urls: Optional public URLs to attach as compliant web context.
+      purpose: Ingest purpose when fetch_urls is set.
+      upstream_api_key: Optional BYOK override (else OHM_UPSTREAM_KEY).
     """
     base, _, _ = _cfg()
     body: dict[str, Any] = {

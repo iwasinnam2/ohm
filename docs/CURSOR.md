@@ -30,4 +30,47 @@ cursor://anysphere.cursor-deeplink/mcp/install?name=ohm&config=<base64>
 }
 ```
 
-`pip install -e ".[mcp]"` once from the repo. Tools: `ohm_fetch_web`, `ohm_usage`, `ohm_chat`. See also [`.cursor/mcp.json.example`](../.cursor/mcp.json.example).
+`pip install -e ".[mcp]"` once from the repo. See also [`.cursor/mcp.json.example`](../.cursor/mcp.json.example).
+
+## Usable commands (MCP tools)
+
+| Command | Purpose |
+|---------|---------|
+| `ohm_fetch_web` | Compliant URL fetch → redacted **markdown** or **JSON** context |
+| `ohm_usage` | Usage snapshot (`GET /v1/usage`) |
+| `ohm_chat` | Chat through Ohm; optional `fetch_urls` for web context |
+
+### `ohm_fetch_web`
+
+| Param | Default | Notes |
+|-------|---------|-------|
+| `urls` | (required) | Public `http(s)` pages |
+| `purpose` | `public_web_retrieval` | Also: `business_catalog`, `public_company_info`, `job_listings` |
+| `query` | `""` | Optional focus question |
+| `format` | `markdown` | `markdown` or `json` (title, text, meta, JSON-LD) |
+
+Metered as `ohm_web_fetch`. Public pages only — see [LEGAL.md](LEGAL.md).
+
+### `ohm_usage`
+
+No params. Returns cache hit ratio, fetches, and web attach rate.
+
+### `ohm_chat`
+
+| Param | Default | Notes |
+|-------|---------|-------|
+| `prompt` | (required) | User message |
+| `model` | `mock` | gpt/claude need BYOK |
+| `fetch_urls` | none | Optional compliant web attach |
+| `purpose` | `public_web_retrieval` | When `fetch_urls` is set |
+| `upstream_api_key` | `""` | Overrides `OHM_UPSTREAM_KEY` |
+
+### Env
+
+| Var | Role |
+|-----|------|
+| `OHM_BASE_URL` | Edge `/v1` (default `http://127.0.0.1:8081/v1`) |
+| `OHM_API_KEY` | Tenant key (`sk-at-…`) |
+| `OHM_UPSTREAM_KEY` | Optional BYOK for cache misses |
+
+Slash skills (project): `/ohm-fetch-web`, `/ohm-usage`, `/ohm-chat` under [`.cursor/skills/`](../.cursor/skills/).

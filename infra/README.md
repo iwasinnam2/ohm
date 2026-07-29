@@ -15,9 +15,11 @@ Cache replication is **asynchronous**. A hit in London may lag a Virginia write 
 
 | Variable | Purpose |
 |----------|---------|
-| `REDIS_URL` | Local replica — `GET` |
+| `REDIS_URL` | Local replica / reader — `GET` |
 | `REDIS_WRITE_URL` | Leader primary — `SET`, metering, tenants |
 | `REDIS_RL_URL` | Local RL cluster — token buckets |
+| `AT_RS_REDIS` | Rust GET (replica/reader host:port) |
+| `AT_RS_REDIS_WRITE` | Rust SET (leader primary host:port) |
 | `AT_REGION` | Region name for keys `at:{tenant}:rl:{region}` |
 
 ## Section C — first region
@@ -27,17 +29,21 @@ Cache replication is **asynchronous**. A hit in London may lag a Virginia write 
 3. Copy `infra/terraform/backend.hcl.example` → `backend.hcl`, `terraform init -backend-config=backend.hcl`
 4. `terraform apply` (leader VPC + Redis + ECR + Secrets + ACM)
 5. Push images: `bash infra/scripts/ecr_push.sh 0.1.0`
-6. Create K8s secret:
+6. Create K8s secret from `terraform output -json leader_redis_env` (Phase 2 reader/primary split):
 
 ```bash
+# Phase 0 cutover may temporarily point REDIS_URL at PRIMARY; prefer reader once stable.
+PRIMARY=$(terraform output -raw redis_leader_primary_endpoint)
+READER=$(terraform output -raw redis_leader_reader_endpoint)
 kubectl -n at-utility create secret generic at-utility-secrets \
   --from-literal=AT_API_KEYS=sk-at-... \
   --from-literal=AT_ADMIN_API_KEYS=sk-at-... \
   --from-literal=OPENAI_API_KEY=sk-... \
-  --from-literal=REDIS_URL=rediss://LEADER:6379/0 \
-  --from-literal=REDIS_WRITE_URL=rediss://LEADER:6379/0 \
-  --from-literal=REDIS_RL_URL=rediss://LEADER:6379/0 \
-  --from-literal=AT_RS_REDIS=LEADER:6379
+  --from-literal=REDIS_URL=rediss://${READER}:6379/0 \
+  --from-literal=REDIS_WRITE_URL=rediss://${PRIMARY}:6379/0 \
+  --from-literal=REDIS_RL_URL=rediss://${PRIMARY}:6379/0 \
+  --from-literal=AT_RS_REDIS=${READER}:6379 \
+  --from-literal=AT_RS_REDIS_WRITE=${PRIMARY}:6379
 ```
 
 7. Deploy: `ACM_CERTIFICATE_ARN=$(terraform output -raw acm_certificate_arn) bash infra/scripts/k8s_deploy.sh`
@@ -47,10 +53,12 @@ kubectl -n at-utility create secret generic at-utility-secrets \
 .\scripts\external_smoke.ps1 -BaseUrl https://api.withohm.dev -ApiKey sk-at-...
 ```
 
+See also [docs/REDIS_MESH.md](../docs/REDIS_MESH.md).
+
 ## Section D — edge mesh
 
 1. Set `enable_edges = true` in `terraform.tfvars` and `terraform apply`.
-2. Attach ElastiCache Global Datastore / cross-region replicas to the leader.
+2. Terraform creates `aws_elasticache_global_replication_group` + per-edge secondary RGs and RL clusters; `edge_wiring` outputs real `REDIS_URL` / `AT_RS_REDIS`.
 3. Deploy the same manifests per region with edge env from module outputs (`edge_wiring`).
 4. CronJob runs `python -m at_utility.allotment` every minute.
 
@@ -58,13 +66,22 @@ kubectl -n at-utility create secret generic at-utility-secrets \
 
 After a miss/`SET` in the leader region, measure time until `GET` hits in two edge regions. Record p50/p99; target under **1000ms** in lab conditions.
 
+Local (Phase 1):
+
+```powershell
+.\scripts\redis_replica_smoke.ps1
+```
+
 ## Section E — Anycast
+
+Prerequisites: ≥2 healthy regional NLBs, Phase 3 lag drill green, public API miss/hit proven.
 
 1. Set `anycast_enabled = true` and `ga_nlb_endpoint_arns = ["arn:aws:elasticloadbalancing:..."]`.
 2. `terraform apply` — accelerator, listener, endpoint group.
 3. Cut DNS `api.withohm.dev` → GA DNS name — [API_CUTOVER.md](runbooks/API_CUTOVER.md) Phase 2.
 4. Drain one region endpoint; confirm clients continue without config change.
 5. Checklist: [GO_LIVE.md](runbooks/GO_LIVE.md).
+6. After green: undeffer multi-region/Anycast claims in [docs/READINESS.md](../docs/READINESS.md).
 
 ## Status host
 

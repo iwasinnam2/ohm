@@ -33,7 +33,9 @@ Doctrine checklist when changing UI: one focal point (squint), three type levels
 | `/docs/[slug]` | Curated markdown from `content/docs/` |
 | `/subscriptions` | Free trial · Intermediate · Enterprise |
 | `/design-partners` | Redirects to `/subscriptions` |
-| `/billing` | Self-serve Checkout |
+| `/billing` | Redirects to `/subscriptions` |
+| `/billing/intermediate` | Intermediate checkout |
+| `/billing/enterprise` | Enterprise application |
 
 ## Deploy
 

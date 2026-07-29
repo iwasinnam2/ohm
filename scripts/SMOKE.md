@@ -11,6 +11,8 @@
 ```powershell
 cd c:\Users\markk\OneDrive\Documents\at-utility
 docker compose up --build -d
+# Phase 1: primary→replica lag budget
+.\scripts\redis_replica_smoke.ps1
 # wait for healthy
 curl http://localhost:8080/health
 # MISS then HIT

@@ -24,7 +24,10 @@ services:
     env_file:
       - .env
     environment:
-      REDIS_URL: redis://redis:6379/0
+      # Phase 1 mesh: GET local replica, SET/RL on primary
+      REDIS_URL: redis://redis-replica:6379/0
+      REDIS_WRITE_URL: redis://redis:6379/0
+      REDIS_RL_URL: redis://redis:6379/0
       INGEST_WORKER_URL: http://ingest-worker:8090
       AT_REGION: local
       # Local bench headroom (production tenants still use token buckets)
@@ -32,6 +35,7 @@ services:
       AT_RATE_LIMIT_BURST: "1000"
     depends_on:
       - redis
+      - redis-replica
       - ingest-worker
 
   ingest-worker:
@@ -59,13 +63,16 @@ services:
       - "8081:8081"
     environment:
       AT_RS_LISTEN: 0.0.0.0:8081
-      AT_RS_REDIS: redis:6379
+      # GET on replica; SET on primary (never write to a read replica)
+      AT_RS_REDIS: redis-replica:6379
+      AT_RS_REDIS_WRITE: redis:6379
       AT_RS_PRIMARY: http://gateway:8080
       AT_RS_FALLBACK: http://gateway:8080
       AT_API_KEYS: sk-at-dev
     depends_on:
       - gateway
       - redis
+      - redis-replica
 
 volumes:
   redis_data:

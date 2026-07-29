@@ -19,6 +19,8 @@ node_modules/
 site/.next/
 .cursor/*
 !.cursor/mcp.json.example
+!.cursor/skills/
+!.cursor/skills/**/
 .terraform/
 *.tfstate
 *.tfstate.*

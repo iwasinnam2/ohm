@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import logging
 from typing import Any, Optional
 
@@ -28,9 +29,14 @@ async def fetch_web_context(
     compliance_ack: bool = False,
     terms_ack: bool = False,
     dpa_ack: bool = False,
+    format: str = "markdown",
     client: Optional[httpx.AsyncClient] = None,
 ) -> dict[str, Any]:
     """Call ingest worker after evaluating the legal policy gate."""
+    fmt = (format or "markdown").strip().lower()
+    if fmt not in ("markdown", "json"):
+        fmt = "markdown"
+
     try:
         require_terms_acks(
             terms_ack=terms_ack,
@@ -75,7 +81,7 @@ async def fetch_web_context(
             json={
                 "query": query,
                 "urls": urls or [],
-                "format": "markdown",
+                "format": fmt,
                 "purpose": decision.purpose,
                 "compliance_ack": True,
                 "respect_robots": settings.at_compliance_respect_robots,
@@ -92,19 +98,41 @@ async def fetch_web_context(
         for d in docs:
             if not d.get("ok"):
                 continue
-            md = d.get("markdown") or ""
-            capped = apply_excerpt_cap(
-                md, max_chars=settings.at_compliance_max_chars_per_source
-            )
-            d["markdown"] = capped.text
-            d.setdefault("compliance", {})["excerpt"] = {
-                "truncated": capped.truncated,
-                "chars_after": capped.chars_after,
-            }
-            parts.append(f"### {d.get('url', 'source')}\n{capped.text}")
+            if fmt == "json":
+                raw = d.get("json")
+                if raw is None:
+                    continue
+                text = (
+                    json.dumps(raw, ensure_ascii=False)
+                    if not isinstance(raw, str)
+                    else raw
+                )
+                capped = apply_excerpt_cap(
+                    text, max_chars=settings.at_compliance_max_chars_per_source
+                )
+                d["markdown"] = capped.text
+                d.setdefault("compliance", {})["excerpt"] = {
+                    "truncated": capped.truncated,
+                    "chars_after": capped.chars_after,
+                }
+                parts.append(
+                    f"### {d.get('url', 'source')}\n```json\n{capped.text}\n```"
+                )
+            else:
+                md = d.get("markdown") or ""
+                capped = apply_excerpt_cap(
+                    md, max_chars=settings.at_compliance_max_chars_per_source
+                )
+                d["markdown"] = capped.text
+                d.setdefault("compliance", {})["excerpt"] = {
+                    "truncated": capped.truncated,
+                    "chars_after": capped.chars_after,
+                }
+                parts.append(f"### {d.get('url', 'source')}\n{capped.text}")
         payload["_joined_markdown"] = cap_total_context(
             parts, max_chars=settings.at_compliance_max_context_chars
         )
+        payload["format"] = fmt
         payload.setdefault(
             "compliance",
             {

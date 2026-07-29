@@ -4,7 +4,7 @@ After Checkout, the success screen’s primary action is **Add withOhm to Cursor
 
 ## One-click (preferred)
 
-1. Finish Stripe Checkout on [/billing](/billing)
+1. Finish Stripe Checkout on [/billing/intermediate](/billing/intermediate)
 2. On success, optionally paste your provider key (BYOK)
 3. Click **Add withOhm to Cursor** → confirm in Cursor’s MCP UI
 

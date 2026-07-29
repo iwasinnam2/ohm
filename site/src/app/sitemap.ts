@@ -7,7 +7,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
   const staticRoutes = [
     "",
     "/subscriptions",
-    "/billing",
+    "/billing/intermediate",
+    "/billing/enterprise",
     "/docs",
     "/status",
     "/edge-pending",
