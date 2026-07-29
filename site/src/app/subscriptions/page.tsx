@@ -20,7 +20,11 @@ const TIERS = [
       "Dynamic model switching, web browse, and URL scrape on the pipe",
       "Converts to Intermediate at $29/mo when the trial ends",
     ],
-    cta: { href: "/billing", label: "Start free trial", external: false },
+    cta: {
+      href: "/billing/intermediate",
+      label: "Start free trial",
+      external: false,
+    },
   },
   {
     id: "intermediate",
@@ -35,7 +39,11 @@ const TIERS = [
       "Real-time model switching with zero local resource drag",
       "Centralised prompt cache and compliant search",
     ],
-    cta: { href: "/billing", label: "Subscribe", external: false },
+    cta: {
+      href: "/billing/intermediate",
+      label: "Subscribe",
+      external: false,
+    },
   },
   {
     id: "enterprise",
@@ -53,9 +61,9 @@ const TIERS = [
       "Invite to the design-partner forum — converse directly with withOhm engineers",
     ],
     cta: {
-      href: "mailto:partners@withohm.dev?subject=withOhm%20Enterprise%20%2F%20design%20partner",
+      href: "/billing/enterprise",
       label: "Contact Enterprise",
-      external: true,
+      external: false,
     },
   },
 ] as const;
@@ -98,15 +106,9 @@ export default function SubscriptionsPage() {
                 ))}
               </ul>
               <div className="tier__cta">
-                {tier.cta.external ? (
-                  <a className="btn btn--primary" href={tier.cta.href}>
-                    {tier.cta.label}
-                  </a>
-                ) : (
-                  <Link className="btn btn--primary" href={tier.cta.href}>
-                    {tier.cta.label}
-                  </Link>
-                )}
+                <Link className="btn btn--primary" href={tier.cta.href}>
+                  {tier.cta.label}
+                </Link>
               </div>
             </li>
           ))}

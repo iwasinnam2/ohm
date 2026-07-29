@@ -59,6 +59,8 @@ class ChatCompletionRequest(BaseModel):
     web_compliance_ack: bool = False
     terms_ack: bool = False
     dpa_ack: bool = False
+    # markdown (default) | json — structured scrape via ingest worker
+    web_format: Optional[str] = None
     # identical-request-replay | no_store (skip Redis write)
     cache_control: Optional[str] = None
 
@@ -720,6 +722,7 @@ async def chat_completions(
             compliance_ack=body.web_compliance_ack,
             terms_ack=body.terms_ack,
             dpa_ack=body.dpa_ack,
+            format=body.web_format or "markdown",
         )
         if ctx.get("ok") is False and ctx.get("error"):
             detail = ctx.get("compliance") or {
@@ -749,6 +752,7 @@ async def chat_completions(
         "web_query": body.web_query,
         "web_urls": body.web_urls,
         "web_purpose": body.web_purpose,
+        "web_format": body.web_format,
         "temperature": body.temperature,
         "max_tokens": body.max_tokens,
         "cache_control": body.cache_control,

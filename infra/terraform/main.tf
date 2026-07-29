@@ -267,6 +267,19 @@ resource "aws_elasticache_replication_group" "leader" {
   }
 }
 
+# Phase 3 — ElastiCache Global Datastore (secondaries created in edge modules)
+resource "aws_elasticache_global_replication_group" "ohm" {
+  count                                = var.enable_edges ? 1 : 0
+  provider                             = aws.leader
+  global_replication_group_id_suffix   = "ohm"
+  primary_replication_group_id         = aws_elasticache_replication_group.leader.id
+  global_replication_group_description = "${var.project} prompt-cache global datastore"
+}
+
+output "redis_global_replication_group_id" {
+  value = try(aws_elasticache_global_replication_group.ohm[0].global_replication_group_id, null)
+}
+
 # --- Secrets Manager ---
 resource "aws_secretsmanager_secret" "runtime" {
   provider = aws.leader
@@ -278,9 +291,14 @@ resource "aws_secretsmanager_secret_version" "runtime" {
   provider  = aws.leader
   secret_id = aws_secretsmanager_secret.runtime.id
   secret_string = jsonencode({
-    OPENAI_API_KEY = var.openai_api_key
-    AT_API_KEYS    = var.at_api_keys
-    REDIS_URL      = "rediss://${aws_elasticache_replication_group.leader.primary_endpoint_address}:6379/0"
+    OPENAI_API_KEY     = var.openai_api_key
+    AT_API_KEYS        = var.at_api_keys
+    # Phase 2: GET on same-region reader; SET/RL/tenants on primary
+    REDIS_URL          = "rediss://${aws_elasticache_replication_group.leader.reader_endpoint_address}:6379/0"
+    REDIS_WRITE_URL    = "rediss://${aws_elasticache_replication_group.leader.primary_endpoint_address}:6379/0"
+    REDIS_RL_URL       = "rediss://${aws_elasticache_replication_group.leader.primary_endpoint_address}:6379/0"
+    AT_RS_REDIS        = "${aws_elasticache_replication_group.leader.reader_endpoint_address}:6379"
+    AT_RS_REDIS_WRITE  = "${aws_elasticache_replication_group.leader.primary_endpoint_address}:6379"
   })
 }
 
@@ -364,6 +382,18 @@ output "redis_leader_primary_endpoint" {
 
 output "redis_leader_reader_endpoint" {
   value = aws_elasticache_replication_group.leader.reader_endpoint_address
+}
+
+# Phase 0–2 single-region wiring helper (before Global Datastore edges)
+output "leader_redis_env" {
+  value = {
+    REDIS_URL         = "rediss://${aws_elasticache_replication_group.leader.reader_endpoint_address}:6379/0"
+    REDIS_WRITE_URL   = "rediss://${aws_elasticache_replication_group.leader.primary_endpoint_address}:6379/0"
+    REDIS_RL_URL      = "rediss://${aws_elasticache_replication_group.leader.primary_endpoint_address}:6379/0"
+    AT_RS_REDIS       = "${aws_elasticache_replication_group.leader.reader_endpoint_address}:6379"
+    AT_RS_REDIS_WRITE = "${aws_elasticache_replication_group.leader.primary_endpoint_address}:6379"
+    note              = "Phase 2 same-region reader; Phase 0 may point all three at primary if reader lag is a concern during cutover"
+  }
 }
 
 output "vpc_id" {

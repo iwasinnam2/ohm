@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import logging
 import os
 import re
@@ -87,26 +88,71 @@ def html_to_markdown(html: str, url: str) -> str:
     return f"# {title}\n\nSource: {url}\n\n{text[:20000]}"
 
 
-async def meta_search(query: str, max_results: int = 3) -> list[str]:
-    """Lightweight DuckDuckGo HTML meta-search (no owned index)."""
-    if SERP_PROVIDER != "duckduckgo":
-        log.warning("serp provider %s not implemented; using duckduckgo", SERP_PROVIDER)
-    url = f"https://html.duckduckgo.com/html/?q={quote_plus(query)}"
-    async with httpx.AsyncClient(timeout=20.0, follow_redirects=True) as client:
-        res = await client.get(url, headers={"User-Agent": BOT_UA})
-        res.raise_for_status()
-    soup = BeautifulSoup(res.text, "html.parser")
-    links: list[str] = []
-    for a in soup.select("a.result__a"):
-        href = a.get("href")
-        if href and href.startswith("http"):
-            g = gate_url(href)
-            if not g.allowed:
-                continue
-            links.append(href)
-        if len(links) >= max_results:
-            break
-    return links
+def html_to_json(html: str, url: str) -> dict[str, Any]:
+    """Structured scrape: title, text, meta, JSON-LD (no custom field DSL)."""
+    soup = BeautifulSoup(html, "html.parser")
+    title = soup.title.string.strip() if soup.title and soup.title.string else url
+
+    meta: dict[str, str] = {}
+    for tag in soup.find_all("meta"):
+        name = (tag.get("name") or tag.get("property") or "").strip().lower()
+        content = (tag.get("content") or "").strip()
+        if not name or not content:
+            continue
+        if name in ("description", "og:title", "og:description", "og:type", "og:url"):
+            meta[name] = content
+
+    json_ld: list[Any] = []
+    for script in soup.find_all("script", attrs={"type": "application/ld+json"}):
+        raw = (script.string or script.get_text() or "").strip()
+        if not raw:
+            continue
+        try:
+            json_ld.append(json.loads(raw))
+        except json.JSONDecodeError:
+            continue
+
+    for tag in soup(["script", "style", "noscript", "iframe", "svg", "nav", "footer", "aside"]):
+        tag.decompose()
+    text = soup.get_text("\n", strip=True)
+    text = re.sub(r"\n{3,}", "\n\n", text)
+
+    out: dict[str, Any] = {
+        "url": url,
+        "title": title,
+        "text": text[:20000],
+    }
+    if meta:
+        out["meta"] = meta
+    if json_ld:
+        out["json_ld"] = json_ld
+    return out
+
+
+def _redact_json_strings(value: Any, *, enabled: bool) -> tuple[Any, int]:
+    """Walk JSON and redact PII in string leaves. Returns (value, total_redactions)."""
+    if not enabled:
+        return value, 0
+    if isinstance(value, str):
+        red = redact_personal_data(value, enabled=True)
+        return red.text, red.total
+    if isinstance(value, list):
+        total = 0
+        out_list = []
+        for item in value:
+            scrubbed, n = _redact_json_strings(item, enabled=True)
+            out_list.append(scrubbed)
+            total += n
+        return out_list, total
+    if isinstance(value, dict):
+        total = 0
+        out_dict: dict[str, Any] = {}
+        for k, v in value.items():
+            scrubbed, n = _redact_json_strings(v, enabled=True)
+            out_dict[k] = scrubbed
+            total += n
+        return out_dict, total
+    return value, 0
 
 
 def _finalize_markdown(
@@ -131,31 +177,107 @@ def _finalize_markdown(
     }
 
 
+def _finalize_json(
+    payload: dict[str, Any],
+    *,
+    redact_pii: bool,
+    max_chars: int,
+    respect_robots: bool,
+) -> dict[str, Any]:
+    scrubbed, pii_total = _redact_json_strings(payload, enabled=redact_pii)
+    # Cap primary text field; keep structure intact for agents
+    text = scrubbed.get("text") or ""
+    excerpt = apply_excerpt_cap(text, max_chars=max_chars)
+    scrubbed["text"] = excerpt.text
+    return {
+        "json": scrubbed,
+        "compliance": {
+            "allowed": True,
+            "pii_redactions": pii_total,
+            "robots": "checked" if respect_robots else "skipped",
+            "excerpt_truncated": excerpt.truncated,
+            "excerpt_chars": excerpt.chars_after,
+            "code_blocks_stripped": excerpt.code_blocks_stripped,
+        },
+    }
+
+
+def _finalize_content(
+    html: str,
+    url: str,
+    *,
+    fmt: str,
+    redact_pii: bool,
+    max_chars: int,
+    respect_robots: bool,
+) -> dict[str, Any]:
+    if fmt == "json":
+        return _finalize_json(
+            html_to_json(html, url),
+            redact_pii=redact_pii,
+            max_chars=max_chars,
+            respect_robots=respect_robots,
+        )
+    return _finalize_markdown(
+        html_to_markdown(html, url),
+        redact_pii=redact_pii,
+        max_chars=max_chars,
+        respect_robots=respect_robots,
+    )
+
+
+async def meta_search(query: str, max_results: int = 3) -> list[str]:
+    """Lightweight DuckDuckGo HTML meta-search (no owned index)."""
+    if SERP_PROVIDER != "duckduckgo":
+        log.warning("serp provider %s not implemented; using duckduckgo", SERP_PROVIDER)
+    url = f"https://html.duckduckgo.com/html/?q={quote_plus(query)}"
+    async with httpx.AsyncClient(timeout=20.0, follow_redirects=True) as client:
+        res = await client.get(url, headers={"User-Agent": BOT_UA})
+        res.raise_for_status()
+    soup = BeautifulSoup(res.text, "html.parser")
+    links: list[str] = []
+    for a in soup.select("a.result__a"):
+        href = a.get("href")
+        if href and href.startswith("http"):
+            g = gate_url(href)
+            if not g.allowed:
+                continue
+            links.append(href)
+        if len(links) >= max_results:
+            break
+    return links
+
+
 async def fetch_url(
     url: str,
     *,
     respect_robots: bool,
     redact_pii: bool,
     max_chars_per_source: int,
+    fmt: str = "markdown",
 ) -> dict[str, Any]:
     """Prefer Playwright; fall back to httpx if browser not installed."""
+    fmt = (fmt or "markdown").strip().lower()
+    if fmt not in ("markdown", "json"):
+        fmt = "markdown"
+
     g = gate_url(url)
     if not g.allowed:
         return {
             "url": url,
-            "markdown": "",
             "ok": False,
             "error": g.reason,
             "compliance": {"code": g.code, "allowed": False},
+            **({"json": {}} if fmt == "json" else {"markdown": ""}),
         }
 
     if not await allowed_by_robots(url, enabled=respect_robots):
         return {
             "url": url,
-            "markdown": "",
             "ok": False,
             "error": "Disallowed by robots.txt for OhmBot",
             "compliance": {"code": "robots_disallow", "allowed": False},
+            **({"json": {}} if fmt == "json" else {"markdown": ""}),
         }
 
     try:
@@ -172,16 +294,17 @@ async def fetch_url(
                 await browser.close()
                 return {
                     "url": url,
-                    "markdown": "",
                     "ok": False,
                     "error": f"Navigation landed on blocked surface: {final_gate.reason}",
                     "compliance": {"code": final_gate.code, "allowed": False, "final_url": final},
+                    **({"json": {}} if fmt == "json" else {"markdown": ""}),
                 }
             html = await page.content()
             await browser.close()
-            md = html_to_markdown(html, final)
-            fin = _finalize_markdown(
-                md,
+            fin = _finalize_content(
+                html,
+                final,
+                fmt=fmt,
                 redact_pii=redact_pii,
                 max_chars=max_chars_per_source,
                 respect_robots=respect_robots,
@@ -200,7 +323,6 @@ async def fetch_url(
                 if not final_gate.allowed:
                     return {
                         "url": url,
-                        "markdown": "",
                         "ok": False,
                         "error": f"Redirected to blocked surface: {final_gate.reason}",
                         "compliance": {
@@ -208,17 +330,24 @@ async def fetch_url(
                             "allowed": False,
                             "final_url": final,
                         },
+                        **({"json": {}} if fmt == "json" else {"markdown": ""}),
                     }
-                md = html_to_markdown(res.text, final)
-                fin = _finalize_markdown(
-                    md,
+                fin = _finalize_content(
+                    res.text,
+                    final,
+                    fmt=fmt,
                     redact_pii=redact_pii,
                     max_chars=max_chars_per_source,
                     respect_robots=respect_robots,
                 )
                 return {"url": final, "ok": True, **fin}
         except Exception as exc2:  # noqa: BLE001
-            return {"url": url, "markdown": "", "ok": False, "error": str(exc2)}
+            return {
+                "url": url,
+                "ok": False,
+                "error": str(exc2),
+                **({"json": {}} if fmt == "json" else {"markdown": ""}),
+            }
 
 
 @app.get("/health")
@@ -239,7 +368,7 @@ async def list_purposes() -> dict[str, Any]:
         "allowed": sorted(ALLOWED_PURPOSES),
         "blocked": sorted(BLOCKED_PURPOSES),
         "risk_bands": PURPOSE_RISK,
-        "notes": "See docs/LEGAL.md — entire ingest path is public-only.",
+        "notes": "See docs/LEGAL.md - entire ingest path is public-only.",
     }
 
 
@@ -287,6 +416,10 @@ async def ingest(body: IngestRequest) -> dict[str, Any]:
             if len(urls) >= body.max_results:
                 break
 
+    fmt = (body.format or "markdown").strip().lower()
+    if fmt not in ("markdown", "json"):
+        fmt = "markdown"
+
     documents = []
     for u in urls[: body.max_results]:
         documents.append(
@@ -295,6 +428,7 @@ async def ingest(body: IngestRequest) -> dict[str, Any]:
                 respect_robots=respect_robots,
                 redact_pii=redact_pii,
                 max_chars_per_source=max_chars,
+                fmt=fmt,
             )
         )
     ok_docs = [d for d in documents if d.get("ok")]
@@ -302,7 +436,7 @@ async def ingest(body: IngestRequest) -> dict[str, Any]:
         "ok": bool(ok_docs),
         "query": body.query,
         "documents": documents,
-        "format": body.format,
+        "format": fmt,
         "metered_fetches": len(ok_docs),
         "compliance": {
             "purpose": decision.purpose,

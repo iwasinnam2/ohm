@@ -1,4 +1,4 @@
-# Regional edge — Redis replica + local RL Redis + notes for gateway wiring (Section D).
+# Regional edge — Global Datastore secondary + local RL Redis (Section D).
 
 variable "project" {
   type = string
@@ -10,6 +10,12 @@ variable "region" {
 
 variable "leader_primary_endpoint" {
   type = string
+}
+
+variable "global_replication_group_id" {
+  type        = string
+  default     = ""
+  description = "ElastiCache Global Datastore id from leader (empty until enable_edges)"
 }
 
 variable "vpc_cidr" {
@@ -48,7 +54,10 @@ data "aws_availability_zones" "available" {
 }
 
 locals {
-  azs = var.create_resources ? slice(data.aws_availability_zones.available[0].names, 0, 2) : []
+  azs          = var.create_resources ? slice(data.aws_availability_zones.available[0].names, 0, 2) : []
+  has_global   = var.create_resources && var.global_replication_group_id != ""
+  replica_host = local.has_global ? aws_elasticache_replication_group.cache_secondary[0].primary_endpoint_address : ""
+  rl_host      = var.create_resources ? aws_elasticache_cluster.rl[0].cache_nodes[0].address : ""
 }
 
 resource "aws_vpc" "edge" {
@@ -74,7 +83,7 @@ resource "aws_subnet" "private" {
 resource "aws_security_group" "redis" {
   count       = var.create_resources ? 1 : 0
   name        = "${var.project}-edge-redis-${var.region}"
-  description = "Edge replica + local RL Redis"
+  description = "Edge Global Datastore secondary + local RL Redis"
   vpc_id      = aws_vpc.edge[0].id
 
   ingress {
@@ -116,29 +125,53 @@ resource "aws_elasticache_cluster" "rl" {
   }
 }
 
-# Cross-region replica of the leader is provisioned via ElastiCache Global Datastore
-# or replica groups once the leader replication group id is known. Documented wiring:
+# Cross-region read replica via Global Datastore (engine/auth inherit from primary).
+resource "aws_elasticache_replication_group" "cache_secondary" {
+  count                       = local.has_global ? 1 : 0
+  replication_group_id        = "${var.project}-cache-${replace(var.region, "-", "")}"
+  description                 = "${var.project} prompt-cache secondary ${var.region}"
+  global_replication_group_id = var.global_replication_group_id
+  num_cache_clusters          = 2
+  automatic_failover_enabled  = true
+  multi_az_enabled            = true
+  port                        = 6379
+  subnet_group_name           = aws_elasticache_subnet_group.edge[0].name
+  security_group_ids          = [aws_security_group.redis[0].id]
+  tags = {
+    Role   = "redis-cache-secondary"
+    Region = var.region
+  }
+}
+
 output "edge_env" {
   value = {
     region              = var.region
     AT_REGION           = var.region
-    REDIS_URL           = "<local-replica-endpoint>:6379  # GET only"
+    REDIS_URL           = local.has_global ? "rediss://${local.replica_host}:6379/0" : "<pending-global-datastore-secondary>"
     REDIS_WRITE_URL     = "rediss://${var.leader_primary_endpoint}:6379/0"
-    REDIS_RL_URL        = var.create_resources ? "redis://${aws_elasticache_cluster.rl[0].cache_nodes[0].address}:6379/0" : "<rl-endpoint>"
+    REDIS_RL_URL        = var.create_resources ? "redis://${local.rl_host}:6379/0" : "<rl-endpoint>"
+    AT_RS_REDIS         = local.has_global ? "${local.replica_host}:6379" : "<pending-global-datastore-secondary>"
+    AT_RS_REDIS_WRITE   = "${var.leader_primary_endpoint}:6379"
     gateway_image       = var.gateway_image
     gateway_rs_image    = var.gateway_rs_image
     consistency_note    = "Async replica lag OK for prompt cache; billing uses leader ledger writes"
     lag_budget_ms       = 1000
+    global_datastore    = local.has_global
   }
 }
 
 output "edge_notes" {
   value = <<-EOT
     Deploy in ${var.region}:
-      1. Attach this VPC to ElastiCache Global Datastore / replica of ${var.leader_primary_endpoint}
-      2. Set REDIS_URL=local-replica (GET), REDIS_WRITE_URL=leader (SET), REDIS_RL_URL=local RL cluster
-      3. Deploy gateway + gateway-rs images; NLB in front of Rust :8081
-      4. Register NLB with Global Accelerator (Section E)
-      5. Run quota-allotment CronJob against REDIS_RL_URL
+      1. enable_edges creates Global Datastore secondary + RL cluster when global_replication_group_id is set
+      2. Set REDIS_URL=secondary (GET), REDIS_WRITE_URL=leader (SET), REDIS_RL_URL=local RL
+      3. Set AT_RS_REDIS=secondary, AT_RS_REDIS_WRITE=leader
+      4. Deploy gateway + gateway-rs; NLB in front of Rust :8081
+      5. Register NLB with Global Accelerator (Section E)
+      6. Run quota-allotment CronJob against REDIS_WRITE_URL / REDIS_RL_URL
   EOT
+}
+
+output "cache_secondary_primary_endpoint" {
+  value = local.has_global ? aws_elasticache_replication_group.cache_secondary[0].primary_endpoint_address : null
 }

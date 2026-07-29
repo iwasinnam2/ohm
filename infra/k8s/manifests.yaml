@@ -15,7 +15,9 @@ data:
   AT_RATE_LIMIT_BURST: "100"
   INGEST_WORKER_URL: "http://ingest-worker:8090"
   OPENAI_BASE_URL: "https://api.openai.com/v1"
-  # Leader: REDIS_URL == REDIS_WRITE_URL. Edge: replica / leader / local RL.
+  # Leader Phase 2: REDIS_URL=reader, REDIS_WRITE_URL=primary, REDIS_RL_URL=primary.
+  # Edge Phase 3: REDIS_URL=Global Datastore secondary, WRITE=leader, RL=regional.
+  # Secrets must also include AT_RS_REDIS (GET) and AT_RS_REDIS_WRITE (SET).
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -101,6 +103,11 @@ spec:
                 secretKeyRef:
                   name: at-utility-secrets
                   key: AT_RS_REDIS
+            - name: AT_RS_REDIS_WRITE
+              valueFrom:
+                secretKeyRef:
+                  name: at-utility-secrets
+                  key: AT_RS_REDIS_WRITE
             - name: AT_API_KEYS
               valueFrom:
                 secretKeyRef:

@@ -25,7 +25,7 @@ Monthly dedicated / managed-capacity SKU with negotiated **transaction usage agr
 
 ## Self-serve
 
-Start at [/billing](/billing) — Checkout issues your withOhm key once, then Stripe collects the seat. Free trial requires payment details and a $0.01 verification charge; Intermediate billing begins after 30 days.
+Start at [/billing/intermediate](/billing/intermediate) — Checkout issues your withOhm key once, then Stripe collects the seat. Free trial requires payment details and a $0.01 verification charge; Intermediate billing begins after 30 days. Enterprise applications: [/billing/enterprise](/billing/enterprise).
 
 ## Savings (estimates)
 
