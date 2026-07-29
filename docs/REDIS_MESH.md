@@ -75,3 +75,5 @@ Set `REDIS_URL` / `AT_RS_REDIS` to ElastiCache **reader_endpoint**; keep writes 
 ## Phase 4–5
 
 Rust never SETs on a replica when `AT_RS_REDIS_WRITE` is set. Anycast: `anycast_enabled=true` + `ga_nlb_endpoint_arns` after lag drill; then undeffer claims in [READINESS.md](READINESS.md).
+
+**TLS note:** ElastiCache leader uses `transit_encryption_enabled`. Python `rediss://` is fine; gateway-rs RESP is plain TCP today — use fail-fast `AT_RS_REDIS=127.0.0.1:9` until TLS RESP lands (edge still proxies to Python for HIT/MISS).

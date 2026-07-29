@@ -309,6 +309,13 @@ async def usage(
     snap["usage_estimate_only"] = False
     snap["billing_model"] = stripe_billing.BILLING_MODEL
     snap["byok"] = True
+    snap["billing_paid"] = bool(tenant.billing_paid)
+    # Unlock soft fetch cap when paid invoice or any metered spend recorded
+    snap["usage_unlocked"] = bool(
+        tenant.billing_paid
+        or tenant.plan in ("enterprise", "dev", "design_partner")
+        or float(snap.get("revenue_usd") or 0) > 0
+    )
     return snap
 
 
@@ -656,35 +663,64 @@ async def stripe_webhook(request: Request) -> dict[str, Any]:
 
     event_type = event["type"] if isinstance(event, dict) else event.type
     data_obj = event["data"]["object"] if isinstance(event, dict) else event.data.object
-    if isinstance(data_obj, dict):
-        tenant_id = (data_obj.get("metadata") or {}).get("tenant_id") or data_obj.get(
-            "client_reference_id"
-        )
-        customer_id = data_obj.get("customer") or ""
-        subscription_id = data_obj.get("subscription") or data_obj.get("id") or ""
-        plan = (data_obj.get("metadata") or {}).get("plan")
-    else:
-        meta = getattr(data_obj, "metadata", None) or {}
-        tenant_id = meta.get("tenant_id") or getattr(data_obj, "client_reference_id", None)
-        customer_id = getattr(data_obj, "customer", "") or ""
-        subscription_id = getattr(data_obj, "subscription", None) or getattr(
-            data_obj, "id", ""
-        )
-        plan = meta.get("plan")
+
+    def _as_mapping(obj: Any) -> dict[str, Any]:
+        if obj is None:
+            return {}
+        if isinstance(obj, dict):
+            return obj
+        if hasattr(obj, "to_dict"):
+            try:
+                return dict(obj.to_dict())
+            except Exception:  # noqa: BLE001
+                pass
+        out: dict[str, Any] = {}
+        for key in (
+            "metadata",
+            "client_reference_id",
+            "customer",
+            "subscription",
+            "id",
+        ):
+            try:
+                val = obj[key] if hasattr(obj, "__getitem__") else getattr(obj, key, None)
+            except Exception:  # noqa: BLE001
+                val = getattr(obj, key, None)
+            if val is not None:
+                out[key] = val
+        return out
+
+    obj = _as_mapping(data_obj)
+    meta_raw = obj.get("metadata") or {}
+    meta = _as_mapping(meta_raw)
+    tenant_id = meta.get("tenant_id") or obj.get("client_reference_id")
+    customer_id = obj.get("customer") or ""
+    subscription_id = obj.get("subscription") or obj.get("id") or ""
+    plan = meta.get("plan")
 
     new_status = stripe_billing.apply_webhook_to_status(event_type)
-    if tenant_id and new_status:
+    billing_paid: bool | None = None
+    if event_type == "invoice.paid":
+        billing_paid = True
+    elif event_type in (
+        "customer.subscription.deleted",
+        "invoice.payment_failed",
+    ):
+        billing_paid = False
+    if tenant_id and (new_status or billing_paid is not None):
         await state.tenants.attach_stripe(
             tenant_id,
             customer_id=str(customer_id or ""),
             subscription_id=str(subscription_id or ""),
             plan=plan,
             status=new_status,
+            billing_paid=billing_paid,
         )
         log.info(
-            "stripe webhook applied tenant=%s status=%s event=%s",
+            "stripe webhook applied tenant=%s status=%s billing_paid=%s event=%s",
             tenant_id,
             new_status,
+            billing_paid,
             event_type,
         )
     return {"received": True, "type": event_type}
@@ -714,6 +750,35 @@ async def chat_completions(
     fetch_count = 0
     web_purpose = body.web_purpose or ""
     if body.fetch_web_context:
+        # Soft daily fetch cap until invoice.paid or metered spend unlocks Intermediate
+        cap = int(state.settings.at_free_tier_fetch_cap_day or 0)
+        unlocked = (
+            tenant_rec.billing_paid
+            or tenant_rec.plan in ("enterprise", "dev", "design_partner")
+        )
+        if not unlocked and float(
+            (await state.meter.snapshot(tenant)).get("revenue_usd") or 0
+        ) > 0:
+            unlocked = True
+        if cap > 0 and not unlocked:
+            today = await state.meter.today_fetches(tenant)
+            # estimate upcoming URLs (best-effort before ingest)
+            upcoming = len(body.web_urls or []) or 1
+            if today + upcoming > cap:
+                raise HTTPException(
+                    status_code=429,
+                    detail={
+                        "code": "fetch_cap_day",
+                        "message": (
+                            f"Daily web-fetch soft cap ({cap}) reached before "
+                            "usage unlock. Complete Checkout so the first paid "
+                            "invoice (or metered spend) lifts this cap. "
+                            "See /docs/pricing."
+                        ),
+                        "today_fetches": today,
+                        "cap": cap,
+                    },
+                )
         ctx = await fetch_web_context(
             state.settings,
             query=body.web_query,
