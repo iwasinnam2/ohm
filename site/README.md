@@ -28,18 +28,20 @@ Doctrine checklist when changing UI: one focal point (squint), three type levels
 
 | Path | Purpose |
 |------|---------|
-| `/` | Hero: Ω + withOhm + Explore Subscription |
+| `/` | Hero — compliant fetch for agents + install line |
+| `/i` | Meme install URL (deeplink + share line) |
+| `/fetch` | Public fetch toy (`fetch.withohm.dev` rewrite) |
+| `/templates` | cursor-agent-with-web steal page |
+| `/bounty` | $29 artifact bounty |
 | `/docs` | Doc index |
 | `/docs/[slug]` | Curated markdown from `content/docs/` |
 | `/subscriptions` | Free trial · Intermediate · Enterprise |
-| `/design-partners` | Redirects to `/subscriptions` |
+| `/design-partners` | Founding design-partner apply (optional icing) |
 | `/billing` | Redirects to `/subscriptions` |
 | `/billing/intermediate` | Intermediate checkout |
 | `/billing/enterprise` | Enterprise application |
+| `/billing/success` | Add to Cursor + teammate share line |
 
 ## Deploy
 
-```bash
-cd site
-npx vercel --prod --yes
-```
+AWS Amplify (`WEB_COMPUTE`) — see [`../infra/runbooks/AMPLIFY_SITE.md`](../infra/runbooks/AMPLIFY_SITE.md).

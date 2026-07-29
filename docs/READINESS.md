@@ -12,8 +12,8 @@ Public distribution readiness for **Ohm**. Towers can be walked; the roadway is 
 | Cursor deeplink CTA | Standing |
 | Public GitHub origin | Required for marketplace |
 | Valid logotype SVG/PNG | Required for marketplace |
-| Public API deck (`api.withohm.dev`) | **Open** — single-region NLB (`v0.1.0-railgun`) |
-| Multi-region / Anycast | Deferred |
+| Public API deck (`api.withohm.dev`) | **Open** — NLB + Global Accelerator ready (`v0.1.0-railgun`) |
+| Multi-region / Anycast | **Standing** — edges us-west-2 + eu-west-2; GA DNS pending cutover |
 
 **Allow global traffic** only after public chat miss/hit on `https://api.withohm.dev`, Stripe lifecycle green on that host, and a public repo for trust + Cursor submit.
 
@@ -55,14 +55,16 @@ Logotype URLs for Cursor submit:
 ## After first traffic
 
 - [ ] Tag `v0.1.0-railgun`
-- [ ] Cursor Marketplace submit: https://cursor.com/marketplace/publish
+- [ ] Cursor Marketplace submit / refresh: https://cursor.com/marketplace/publish — copy in [listings/MARKETPLACE.md](listings/MARKETPLACE.md)
+- [ ] cursor.directory listing — [listings/CURSOR_DIRECTORY.md](listings/CURSOR_DIRECTORY.md)
+- [ ] Daily partner fishing loop — [LAUNCH_GTM.md](LAUNCH_GTM.md) + [OUTREACH_TEMPLATES.md](OUTREACH_TEMPLATES.md)
 - [ ] SDK publish ([PLATFORM.md](PLATFORM.md)) only after public smoke
-- [ ] Design-partner quotes on homepage
+- [ ] Design-partner quotes on homepage (inbound via [/design-partners](https://withohm.dev/design-partners))
 
 ## Deferred (do not claim yet)
 
 - Mid-stream failover
-- Multi-region Redis lag / Anycast **in production** (in-repo mesh ready: [REDIS_MESH.md](REDIS_MESH.md), Global Datastore Terraform when `enable_edges=true`, `AT_RS_REDIS_WRITE`; go-live still gated on public API + lag drill)
 - Enterprise contractual SLA
 - Managed-key capacity pools
 - Hosted remote MCP URL (zero `pip install`)
+- Tokyo (`ap-northeast-1`) edge (optional third region)

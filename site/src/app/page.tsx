@@ -4,10 +4,12 @@ import { OhmMark } from "@/components/OhmMark";
 const QUOTES = [
   {
     quote:
-      "Change one base URL (or one Cursor attach). Keep your keys and SDKs. Gain prompt replay, a clearer pipe, compliant web context — and a bill that rents the plumbing, not the model.",
+      "Compliant fetch for agents — change one Cursor attach. Keep your keys. Prompt replay, public URL context, pipe rent — not token wholesale.",
     attribution: "withOhm — the product promise",
   },
 ];
+
+const SHARE_LINE = "Add withOhm MCP from https://withohm.dev/i";
 
 export default function HomePage() {
   return (
@@ -18,42 +20,40 @@ export default function HomePage() {
           <h1 className="hero__brand">withOhm</h1>
         </div>
         <p className="hero__promise">
-          Change one base URL (or one Cursor attach). Keep your keys and SDKs.
-          Gain prompt replay, a clearer pipe, compliant web context — and a bill
-          that rents the plumbing, not the model.
+          <strong>Compliant fetch for agents.</strong> One Cursor attach. Keep
+          your keys and SDKs. Prompt replay, public URL context, and a bill that
+          rents the plumbing — not the model.
         </p>
         <div className="hero__cta cta-row">
-          <Link href="/subscriptions" className="btn btn--primary">
-            Explore Subscription
+          <Link href="/i" className="btn btn--primary">
+            Install /i
           </Link>
-          <Link href="/docs/cursor" className="link-quiet">
-            Add to Cursor
+          <Link href="/fetch" className="link-quiet">
+            Try fetch toy
+          </Link>
+          <Link href="/templates" className="link-quiet">
+            Steal template
           </Link>
         </div>
         <div className="hero__product">
           <span className="hero__product-label">
-            Drop-in · BYOK · OpenAI-compatible
+            Paste this to a teammate — that is the product
           </span>
-          <pre className="hero__snippet">{`curl -s http://localhost:8081/v1/chat/completions \\
-  -H "Authorization: Bearer sk-at-dev" \\
-  -H "X-Ohm-Upstream-Key: $OPENAI_API_KEY" \\
-  -H "Content-Type: application/json" \\
-  -d '{"model":"gpt-4o-mini","messages":[{"role":"user","content":"hi"}]}'`}</pre>
+          <pre className="hero__snippet">{SHARE_LINE}</pre>
           <p className="hero__note">
-            OpenAI-compatible · keys <code>sk-at-…</code> · BYOK header{" "}
-            <code>X-Ohm-Upstream-Key</code> ·{" "}
-            <Link href="/">Home</Link> ·{" "}
-            <Link href="/docs/terms">Terms</Link> ·{" "}
-            <Link href="/docs/pricing">Pricing</Link>
+            $0 Intermediate membership · BYOK ·{" "}
+            <Link href="/subscriptions">Subscriptions</Link> ·{" "}
+            <Link href="/bounty">Artifact bounty</Link> ·{" "}
+            <Link href="/docs/steal-kit">Steal-kit</Link>
           </p>
         </div>
       </section>
 
       <section className="social-proof" aria-label="Product promise">
-        <h2 className="social-proof__title">Built for the pipe</h2>
+        <h2 className="social-proof__title">Built to be copied</h2>
         <p className="social-proof__lede">
-          One attach. Measured relief on wait and miss-ratio. Compliant web
-          context without a second stack.
+          Templates, meme install URLs, and a public fetch toy. Not a traveling
+          salesman loop.
         </p>
         <ul className="social-proof__list">
           {QUOTES.map((q) => (
@@ -66,7 +66,7 @@ export default function HomePage() {
           ))}
         </ul>
         <p className="social-proof__cta">
-          <Link href="/subscriptions">Explore Subscription</Link>
+          <Link href="/i">{SHARE_LINE}</Link>
         </p>
       </section>
     </>

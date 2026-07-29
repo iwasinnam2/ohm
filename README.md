@@ -47,6 +47,8 @@ Release smoke asserts health, mock miss/hit, OpenAI miss/hit (when a key is pres
 
 ## Cursor / MCP
 
+Default public base: `https://api.withohm.dev/v1`. Founding partners (no warm list needed): [docs/LAUNCH_GTM.md](docs/LAUNCH_GTM.md) · apply at https://withohm.dev/design-partners
+
 ```powershell
 pip install -e ".[mcp]"
 # Copy .cursor/mcp.json.example into Cursor MCP settings — see docs/CURSOR.md

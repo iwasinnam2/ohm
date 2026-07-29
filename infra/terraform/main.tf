@@ -42,10 +42,16 @@ variable "enable_edges" {
   description = "Section D: provision edge regional VPC + RL Redis (us-west-2, eu-west-2, ap-northeast-1)"
 }
 
+variable "redis_node_type" {
+  type        = string
+  default     = "cache.r6g.large"
+  description = "Leader Redis node type; Global Datastore requires large+ (not t-family)"
+}
+
 variable "ga_nlb_endpoint_arns" {
-  type        = list(string)
-  default     = []
-  description = "NLB ARNs registered on the GA endpoint group when anycast_enabled=true"
+  type        = map(string)
+  default     = {}
+  description = "Map of AWS region => NLB ARN for GA endpoint groups (one group per region)"
 }
 
 variable "domain_name" {
@@ -252,11 +258,12 @@ resource "aws_elasticache_replication_group" "leader" {
   description                = "at-utility Redis replication leader (cache writes + quota grants)"
   engine                     = "redis"
   engine_version             = "7.1"
-  node_type                  = "cache.t4g.small"
+  node_type                  = var.redis_node_type
   num_cache_clusters         = 2
   automatic_failover_enabled = true
   multi_az_enabled           = true
   port                       = 6379
+  apply_immediately          = true
   at_rest_encryption_enabled = true
   transit_encryption_enabled = true
   subnet_group_name          = aws_elasticache_subnet_group.leader.name
@@ -359,20 +366,20 @@ resource "aws_globalaccelerator_listener" "https" {
 }
 
 resource "aws_globalaccelerator_endpoint_group" "https" {
-  count        = var.anycast_enabled && length(var.ga_nlb_endpoint_arns) > 0 ? 1 : 0
+  for_each     = var.anycast_enabled ? var.ga_nlb_endpoint_arns : {}
   provider     = aws.leader
   listener_arn = aws_globalaccelerator_listener.https[0].id
+
+  # Must match the NLB's region
+  endpoint_group_region = each.key
 
   health_check_protocol = "TCP"
   health_check_port     = 443
   threshold_count       = 3
 
-  dynamic "endpoint_configuration" {
-    for_each = var.ga_nlb_endpoint_arns
-    content {
-      endpoint_id = endpoint_configuration.value
-      weight      = 128
-    }
+  endpoint_configuration {
+    endpoint_id = each.value
+    weight      = 128
   }
 }
 
@@ -440,11 +447,11 @@ output "acm_validation_records" {
 
 output "global_accelerator" {
   value = var.anycast_enabled ? {
-    arn            = aws_globalaccelerator_accelerator.api[0].id
-    dns            = aws_globalaccelerator_accelerator.api[0].dns_name
-    ips            = aws_globalaccelerator_accelerator.api[0].ip_sets
-    listen         = aws_globalaccelerator_listener.https[0].id
-    endpoint_group = try(aws_globalaccelerator_endpoint_group.https[0].id, null)
+    arn             = aws_globalaccelerator_accelerator.api[0].id
+    dns             = aws_globalaccelerator_accelerator.api[0].dns_name
+    ips             = aws_globalaccelerator_accelerator.api[0].ip_sets
+    listen          = aws_globalaccelerator_listener.https[0].id
+    endpoint_groups = { for k, g in aws_globalaccelerator_endpoint_group.https : k => g.id }
   } : null
 }
 

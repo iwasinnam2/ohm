@@ -9,11 +9,11 @@ Source of truth for leader/replica/global distribution. Consistency rules: [CONS
 | 0 | Single-region public deck Redis | Templates ready | Blocked on [GO_LIVE.md](../infra/runbooks/GO_LIVE.md) API cutover |
 | 1 | Local primary+replica split + lag smoke | Compose + `scripts/redis_replica_smoke.ps1` | Local only |
 | 2 | Leader `REDIS_URL`=reader, `REDIS_WRITE_URL`=primary | Secrets + outputs | After Section C apply |
-| 3 | Global Datastore secondaries + edge env | Terraform when `enable_edges=true` | After Phase 0 |
-| 4 | `AT_RS_REDIS_WRITE` on gateway-rs | Implemented | Deploy image |
-| 5 | Anycast | GA Terraform gated on NLB ARNs | After ≥2 edges + lag drill |
+| 3 | Global Datastore secondaries + edge env | Terraform when `enable_edges=true` | **Live** `ldgnf-ohm`; edges us-west-2 + eu-west-2 |
+| 4 | `AT_RS_REDIS_WRITE` on gateway-rs | Implemented | Edges wired; Rust still fail-fast until TLS RESP |
+| 5 | Anycast | GA Terraform gated on NLB ARNs | **GA live** — flip DNS per [DNS_CUTOVER_PHASE2_GA.md](../infra/runbooks/DNS_CUTOVER_PHASE2_GA.md) |
 
-Do **not** claim Redis lag budgets or Anycast in marketing until Phase 3–5 are green in production.
+Lag drill (us-west-2 in-cluster): **PASS (~0–1000ms budget)**. Edge NLBs + all three GA endpoint groups **HEALTHY**.
 
 ## Env pattern
 

@@ -1,7 +1,8 @@
 {
   "name": "ohm",
-  "version": "0.1.0",
-  "description": "Ohm AI traffic utility — prompt cache, compliant web context, and BYOK model ingress for Cursor.",
+  "displayName": "withOhm",
+  "version": "0.1.1",
+  "description": "withOhm (ohm) — compliant fetch for agents: prompt cache replay, ohm_fetch_web, BYOK OpenAI-compatible ingress. Use when agents need public URL context or pipe rent instead of token wholesale.",
   "author": {
     "name": "Ohm",
     "email": "partners@withohm.dev"
@@ -9,9 +10,26 @@
   "homepage": "https://withohm.dev",
   "repository": "https://github.com/iwasinnam2/ohm",
   "license": "MIT",
-  "keywords": ["ohm", "mcp", "ai", "cache", "openai-compatible", "web-context"],
+  "keywords": [
+    "ohm",
+    "withohm",
+    "withOhm",
+    "mcp",
+    "prompt-cache",
+    "cache",
+    "web-fetch",
+    "web-scrape",
+    "byok",
+    "openai-compatible",
+    "web-context",
+    "compliant-fetch",
+    "compliant-fetch-for-agents",
+    "agent-browse",
+    "url-context"
+  ],
   "logo": "assets/logo.svg",
   "mcpServers": "mcp.json",
+  "skills": "./skills/",
   "variables": {
     "type": "object",
     "properties": {
@@ -28,8 +46,8 @@
       "OHM_BASE_URL": {
         "type": "string",
         "title": "Ohm base URL",
-        "description": "Local edge or public API /v1",
-        "default": "http://127.0.0.1:8081/v1"
+        "description": "Public API /v1 (use http://127.0.0.1:8081/v1 only for local smoke)",
+        "default": "https://api.withohm.dev/v1"
       }
     },
     "required": ["OHM_API_KEY"]

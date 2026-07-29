@@ -128,8 +128,9 @@ export function BillingCheckoutForm() {
         {busy ? "Redirecting…" : "Continue to Checkout"}
       </button>
       <p className="billing-form__note">
-        After you pay, one button adds withOhm to Cursor — seat wired, no JSON
-        to assemble. Model tokens stay on your provider keys (BYOK).{" "}
+        After you add a card, one button adds withOhm to Cursor — seat wired, no
+        JSON to assemble. Membership is $0; cache and web-fetch meters invoice
+        monthly. Model tokens stay on your provider keys (BYOK).{" "}
         <Link href="/docs/pricing">Pricing</Link>
       </p>
     </form>

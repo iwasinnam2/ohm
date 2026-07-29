@@ -1,19 +1,29 @@
 # Pricing
 
-**BYOK ledgers:** You pay providers with your own keys. You pay **withOhm** for pipe access (seat) plus metered cache and web-fetch rent. withOhm does not wholesale model tokens on pay-as-you-go Intermediate plans.
+**BYOK ledgers:** You pay providers with your own keys. You pay **withOhm** for pipe rent — metered cache and web-fetch — with a **$0 Intermediate membership** (card on file). withOhm does not wholesale model tokens on Intermediate.
 
 ## Plans
 
-See [/subscriptions](/subscriptions) for Free trial, Intermediate ($29/mo), and Enterprise (design-partner rank).
+See [/subscriptions](/subscriptions): Free trial (card + verify), **Intermediate (usage-led)**, and Enterprise (design-partner rank).
+
+## Intermediate list rates (USD)
+
+| Meter | Unit | List |
+|-------|------|------|
+| Cache hit | per 1k tokens | `$0.0005` |
+| Cache miss | per 1k tokens | `$0.002` |
+| Web fetch | per URL | `$0.001` |
+
+Optional **$29 meter credit pack** prepaid toward usage — not a required seat. Soft daily fetch cap applies until the first paid invoice / metered spend unlocks the account (`AT_FREE_TIER_FETCH_CAP_DAY`).
 
 ## Invoice basis
 
-Stripe invoices a **monthly subscription seat** plus **Billing Meter** usage (`ohm_web_fetch`, `ohm_cache_hit`, `ohm_cache_miss`). `/v1/usage` mirrors the same events (`invoice_basis: seat_plus_meters`).
+Stripe invoices a **membership subscription** (typically `$0`) plus **Billing Meter** usage (`ohm_web_fetch`, `ohm_cache_hit`, `ohm_cache_miss`). `/v1/usage` mirrors the same events (`invoice_basis: seat_plus_meters`) and reports `stripe_synced`.
 
 | Event | Role |
 |-------|------|
-| **Seat** | Right to use the withOhm pipe — suspend→403 if unpaid |
-| **Cache hit** | Redis replay rent |
+| **Membership** | Card on file; suspend→403 if unpaid / cancelled |
+| **Cache hit** | Redis replay rent (billable units = ceil(tokens/1000)) |
 | **Cache miss** | Proxy fee (your provider still bills tokens) |
 | **Web fetch** | Primary variable line — compliant URL ingest |
 
@@ -25,7 +35,7 @@ Monthly dedicated / managed-capacity SKU with negotiated **transaction usage agr
 
 ## Self-serve
 
-Start at [/billing/intermediate](/billing/intermediate) — Checkout issues your withOhm key once, then Stripe collects the seat. Free trial requires payment details and a $0.01 verification charge; Intermediate billing begins after 30 days. Enterprise applications: [/billing/enterprise](/billing/enterprise).
+Start at [/billing/intermediate](/billing/intermediate) — Checkout issues your withOhm key once and collects a payment method. Meters invoice monthly. Enterprise applications: [/billing/enterprise](/billing/enterprise).
 
 ## Savings (estimates)
 

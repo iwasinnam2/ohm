@@ -32,6 +32,10 @@ class TenantRecord:
     key_hash: str = ""
     stripe_customer_id: str = ""
     stripe_subscription_id: str = ""
+    # True after invoice.paid (or first metered spend unlocks soft fetch caps)
+    billing_paid: bool = False
+    # Unix ts when invoice.payment_failed first fired; 0 = not delinquent
+    billing_delinquent_since: int = 0
     terms_version: str = ""
     dpa_version: str = ""
     expires_at: int = 0  # unix; 0 = no expiry
@@ -140,6 +144,23 @@ class TenantRegistry:
         record.status = status
         return await self._save(record)
 
+    async def find_by_stripe_customer(
+        self, customer_id: str
+    ) -> Optional[TenantRecord]:
+        """Best-effort scan via Redis label index is unavailable — use meta scan key.
+
+        Tenants store stripe_customer_id on the record; we keep a reverse index.
+        """
+        if not customer_id:
+            return None
+        tenant_id = await self._store.get(f"at:global:stripe_customer:{customer_id}")
+        if not tenant_id:
+            return None
+        raw = await self._store.get(self._tenant_meta(tenant_id))
+        if not raw:
+            return None
+        return TenantRecord.from_json(raw)
+
     async def attach_stripe(
         self,
         tenant_id: str,
@@ -148,6 +169,9 @@ class TenantRegistry:
         subscription_id: str = "",
         plan: str | None = None,
         status: str | None = None,
+        billing_paid: bool | None = None,
+        billing_delinquent_since: int | None = None,
+        clear_delinquent: bool = False,
     ) -> Optional[TenantRecord]:
         raw = await self._store.get(self._tenant_meta(tenant_id))
         if not raw:
@@ -155,12 +179,25 @@ class TenantRegistry:
         record = TenantRecord.from_json(raw)
         if customer_id:
             record.stripe_customer_id = customer_id
+            await self._store.set(
+                f"at:global:stripe_customer:{customer_id}",
+                tenant_id,
+                ttl_seconds=0,
+            )
         if subscription_id:
             record.stripe_subscription_id = subscription_id
         if plan and plan in VALID_PLANS:
             record.plan = plan
         if status:
             record.status = status
+        if billing_paid is not None:
+            record.billing_paid = billing_paid
+        if clear_delinquent:
+            record.billing_delinquent_since = 0
+        elif billing_delinquent_since is not None:
+            # Keep the earliest delinquency timestamp
+            if not record.billing_delinquent_since:
+                record.billing_delinquent_since = billing_delinquent_since
         return await self._save(record)
 
     async def public_view(self, record: TenantRecord) -> dict[str, Any]:
@@ -174,6 +211,8 @@ class TenantRegistry:
             "soft_quota_usd": record.soft_quota_usd or None,
             "request_cap": record.request_cap or None,
             "stripe_customer_id": record.stripe_customer_id or None,
+            "billing_paid": record.billing_paid,
+            "billing_delinquent_since": record.billing_delinquent_since or None,
             "terms_version": record.terms_version or None,
             "dpa_version": record.dpa_version or None,
         }

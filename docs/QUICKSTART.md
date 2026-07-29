@@ -12,7 +12,7 @@ Change one base URL (or one Cursor attach). Keep your keys and SDKs.
 
 ## Self-serve
 
-[withohm.dev/billing](https://withohm.dev/billing) → Checkout → Ohm key once → Stripe seat.
+[withohm.dev/billing/intermediate](https://withohm.dev/billing/intermediate) → Checkout ($0 membership + meters) → withOhm key once → card on file.
 
 ## Ten lines of Python (BYOK)
 
