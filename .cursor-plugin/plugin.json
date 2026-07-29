@@ -28,8 +28,8 @@
       "OHM_BASE_URL": {
         "type": "string",
         "title": "Ohm base URL",
-        "description": "Local edge or public API /v1",
-        "default": "http://127.0.0.1:8081/v1"
+        "description": "Public API /v1 (use http://127.0.0.1:8081/v1 only for local smoke)",
+        "default": "https://api.withohm.dev/v1"
       }
     },
     "required": ["OHM_API_KEY"]

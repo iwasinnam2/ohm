@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
-# Create Stripe *test* Products/Prices for Ohm seat billing (requires stripe CLI).
+# Create Stripe *test* Products/Prices for withOhm seat billing (requires stripe CLI).
 # Usage: from repo root after `stripe login`
 #   bash scripts/stripe_create_test_prices.sh
+#
+# Recommended Intermediate model: \$0 membership seat + metered Prices
+# (see scripts/stripe_create_meters.sh). \$29 is an optional credit pack.
 set -euo pipefail
 
 if ! command -v stripe >/dev/null 2>&1; then
@@ -9,30 +12,40 @@ if ! command -v stripe >/dev/null 2>&1; then
   exit 1
 fi
 
-# This CLI build prints JSON by default and rejects --format / -o json.
 extract_id() {
   python -c "import sys,json; print(json.load(sys.stdin)['id'])"
 }
 
-echo "Creating Ohm PAYG seat product..."
+echo "Creating withOhm Intermediate membership product (\$0 seat)..."
 PAYG_PROD=$(stripe products create \
-  --name "Ohm PAYG seat" \
-  --description "Monthly seat; usage estimated in-product until meters ship" \
-  -d "metadata[billing_model]=seat_plus_estimate" | extract_id)
+  --name "withOhm Intermediate membership" \
+  --description "Card-on-file pipe access; cache + web-fetch metered separately" \
+  -d "metadata[billing_model]=seat_plus_meters" | extract_id)
 echo "PAYG_PROD=$PAYG_PROD"
 
-echo "Creating PAYG monthly price (\$29)..."
+echo "Creating Intermediate membership price (\$0 / month)..."
 PAYG_PRICE=$(stripe prices create \
   --product "$PAYG_PROD" \
-  --unit-amount 2900 \
+  --unit-amount 0 \
   --currency usd \
   -d "recurring[interval]=month" | extract_id)
 echo "STRIPE_PRICE_PAYG=$PAYG_PRICE"
 
-echo "Creating Ohm Enterprise product..."
+echo "Creating optional \$29 meter credit pack product..."
+CREDIT_PROD=$(stripe products create \
+  --name "withOhm meter credit pack" \
+  --description "Optional \$29 prepaid allowance toward Intermediate meters" \
+  -d "metadata[billing_model]=credit_pack" | extract_id)
+CREDIT_PRICE=$(stripe prices create \
+  --product "$CREDIT_PROD" \
+  --unit-amount 2900 \
+  --currency usd | extract_id)
+echo "STRIPE_PRICE_CREDIT_PACK=$CREDIT_PRICE"
+
+echo "Creating withOhm Enterprise product..."
 ENT_PROD=$(stripe products create \
-  --name "Ohm Enterprise" \
-  --description "Monthly enterprise seat" \
+  --name "withOhm Enterprise" \
+  --description "Monthly enterprise seat / negotiated bundles" \
   -d "metadata[billing_model]=subscription_seat" | extract_id)
 echo "ENT_PROD=$ENT_PROD"
 
@@ -48,8 +61,11 @@ cat <<EOF
 
 # Add to .env
 STRIPE_PRICE_PAYG=$PAYG_PRICE
+STRIPE_PRICE_CREDIT_PACK=$CREDIT_PRICE
 STRIPE_PRICE_ENTERPRISE=$ENT_PRICE
-# STRIPE_SECRET_KEY=sk_test_...   # Dashboard → API keys (Test)
-# STRIPE_WEBHOOK_SECRET=whsec_... # stripe listen --forward-to localhost:8080/v1/billing/webhook
+# Then run: bash scripts/stripe_create_meters.sh
+# STRIPE_SECRET_KEY=sk_test_...
+# STRIPE_WEBHOOK_SECRET=whsec_...
+# AT_ENV=production   # fail-closed if meter Prices missing
 # Full lifecycle: docs/STRIPE.md
 EOF

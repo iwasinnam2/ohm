@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import math
 import time
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -22,10 +23,19 @@ class UsageEvent:
     tokens: int = 0
     fetches: int = 0
     billed_usd: float = 0.0
+    stripe_synced: bool = False
+    billable_units: int = 0
 
 
 def _day_stamp() -> str:
     return datetime.now(timezone.utc).strftime("%Y%m%d")
+
+
+def billable_1k_units(total_tokens: int) -> int:
+    """Stripe meter quantity aligned to AT_PRICE_PER_1K_* (ceil tokens/1000, min 1)."""
+    if total_tokens <= 0:
+        return 1
+    return max(1, math.ceil(total_tokens / 1000.0))
 
 
 class Meter:
@@ -40,15 +50,27 @@ class Meter:
             tenant_key(tenant, "ledger", f"{day}:{metric}"), amount
         )
 
+    async def _mark_stripe_sync(self, tenant: str, ok: bool) -> None:
+        await self._store.set(
+            tenant_key(tenant, "meter", "stripe_last_ok"),
+            "1" if ok else "0",
+            ttl_seconds=0,
+        )
+        await self._store.set(
+            tenant_key(tenant, "meter", "stripe_last_ts"),
+            str(int(time.time())),
+            ttl_seconds=0,
+        )
+
     def _sync_stripe(
         self,
         *,
         kind: str,
         value: int | float,
         stripe_customer_id: str,
-    ) -> None:
+    ) -> bool:
         if not stripe_customer_id:
-            return
+            return False
         s = self._settings
         event_name = {
             "cache_hit": s.stripe_meter_event_cache_hit,
@@ -56,8 +78,8 @@ class Meter:
             "fetch": s.stripe_meter_event_web_fetch,
         }.get(kind, "")
         if not event_name:
-            return
-        stripe_billing.report_meter_event(
+            return False
+        return stripe_billing.report_meter_event(
             s,
             event_name=event_name,
             stripe_customer_id=stripe_customer_id,
@@ -82,14 +104,23 @@ class Meter:
         await self._bump(tenant, f"{kind}_tokens", float(total_tokens))
         await self._bump(tenant, f"{kind}_usd", billed)
         await self._bump(tenant, "requests", 1.0)
-        # Meter value: token units (rounded up) so Stripe aggregates usable quantity
-        meter_value = max(1, total_tokens) if total_tokens > 0 else 1
-        self._sync_stripe(
+        # Billable units match AT_PRICE_PER_1K_* meter Prices (ceil tokens/1000)
+        units = billable_1k_units(total_tokens)
+        synced = self._sync_stripe(
             kind=kind,
-            value=meter_value,
+            value=units,
             stripe_customer_id=stripe_customer_id,
         )
-        return UsageEvent(tenant=tenant, kind=kind, tokens=total_tokens, billed_usd=billed)
+        if stripe_customer_id:
+            await self._mark_stripe_sync(tenant, synced)
+        return UsageEvent(
+            tenant=tenant,
+            kind=kind,
+            tokens=total_tokens,
+            billed_usd=billed,
+            stripe_synced=synced,
+            billable_units=units,
+        )
 
     async def record_fetch(
         self,
@@ -100,12 +131,28 @@ class Meter:
         billed = count * self._settings.at_price_per_fetch
         await self._bump(tenant, "fetches", float(count))
         await self._bump(tenant, "fetch_usd", billed)
-        self._sync_stripe(
+        synced = self._sync_stripe(
             kind="fetch",
             value=count,
             stripe_customer_id=stripe_customer_id,
         )
-        return UsageEvent(tenant=tenant, kind="fetch", fetches=count, billed_usd=billed)
+        if stripe_customer_id:
+            await self._mark_stripe_sync(tenant, synced)
+        return UsageEvent(
+            tenant=tenant,
+            kind="fetch",
+            fetches=count,
+            billed_usd=billed,
+            stripe_synced=synced,
+            billable_units=count,
+        )
+
+    async def today_fetches(self, tenant: str) -> float:
+        day = _day_stamp()
+        day_raw = await self._store.get(
+            tenant_key(tenant, "ledger", f"{day}:fetches")
+        )
+        return float(day_raw) if day_raw is not None else 0.0
 
     async def snapshot(self, tenant: str) -> dict[str, Any]:
         keys = [
@@ -143,4 +190,18 @@ class Meter:
         out["web_context_attach_rate"] = (
             (out["fetches"] / req) if req > 0 else 0.0
         )
+        sync_raw = await self._store.get(tenant_key(tenant, "meter", "stripe_last_ok"))
+        sync_ts = await self._store.get(tenant_key(tenant, "meter", "stripe_last_ts"))
+        out["stripe_synced"] = sync_raw == "1"
+        out["stripe_last_sync_ts"] = int(sync_ts) if sync_ts else None
+        out["meter_unit"] = {
+            "cache_hit": "per_1k_tokens",
+            "cache_miss": "per_1k_tokens",
+            "web_fetch": "per_url",
+            "list_usd": {
+                "cache_hit": self._settings.at_price_per_1k_tokens_hit,
+                "cache_miss": self._settings.at_price_per_1k_tokens_miss,
+                "web_fetch": self._settings.at_price_per_fetch,
+            },
+        }
         return out

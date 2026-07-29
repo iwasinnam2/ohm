@@ -1,10 +1,11 @@
 import Link from "next/link";
 import type { Metadata } from "next";
+import { PAYG_RATES, formatUsd } from "@/lib/meterRates";
 
 export const metadata: Metadata = {
   title: "Subscriptions",
   description:
-    "withOhm subscriptions — free trial, Intermediate, and Enterprise design-partner rank for high-volume AI workflows.",
+    "withOhm — usage-led Intermediate (card on file), free trial, and Enterprise design-partner rank.",
 };
 
 const TIERS = [
@@ -14,35 +15,34 @@ const TIERS = [
     featured: false,
     price: "$0 for 30 days",
     priceNote:
-      "Then $29/mo. Payment details required to activate. A $0.01 verification charge confirms account legitimacy and subscription recurrence.",
+      "Card on file required. A $0.01 verification charge confirms legitimacy. Then usage-led Intermediate meters apply.",
     pros: [
       "Full access to withOhm architecture and built-in features for 30 days",
       "Dynamic model switching, web browse, and URL scrape on the pipe",
-      "Converts to Intermediate at $29/mo when the trial ends",
+      "Converts to Intermediate (meters + $0 membership) when the trial ends",
     ],
     cta: {
       href: "/billing/intermediate",
       label: "Start free trial",
-      external: false,
     },
   },
   {
     id: "intermediate",
     name: "Intermediate",
     featured: true,
-    price: "$29 / month",
-    priceNote: "Self-serve seat for AI software developers.",
+    price: "Usage-based",
+    priceNote: `$0 membership (card on file). Meters: hit ${formatUsd(PAYG_RATES.cache_hit)}/1k · miss ${formatUsd(PAYG_RATES.cache_miss)}/1k · fetch ${formatUsd(PAYG_RATES.web_fetch)}/URL. Optional $29 credit pack.`,
     pros: [
       "Cursor integration — one-click MCP attach",
       "URL search and web context on the pipe",
       "Proxy-managed keys for streamlined upstream access",
       "Real-time model switching with zero local resource drag",
       "Centralised prompt cache and compliant search",
+      "Pay for pipe rent you use — not a deadweight seat",
     ],
     cta: {
       href: "/billing/intermediate",
       label: "Subscribe",
-      external: false,
     },
   },
   {
@@ -63,7 +63,6 @@ const TIERS = [
     cta: {
       href: "/billing/enterprise",
       label: "Contact Enterprise",
-      external: false,
     },
   },
 ] as const;
@@ -74,17 +73,13 @@ export default function SubscriptionsPage() {
       <header className="page-head">
         <h1>Subscriptions</h1>
         <p>
-          withOhm offers a monthly premium for exclusive use of its architecture
-          and built-in features. This subscription is tailored toward AI software
-          developers who wish to streamline their workflow and integrate the
-          withOhm infrastructure into their builds. For $29 monthly, developers
-          can switch models dynamically in real time, browse the web, scrape
-          URLs — with zero rate limits, zero latency, zero local resources, and
-          zero resistance. This subscription covers the encompassing network of
-          withOhm&apos;s features: complete streamlining of AI usage, centralised
-          cache prompts, and powerful search with full legal compliance. Join
-          now and experience the future of AI software development — one where
-          you aren&apos;t weighed down by anything, at all.
+          withOhm is usage-led pipe rent for AI software developers: attach once,
+          keep your provider keys (BYOK), and pay for cache replay and compliant
+          web fetch as you go. Intermediate membership is <strong>$0</strong> with
+          a card on file; meters invoice monthly. An optional{" "}
+          <strong>$29 credit pack</strong> prepays allowance toward usage — it is
+          not a required seat. Enterprise negotiates fixed transactional bundles
+          for high-volume scraping.
         </p>
       </header>
 
@@ -114,6 +109,9 @@ export default function SubscriptionsPage() {
           ))}
         </ul>
         <div className="partner__cta cta-row">
+          <Link href="/design-partners" className="btn btn--primary">
+            Apply as founding design partner
+          </Link>
           <Link href="/docs/quickstart" className="link-quiet">
             Read the quickstart
           </Link>
@@ -121,6 +119,43 @@ export default function SubscriptionsPage() {
             Pricing detail
           </Link>
         </div>
+        <table className="rate-table" aria-label="Intermediate meter list rates">
+          <caption>Intermediate meter list (USD)</caption>
+          <thead>
+            <tr>
+              <th scope="col">Meter</th>
+              <th scope="col">Unit</th>
+              <th scope="col">List</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Cache hit</td>
+              <td>per 1k tokens</td>
+              <td>{formatUsd(PAYG_RATES.cache_hit)}</td>
+            </tr>
+            <tr>
+              <td>Cache miss</td>
+              <td>per 1k tokens</td>
+              <td>{formatUsd(PAYG_RATES.cache_miss)}</td>
+            </tr>
+            <tr>
+              <td>Web fetch</td>
+              <td>per URL</td>
+              <td>{formatUsd(PAYG_RATES.web_fetch)}</td>
+            </tr>
+            <tr>
+              <td>Membership</td>
+              <td>per month</td>
+              <td>$0 (card on file)</td>
+            </tr>
+            <tr>
+              <td>Credit pack</td>
+              <td>optional prepaid</td>
+              <td>$29</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </>
   );

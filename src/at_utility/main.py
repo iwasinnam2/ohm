@@ -189,10 +189,24 @@ async def auth_tenant(
             status_code=403,
             detail="Tenant expired — renew design-partner window or upgrade billing",
         )
+    # Hard cutover after dunning window (default 14 days past first payment_failed)
+    if (
+        record.billing_delinquent_since
+        and record.status == "active"
+        and state.settings.at_delinquent_suspend_days > 0
+    ):
+        age_days = (int(time.time()) - record.billing_delinquent_since) / 86400.0
+        if age_days >= state.settings.at_delinquent_suspend_days:
+            updated = await state.tenants.set_status(record.tenant_id, "suspended")
+            if updated:
+                record = updated
     if record.status != "active":
         raise HTTPException(
             status_code=403,
-            detail="Tenant suspended — update billing or contact support",
+            detail=(
+                "Tenant suspended — update billing at withohm.dev/billing/intermediate "
+                "or contact partners@withohm.dev"
+            ),
         )
     if record.soft_quota_usd and record.soft_quota_usd > 0:
         snap = await state.meter.snapshot(record.tenant_id)
@@ -697,17 +711,45 @@ async def stripe_webhook(request: Request) -> dict[str, Any]:
     customer_id = obj.get("customer") or ""
     subscription_id = obj.get("subscription") or obj.get("id") or ""
     plan = meta.get("plan")
+    subscription_status = str(obj.get("status") or "")
 
-    new_status = stripe_billing.apply_webhook_to_status(event_type)
+    if not tenant_id and customer_id:
+        found = await state.tenants.find_by_stripe_customer(str(customer_id))
+        if found:
+            tenant_id = found.tenant_id
+            if not plan:
+                plan = found.plan
+
+    new_status = stripe_billing.apply_webhook_to_status(
+        event_type, subscription_status=subscription_status
+    )
     billing_paid: bool | None = None
+    clear_delinquent = False
+    delinquent_since: int | None = None
+
     if event_type == "invoice.paid":
         billing_paid = True
+        clear_delinquent = True
+    elif event_type == "invoice.payment_failed":
+        # Stay active for Smart Retries + reminder emails; lock meters/fetch via flag
+        billing_paid = False
+        delinquent_since = int(time.time())
     elif event_type in (
         "customer.subscription.deleted",
-        "invoice.payment_failed",
+        "invoice.marked_uncollectible",
     ):
         billing_paid = False
-    if tenant_id and (new_status or billing_paid is not None):
+    elif event_type == "customer.subscription.updated":
+        st = subscription_status.lower()
+        if st in ("canceled", "unpaid", "incomplete_expired"):
+            billing_paid = False
+        elif st in ("active", "trialing"):
+            billing_paid = True
+            clear_delinquent = True
+
+    if tenant_id and (
+        new_status or billing_paid is not None or delinquent_since or clear_delinquent
+    ):
         await state.tenants.attach_stripe(
             tenant_id,
             customer_id=str(customer_id or ""),
@@ -715,13 +757,18 @@ async def stripe_webhook(request: Request) -> dict[str, Any]:
             plan=plan,
             status=new_status,
             billing_paid=billing_paid,
+            billing_delinquent_since=delinquent_since,
+            clear_delinquent=clear_delinquent,
         )
         log.info(
-            "stripe webhook applied tenant=%s status=%s billing_paid=%s event=%s",
+            "stripe webhook applied tenant=%s status=%s billing_paid=%s "
+            "delinquent=%s event=%s sub_status=%s",
             tenant_id,
             new_status,
             billing_paid,
+            delinquent_since,
             event_type,
+            subscription_status,
         )
     return {"received": True, "type": event_type}
 
@@ -750,7 +797,21 @@ async def chat_completions(
     fetch_count = 0
     web_purpose = body.web_purpose or ""
     if body.fetch_web_context:
-        # Soft daily fetch cap until invoice.paid or metered spend unlocks Intermediate
+        # Soft daily fetch cap until invoice.paid / usage spend unlocks Intermediate.
+        # Delinquent tenants (failed invoice in dunning window): hard-block web fetch.
+        if tenant_rec.billing_delinquent_since:
+            raise HTTPException(
+                status_code=402,
+                detail={
+                    "code": "billing_delinquent",
+                    "message": (
+                        "Web fetch paused while your invoice is past due. "
+                        "Update your payment method — Stripe is retrying collection "
+                        "and sending reminders. Service suspends after "
+                        f"{state.settings.at_delinquent_suspend_days} days unpaid."
+                    ),
+                },
+            )
         cap = int(state.settings.at_free_tier_fetch_cap_day or 0)
         unlocked = (
             tenant_rec.billing_paid

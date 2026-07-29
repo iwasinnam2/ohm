@@ -220,10 +220,10 @@ export function EnterpriseApplicationForm() {
                   required
                 />
                 <span className="rate-caption">
-                  withOhm Intermediate PAYG list:{" "}
-                  {formatUsd(PAYG_RATES[key])} per unit. Delivery cost context —
-                  negotiated Enterprise rates sit against this published
-                  Intermediate meter schedule.
+                  Intermediate PAYG list: {formatUsd(PAYG_RATES[key])}
+                  {key === "web_fetch" ? " per URL" : " per 1k tokens"}.
+                  Delivery cost context — negotiated Enterprise rates sit against
+                  this published Intermediate meter schedule.
                 </span>
               </label>
             </div>

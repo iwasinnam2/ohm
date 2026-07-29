@@ -36,7 +36,7 @@ spec:
     spec:
       containers:
         - name: gateway
-          image: ACCOUNT.dkr.ecr.us-east-1.amazonaws.com/at-utility/gateway:0.1.0
+          image: 594161136574.dkr.ecr.us-east-1.amazonaws.com/at-utility/gateway:0.1.3
           ports:
             - containerPort: 8080
           envFrom:
@@ -88,7 +88,7 @@ spec:
     spec:
       containers:
         - name: gateway-rs
-          image: ACCOUNT.dkr.ecr.us-east-1.amazonaws.com/at-utility/gateway-rs:0.1.0
+          image: 594161136574.dkr.ecr.us-east-1.amazonaws.com/at-utility/gateway-rs:0.1.5
           ports:
             - containerPort: 8081
           env:
@@ -169,7 +169,7 @@ spec:
     spec:
       containers:
         - name: ingest
-          image: ACCOUNT.dkr.ecr.us-east-1.amazonaws.com/at-utility/ingest-worker:0.1.0
+          image: 594161136574.dkr.ecr.us-east-1.amazonaws.com/at-utility/ingest-worker:0.1.1
           ports:
             - containerPort: 8090
           env:
@@ -213,7 +213,7 @@ spec:
           restartPolicy: OnFailure
           containers:
             - name: allot
-              image: ACCOUNT.dkr.ecr.us-east-1.amazonaws.com/at-utility/gateway:0.1.0
+              image: 594161136574.dkr.ecr.us-east-1.amazonaws.com/at-utility/gateway:0.1.3
               command:
                 - python
                 - -m
