@@ -2,7 +2,7 @@
   "name": "ohm",
   "displayName": "withOhm",
   "version": "0.1.1",
-  "description": "withOhm (ohm) — BYOK Cursor MCP for prompt cache replay, compliant web fetch (ohm_fetch_web), and OpenAI-compatible model ingress. Use when agents need public URL context, prompt replay, or pipe rent instead of token wholesale.",
+  "description": "withOhm (ohm) — compliant fetch for agents: prompt cache replay, ohm_fetch_web, BYOK OpenAI-compatible ingress. Use when agents need public URL context or pipe rent instead of token wholesale.",
   "author": {
     "name": "Ohm",
     "email": "partners@withohm.dev"
@@ -22,6 +22,8 @@
     "byok",
     "openai-compatible",
     "web-context",
+    "compliant-fetch",
+    "compliant-fetch-for-agents",
     "agent-browse",
     "url-context"
   ],
