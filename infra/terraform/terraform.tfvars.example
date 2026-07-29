@@ -15,10 +15,12 @@ enable_eks = true
 
 # Section E — Global Accelerator. Set true after NLB hostname is stable.
 anycast_enabled = false
-# After k8s_deploy: paste NLB ARN(s) from AWS console / elbv2 describe-load-balancers
-ga_nlb_endpoint_arns = [
-  # "arn:aws:elasticloadbalancing:us-east-1:ACCOUNT:loadbalancer/net/....",
-]
+# After k8s_deploy: map region => NLB ARN for Global Accelerator endpoint groups
+ga_nlb_endpoint_arns = {
+  # "us-east-1" = "arn:aws:elasticloadbalancing:us-east-1:ACCOUNT:loadbalancer/net/...."
+  # "us-west-2" = "arn:aws:elasticloadbalancing:us-west-2:ACCOUNT:loadbalancer/net/...."
+  # "eu-west-2" = "arn:aws:elasticloadbalancing:eu-west-2:ACCOUNT:loadbalancer/net/...."
+}
 
 # Pass via env TF_VAR_openai_api_key / TF_VAR_at_api_keys — do not commit secrets
 # openai_api_key = ""
