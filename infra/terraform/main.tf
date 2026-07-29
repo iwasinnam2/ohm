@@ -42,6 +42,12 @@ variable "enable_edges" {
   description = "Section D: provision edge regional VPC + RL Redis (us-west-2, eu-west-2, ap-northeast-1)"
 }
 
+variable "redis_node_type" {
+  type        = string
+  default     = "cache.r6g.large"
+  description = "Leader Redis node type; Global Datastore requires large+ (not t-family)"
+}
+
 variable "ga_nlb_endpoint_arns" {
   type        = list(string)
   default     = []
@@ -252,11 +258,12 @@ resource "aws_elasticache_replication_group" "leader" {
   description                = "at-utility Redis replication leader (cache writes + quota grants)"
   engine                     = "redis"
   engine_version             = "7.1"
-  node_type                  = "cache.t4g.small"
+  node_type                  = var.redis_node_type
   num_cache_clusters         = 2
   automatic_failover_enabled = true
   multi_az_enabled           = true
   port                       = 6379
+  apply_immediately          = true
   at_rest_encryption_enabled = true
   transit_encryption_enabled = true
   subnet_group_name          = aws_elasticache_subnet_group.leader.name
