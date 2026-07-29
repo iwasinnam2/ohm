@@ -8,10 +8,15 @@ a8a4fb2a5e7214a93bc86c9b79a4f3c6-da5bb54336e41479.elb.us-east-1.amazonaws.com
 
 Also saved in [NLB_HOSTNAME.txt](NLB_HOSTNAME.txt).
 
-## Verified on NLB (HTTP)
+## Verified (pre-DNS via TLS SNI / `-ResolveIp`)
 
-- `GET /health` → `{"ok":true,"service":"ohm","plane":"rust"}`
-- Chat mock **MISS** then **HIT** via `http://<NLB>/v1/chat/completions`
+- `external_smoke.ps1 -BaseUrl https://api.withohm.dev -SkipOpenAI -ResolveIp <NLB_IP>` → PASS
+- Stripe endpoint `we_1TyTnN…` → `https://api.withohm.dev/v1/billing/webhook`
+- `python scripts/stripe_public_lifecycle.py` with `OHM_RESOLVE_IP` → checkout webhook → chat → cancel → **403**
+
+## Remaining operator step
+
+GoDaddy still serves `api` → Vercel. Until the CNAME below is live, public clients and Stripe Dashboard delivery see `edge_pending` 503.
 
 ## GoDaddy (nameservers are Third Party)
 
