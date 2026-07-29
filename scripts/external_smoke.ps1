@@ -31,9 +31,11 @@ Assert-Ok "health" ($health.ok -eq $true)
 
 $payload = @{ model = "mock"; messages = @(@{ role = "user"; content = $unique }) } | ConvertTo-Json -Compress
 $miss = Invoke-WebRequest -Uri "$root/chat/completions" -Method POST -Headers $headers -Body $payload
-Assert-Ok "mock miss" ($miss.Headers["x-at-cache"] -match "MISS")
+$missCache = [string]$miss.Headers["x-at-cache"]
+Assert-Ok "mock miss" ($missCache -match "MISS") ($missCache)
 $hit = Invoke-WebRequest -Uri "$root/chat/completions" -Method POST -Headers $headers -Body $payload
-Assert-Ok "mock hit" ($hit.Headers["x-at-cache"] -match "HIT")
+$hitCache = [string]$hit.Headers["x-at-cache"]
+Assert-Ok "mock hit" ($hitCache -match "HIT") ($hitCache)
 
 if (-not $SkipOpenAI) {
   $op = "openai-$unique"
