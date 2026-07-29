@@ -1,0 +1,51 @@
+# Privacy Policy
+
+**Product:** Ohm (OpenAI-compatible gateway)  
+**Effective:** 2026-07-26  
+**Contact:** partners@withohm.dev
+
+This policy describes how Ohm processes information when you use the API and related sites. It is an operator-facing MVP policy for the Ohm service. It is not a substitute for counsel review of your own use case.
+
+## Roles
+
+| Party | Role |
+|-------|------|
+| You (tenant) | Controller of prompts, tools, and any personal data you submit or ask Ohm to fetch |
+| Ohm | Processor of that data to provide routing, optional cache replay, metering, and optional public-web context |
+| Upstream model providers | Sub-processors for inference under their terms |
+
+## What we process
+
+- API authentication material (keys stored hashed)
+- Request metadata needed to route, rate-limit, and meter (tenant id, model, token/usage counters)
+- Prompt and completion content as required to fulfill `POST /v1/chat/completions`
+- Optional public-web page excerpts when you enable `fetch_web_context` (minimised / redacted by default)
+- Billing identifiers via Stripe when you use paid plans
+
+We do **not** use Customer Content to train foundation models. Redis cache is for identical-request replay only (`X-AT-Cache-Purpose: identical-request-replay`).
+
+## Cache and retention
+
+- Default cache TTL: configured by operator (`AT_CACHE_TTL_SECONDS`, typically 3600s)
+- Opt out of cache writes with `cache_control: "no_store"`
+- Ledger counters are aggregates for metering, not full prompt archives
+
+## Web retrieval
+
+Public `http`/`https` pages only. Login-gated, credentialed, or private targets are refused. See [Legal & compliance](./legal) and the [DPA](./dpa).
+
+## Subprocessors
+
+Typical: OpenAI and/or Anthropic (as you enable), Amazon Web Services (or host), Stripe (billing). Details: [Security](./security) and [DPA](./dpa).
+
+## Your rights
+
+Depending on UK GDPR / EU GDPR / CCPA applicability, you may have rights of access, deletion, and restriction. Controllers remain responsible for data subject requests regarding content they submit. Contact partners@withohm.dev for operator requests about account/metering data.
+
+## Cookies / marketing site
+
+The marketing site is static documentation. No advertising trackers are required for core docs. Hosting (e.g. Vercel) may process standard request logs.
+
+## Changes
+
+Material changes bump the policy date and, where API acks are versioned, related terms/DPA versions.

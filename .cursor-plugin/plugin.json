@@ -1,0 +1,37 @@
+{
+  "name": "ohm",
+  "version": "0.1.0",
+  "description": "Ohm AI traffic utility — prompt cache, compliant web context, and BYOK model ingress for Cursor.",
+  "author": {
+    "name": "Ohm",
+    "email": "partners@withohm.dev"
+  },
+  "homepage": "https://withohm.dev",
+  "repository": "https://github.com/withohm/ohm",
+  "license": "MIT",
+  "keywords": ["ohm", "mcp", "ai", "cache", "openai-compatible", "web-context"],
+  "logo": "assets/logo.svg",
+  "mcpServers": "mcp.json",
+  "variables": {
+    "type": "object",
+    "properties": {
+      "OHM_API_KEY": {
+        "type": "string",
+        "title": "Ohm API key",
+        "description": "Tenant key from withohm.dev/billing (sk-at-…)"
+      },
+      "OHM_UPSTREAM_KEY": {
+        "type": "string",
+        "title": "Provider API key (BYOK)",
+        "description": "Optional OpenAI/Anthropic key for cache misses"
+      },
+      "OHM_BASE_URL": {
+        "type": "string",
+        "title": "Ohm base URL",
+        "description": "Local edge or public API /v1",
+        "default": "http://127.0.0.1:8081/v1"
+      }
+    },
+    "required": ["OHM_API_KEY"]
+  }
+}

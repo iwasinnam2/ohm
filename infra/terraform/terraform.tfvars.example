@@ -1,0 +1,19 @@
+project       = "at-utility"
+leader_region = "us-east-1"
+edge_regions  = ["us-west-2", "eu-west-2", "ap-northeast-1"]
+domain_name   = "api.withohm.dev"
+image_tag     = "0.1.0"
+
+# Section D — edge VPCs + regional RL Redis (costful). Set true when mesh is next.
+enable_edges = true
+
+# Section E — Global Accelerator. Set true after NLB hostname is stable.
+anycast_enabled = true
+# After k8s_deploy: paste NLB ARN(s) from AWS console / elbv2 describe-load-balancers
+ga_nlb_endpoint_arns = [
+  # "arn:aws:elasticloadbalancing:us-east-1:ACCOUNT:loadbalancer/net/....",
+]
+
+# Pass via env TF_VAR_openai_api_key / TF_VAR_at_api_keys — do not commit secrets
+# openai_api_key = ""
+# at_api_keys    = ""

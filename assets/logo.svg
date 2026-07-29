@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 360" width="360" height="360" role="img" aria-label="Ohm">
+  <rect width="360" height="360" fill="#090c0f"/>
+  <text
+    x="180"
+    y="188"
+    text-anchor="middle"
+    dominant-baseline="central"
+    fill="#d08945"
+    font-family="Georgia, 'Times New Roman', 'Noto Serif', serif"
+    font-size="220"
+    font-weight="700"
+  >&#x03A9;</text>
+</svg>

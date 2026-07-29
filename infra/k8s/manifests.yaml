@@ -1,0 +1,235 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: at-utility
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: at-utility-config
+  namespace: at-utility
+data:
+  AT_REGION: "us-east-1"
+  AT_CACHE_TTL_SECONDS: "3600"
+  AT_RATE_LIMIT_RPS: "50"
+  AT_RATE_LIMIT_BURST: "100"
+  INGEST_WORKER_URL: "http://ingest-worker:8090"
+  OPENAI_BASE_URL: "https://api.openai.com/v1"
+  # Leader: REDIS_URL == REDIS_WRITE_URL. Edge: replica / leader / local RL.
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gateway
+  namespace: at-utility
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: gateway
+  template:
+    metadata:
+      labels:
+        app: gateway
+    spec:
+      containers:
+        - name: gateway
+          image: ACCOUNT.dkr.ecr.us-east-1.amazonaws.com/at-utility/gateway:0.1.0
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: at-utility-config
+            - secretRef:
+                name: at-utility-secrets
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 3
+            periodSeconds: 5
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "1"
+              memory: "512Mi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: gateway
+  namespace: at-utility
+spec:
+  type: ClusterIP
+  selector:
+    app: gateway
+  ports:
+    - port: 8080
+      targetPort: 8080
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gateway-rs
+  namespace: at-utility
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: gateway-rs
+  template:
+    metadata:
+      labels:
+        app: gateway-rs
+    spec:
+      containers:
+        - name: gateway-rs
+          image: ACCOUNT.dkr.ecr.us-east-1.amazonaws.com/at-utility/gateway-rs:0.1.0
+          ports:
+            - containerPort: 8081
+          env:
+            - name: AT_RS_LISTEN
+              value: "0.0.0.0:8081"
+            - name: AT_RS_PRIMARY
+              value: "http://gateway:8080"
+            - name: AT_RS_FALLBACK
+              value: "http://gateway:8080"
+            - name: AT_RS_REDIS
+              valueFrom:
+                secretKeyRef:
+                  name: at-utility-secrets
+                  key: AT_RS_REDIS
+            - name: AT_API_KEYS
+              valueFrom:
+                secretKeyRef:
+                  name: at-utility-secrets
+                  key: AT_API_KEYS
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8081
+            initialDelaySeconds: 2
+            periodSeconds: 5
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "64Mi"
+            limits:
+              cpu: "1"
+              memory: "256Mi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: gateway-rs
+  namespace: at-utility
+  annotations:
+    service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
+    service.beta.kubernetes.io/aws-load-balancer-scheme: "internet-facing"
+    service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: "ip"
+    # Replace via ACM_CERTIFICATE_ARN env in infra/scripts/k8s_deploy.sh
+    service.beta.kubernetes.io/aws-load-balancer-ssl-cert: "ACM_CERTIFICATE_ARN_PLACEHOLDER"
+    service.beta.kubernetes.io/aws-load-balancer-ssl-ports: "443"
+    service.beta.kubernetes.io/aws-load-balancer-backend-protocol: "tcp"
+spec:
+  type: LoadBalancer
+  selector:
+    app: gateway-rs
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8081
+    - name: https
+      port: 443
+      targetPort: 8081
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ingest-worker
+  namespace: at-utility
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: ingest-worker
+  template:
+    metadata:
+      labels:
+        app: ingest-worker
+    spec:
+      containers:
+        - name: ingest
+          image: ACCOUNT.dkr.ecr.us-east-1.amazonaws.com/at-utility/ingest-worker:0.1.0
+          ports:
+            - containerPort: 8090
+          env:
+            - name: WORKER_PORT
+              value: "8090"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8090
+          resources:
+            requests:
+              cpu: "200m"
+              memory: "512Mi"
+            limits:
+              cpu: "2"
+              memory: "2Gi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ingest-worker
+  namespace: at-utility
+spec:
+  selector:
+    app: ingest-worker
+  ports:
+    - port: 8090
+      targetPort: 8090
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: quota-allotment
+  namespace: at-utility
+spec:
+  schedule: "*/1 * * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: allot
+              image: ACCOUNT.dkr.ecr.us-east-1.amazonaws.com/at-utility/gateway:0.1.0
+              command:
+                - python
+                - -m
+                - at_utility.allotment
+              envFrom:
+                - configMapRef:
+                    name: at-utility-config
+                - secretRef:
+                    name: at-utility-secrets
+              env:
+                - name: REDIS_LEADER_URL
+                  valueFrom:
+                    secretKeyRef:
+                      name: at-utility-secrets
+                      key: REDIS_WRITE_URL
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: gateway-rs-pdb
+  namespace: at-utility
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: gateway-rs

@@ -1,0 +1,71 @@
+services:
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+
+  redis-replica:
+    image: redis:7-alpine
+    ports:
+      - "6380:6379"
+    command: ["redis-server", "--replicaof", "redis", "6379"]
+    depends_on:
+      - redis
+
+  gateway:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env
+    environment:
+      REDIS_URL: redis://redis:6379/0
+      INGEST_WORKER_URL: http://ingest-worker:8090
+      AT_REGION: local
+      # Local bench headroom (production tenants still use token buckets)
+      AT_RATE_LIMIT_RPS: "500"
+      AT_RATE_LIMIT_BURST: "1000"
+    depends_on:
+      - redis
+      - ingest-worker
+
+  ingest-worker:
+    build:
+      context: .
+      dockerfile: workers/Dockerfile
+    ports:
+      - "8090:8090"
+    environment:
+      WORKER_PORT: "8090"
+      PLAYWRIGHT_TIMEOUT_MS: "30000"
+      SERP_PROVIDER: duckduckgo
+      AT_COMPLIANCE_ENFORCE: "true"
+      AT_COMPLIANCE_JURISDICTION: uk_us
+      AT_COMPLIANCE_RESPECT_ROBOTS: "true"
+      AT_COMPLIANCE_REDACT_PII: "true"
+      AT_COMPLIANCE_MAX_CHARS_PER_SOURCE: "4000"
+
+  gateway-rs:
+    profiles: ["rust"]
+    build:
+      context: ./gateway-rs
+      dockerfile: Dockerfile
+    ports:
+      - "8081:8081"
+    environment:
+      AT_RS_LISTEN: 0.0.0.0:8081
+      AT_RS_REDIS: redis:6379
+      AT_RS_PRIMARY: http://gateway:8080
+      AT_RS_FALLBACK: http://gateway:8080
+      AT_API_KEYS: sk-at-dev
+    depends_on:
+      - gateway
+      - redis
+
+volumes:
+  redis_data:

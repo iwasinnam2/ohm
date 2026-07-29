@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "ohm": {
+      "command": "python",
+      "args": ["-m", "ohm_mcp"],
+      "env": {
+        "OHM_BASE_URL": "http://127.0.0.1:8081/v1",
+        "OHM_API_KEY": "sk-at-dev",
+        "OHM_UPSTREAM_KEY": ""
+      }
+    }
+  }
+}
