@@ -1,9 +1,7 @@
 ---
 name: ohm-chat
-description: >
-  Chat through withOhm via MCP ohm_chat (OpenAI-compatible ingress + Redis prompt
-  replay). Use when the user wants prompt cache, BYOK model calls through Ohm,
-  or chat with optional compliant fetch_urls — withOhm, ohm, prompt-cache, BYOK.
+description: Chat through Ohm via MCP ohm_chat; optional compliant fetch_urls.
+disable-model-invocation: true
 ---
 
 # Ohm chat
