@@ -17,7 +17,7 @@ https://github.com/iwasinnam2/ohm/tree/master/templates/cursor-agent-with-web
 
 ## Target lists / repos (open PRs)
 
-### 1. awesome-mcp-servers (or similar)
+### 1. punkpeye/awesome-mcp-servers
 
 **Title:** Add withOhm — compliant fetch for agents (Cursor MCP)
 
@@ -27,10 +27,13 @@ https://github.com/iwasinnam2/ohm/tree/master/templates/cursor-agent-with-web
 ## withOhm
 
 - **Repo:** https://github.com/iwasinnam2/ohm
-- **Install:** https://withohm.dev/i
+- **Install:** https://www.withohm.dev/i
 - **What:** Cursor MCP for prompt cache + **compliant fetch for agents** (`ohm_fetch_web`), BYOK
-- **Template:** `templates/cursor-agent-with-web`
+- **Template:** https://github.com/iwasinnam2/ohm/tree/master/templates/cursor-agent-with-web
+- **Fetch toy:** https://fetch.withohm.dev
 ```
+
+Open PR: https://github.com/punkpeye/awesome-mcp-servers/compare
 
 ### 2. cursor.directory
 

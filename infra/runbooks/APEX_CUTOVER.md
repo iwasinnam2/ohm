@@ -64,15 +64,19 @@ v=spf1 include:spf.protection.outlook.com -all
 | `www.withohm.dev` | CNAME → Amplify CloudFront | **Amplify** (200, `/i` live) |
 | `fetch.withohm.dev` | CNAME → Amplify CloudFront | **Amplify** (200, fetch toy) |
 | `status.withohm.dev` | CNAME → Amplify CloudFront | **Amplify** (200) |
-| `withohm.dev` (apex) | Still **Vercel A** records | **Vercel** until forward / ALIAS |
-| `api.withohm.dev` | AWS NLB/GA | Unchanged |
+| `withohm.dev` (apex) | **A** still `76.76.21.21` (Vercel IP) | **404 DEPLOYMENT_NOT_FOUND** after domain removed from Vercel project |
+| `api.withohm.dev` | AWS GA | Unchanged / healthy |
 
-Amplify Console may show `AWAITING_APP_CNAME` until apex is off Vercel A records.
+Amplify domain association: **AVAILABLE** (`www` / `fetch` / `status` verified). Apex subdomain still `verified: false` until `@` stops using the Vercel A record.
 
-### Finish apex (you — GoDaddy)
+Vercel project `site` no longer owns `withohm.dev` (removed from account).
 
-1. **Domain Forward:** `withohm.dev` → `https://www.withohm.dev` (301 permanent).
-2. **Delete** apex **A** records pointing at Vercel (`216.198.79.1`, `64.29.17.1`).
-3. Optional: remove `withohm.dev` / `www` from the old Vercel project so it stops claiming the domain.
+### Finish apex NOW (GoDaddy — 2 minutes)
 
-Until then, share **`https://www.withohm.dev`** and **`https://fetch.withohm.dev`** as the canonical public URLs.
+Apex is broken until you do this:
+
+1. **Delete** the apex **A** record (`76.76.21.21` / any Vercel A).
+2. **Domain Forward:** `withohm.dev` → `https://www.withohm.dev` (301 permanent), **or** ALIAS/ANAME `@` → `d2pta05dql0ixa.cloudfront.net` if GoDaddy offers it.
+3. Confirm SNS email for AWS budget (`admin@withohm.dev`) if you have a pending subscription mail.
+
+Until then, share **`https://www.withohm.dev`** and **`https://fetch.withohm.dev`**.
