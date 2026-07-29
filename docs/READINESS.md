@@ -24,6 +24,7 @@ Public distribution readiness for **Ohm**. Towers can be walked; the roadway is 
 - [x] Cursor plugin shape: [`.cursor-plugin/plugin.json`](../.cursor-plugin/plugin.json) + [`mcp.json`](../mcp.json)
 - [x] Public GitHub push — https://github.com/iwasinnam2/ohm
 - [x] Cursor marketplace submission sent
+- [x] Redis mesh Phase 1–4 in-repo — [REDIS_MESH.md](REDIS_MESH.md) (compose split, lag smoke, Global Datastore TF, `AT_RS_REDIS_WRITE`)
 - [ ] Redeploy site so `https://withohm.dev/ohm-icon.svg` + `.png` resolve (raw.githubusercontent.com works today)
 - [ ] Public API deck — [API_CUTOVER.md](../infra/runbooks/API_CUTOVER.md) / [GO_LIVE.md](../infra/runbooks/GO_LIVE.md)
 
@@ -54,7 +55,7 @@ Logotype URLs for Cursor submit:
 ## Deferred (do not claim yet)
 
 - Mid-stream failover
-- Multi-region Redis lag / Anycast
+- Multi-region Redis lag / Anycast **in production** (in-repo mesh ready: [REDIS_MESH.md](REDIS_MESH.md), Global Datastore Terraform when `enable_edges=true`, `AT_RS_REDIS_WRITE`; go-live still gated on public API + lag drill)
 - Enterprise contractual SLA
 - Managed-key capacity pools
 - Hosted remote MCP URL (zero `pip install`)

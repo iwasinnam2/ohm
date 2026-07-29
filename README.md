@@ -86,8 +86,8 @@ Inspect live policy: `GET /v1/compliance/policy`. Templates: Terms, DPA, upstrea
 | Ingest worker (`:8090`) | Meta-search + public page fetch → redacted markdown/JSON for `fetch_web_context` |
 | `src/at_utility/compliance/` | Purpose matrix, URL gate, robots.txt, PII redaction |
 | `src/ohm_mcp/` | Cursor MCP attach (`ohm_fetch_web`, `ohm_usage`, `ohm_chat`) |
-| Redis leader / replica | Cache and rate-limit state; replica is for local mesh learning |
-| `infra/` | Terraform + Kubernetes path to multi-region Redis and Anycast |
+| Redis leader / replica | Cache + RL; GET on replica/reader, SET on leader — [docs/REDIS_MESH.md](docs/REDIS_MESH.md) |
+| `infra/` | Terraform + Kubernetes: Global Datastore edges + Anycast |
 | `site/` | Marketing + docs + self-serve `/billing` |
 
 ## Tenancy and billing
