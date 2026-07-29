@@ -12,12 +12,12 @@ export const DOC_INDEX: DocMeta[] = [
   {
     slug: "quickstart",
     title: "Quickstart",
-    description: "Local edge, BYOK, billing, and design-partner path.",
+    description: "Local edge, BYOK, billing, and subscription path.",
   },
   {
     slug: "cursor",
     title: "Cursor / MCP",
-    description: "Attach Ohm as invisible plumbing in Cursor.",
+    description: "Attach withOhm as invisible plumbing in Cursor.",
   },
   {
     slug: "examples",
@@ -62,12 +62,12 @@ export const DOC_INDEX: DocMeta[] = [
   {
     slug: "status",
     title: "Status & limits",
-    description: "Rate limits, hosts, and MVP edge scope.",
+    description: "Rate limits, hosts, and edge availability.",
   },
   {
     slug: "brand",
     title: "Brand",
-    description: "Ohm naming and deferred sk-at / X-AT rename.",
+    description: "withOhm naming and deferred sk-at / X-AT rename.",
   },
 ];
 

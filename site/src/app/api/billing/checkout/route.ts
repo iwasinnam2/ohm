@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
   } catch (err) {
     return NextResponse.json(
       {
-        error: "Cannot reach Ohm API",
+        error: "Cannot reach withOhm API",
         detail: err instanceof Error ? err.message : String(err),
         hint: "Set OHM_API_URL on the site (control plane, e.g. http://127.0.0.1:8080)",
       },

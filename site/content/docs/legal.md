@@ -1,6 +1,6 @@
 # Legal & compliance
 
-Ohm’s web ingestion is **public-only** and purpose-limited. Binding public documents:
+withOhm’s web ingestion is **public-only** and purpose-limited. Binding public documents:
 
 - [Terms of Service](./terms) (`tos-2026-07-26`)
 - [Privacy Policy](./privacy)

@@ -1,7 +1,7 @@
 # Data Processing Addendum
 
 **Version:** `dpa-2026-07-26`  
-**Product:** Ohm  
+**Product:** withOhm  
 **Contact:** partners@withohm.dev
 
 API field `dpa_ack: true` and tenant `dpa_version` at key issue bind this version.
@@ -11,7 +11,7 @@ API field `dpa_ack: true` and tenant `dpa_version` at key issue bind this versio
 | Party | Role |
 |-------|------|
 | Customer (tenant) | **Controller** of personal data in prompts, tools, and chosen web targets |
-| Ohm (operator) | **Processor** when processing that data to provide the API |
+| withOhm (operator) | **Processor** when processing that data to provide the API |
 | Upstream LLM providers | **Sub-processors** (and may be independent controllers under their terms) |
 
 ## Subject matter
@@ -25,7 +25,7 @@ Processing of Customer Content submitted to `POST /v1/chat/completions` and rela
 - Metering aggregates (not full prompts in ledgers)
 - Public-web fetch when Customer enables `fetch_web_context`
 
-**Not in scope:** Ohm does not use Customer Content to train foundation models.
+**Not in scope:** withOhm does not use Customer Content to train foundation models.
 
 ## Duration
 
@@ -33,7 +33,7 @@ For the subscription term; cache entries expire per configured TTL unless `cache
 
 ## Categories of data
 
-Determined by Customer. May include identifiers, message content, and URLs. Ohm applies technical minimisation on web ingest (PII redaction, excerpt caps).
+Determined by Customer. May include identifiers, message content, and URLs. withOhm applies technical minimisation on web ingest (PII redaction, excerpt caps).
 
 ## Subprocessors
 

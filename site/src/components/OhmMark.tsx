@@ -7,7 +7,7 @@ type OhmMarkProps = {
  * Brand mark: Greek capital omega (Ω) — the Ohm symbol.
  * Uses the Unicode glyph so it reads as Ω, not a paren/horseshoe sketch.
  */
-export function OhmMark({ className, title = "Ohm" }: OhmMarkProps) {
+export function OhmMark({ className, title = "withOhm" }: OhmMarkProps) {
   return (
     <svg
       className={className}

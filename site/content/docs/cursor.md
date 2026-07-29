@@ -1,12 +1,12 @@
-# Add Ohm to Cursor
+# Add withOhm to Cursor
 
-After Checkout, the success screen’s primary action is **Add Ohm to Cursor** — a one-click deeplink into Cursor’s MCP install confirm. Your Ohm key is already in the config. That is the product path; manual JSON is only a fallback.
+After Checkout, the success screen’s primary action is **Add withOhm to Cursor** — a one-click deeplink into Cursor’s MCP install confirm. Your withOhm key is already in the config. That is the product path; manual JSON is only a fallback.
 
 ## One-click (preferred)
 
 1. Finish Stripe Checkout on [/billing](/billing)
 2. On success, optionally paste your provider key (BYOK)
-3. Click **Add Ohm to Cursor** → confirm in Cursor’s MCP UI
+3. Click **Add withOhm to Cursor** → confirm in Cursor’s MCP UI
 
 Deeplink shape (built automatically on success):
 
@@ -34,12 +34,53 @@ Only if the deeplink isn’t available:
 }
 ```
 
-`pip install -e ".[mcp]"` once from the Ohm repo (or install the published package when available). Tools: `ohm_fetch_web`, `ohm_usage`, `ohm_chat`.
+`pip install -e ".[mcp]"` once from the withOhm repository (or install the published package when available).
+
+## Usable commands (MCP tools)
+
+| Command | Purpose |
+|---------|---------|
+| `ohm_fetch_web` | Compliant URL fetch → redacted **markdown** or **JSON** context |
+| `ohm_usage` | Usage snapshot (`GET /v1/usage`) |
+| `ohm_chat` | Chat through Ohm; optional `fetch_urls` for web context |
+
+### `ohm_fetch_web`
+
+| Param | Default | Notes |
+|-------|---------|-------|
+| `urls` | (required) | Public `http(s)` pages |
+| `purpose` | `public_web_retrieval` | Also: `business_catalog`, `public_company_info`, `job_listings` |
+| `query` | `""` | Optional focus question |
+| `format` | `markdown` | `markdown` or `json` (title, text, meta, JSON-LD) |
+
+Metered as `ohm_web_fetch`. Public pages only.
+
+### `ohm_usage`
+
+No params. Returns cache hit ratio, fetches, and web attach rate.
+
+### `ohm_chat`
+
+| Param | Default | Notes |
+|-------|---------|-------|
+| `prompt` | (required) | User message |
+| `model` | `mock` | gpt/claude need BYOK |
+| `fetch_urls` | none | Optional compliant web attach |
+| `purpose` | `public_web_retrieval` | When `fetch_urls` is set |
+| `upstream_api_key` | `""` | Overrides `OHM_UPSTREAM_KEY` |
+
+### Env
+
+| Var | Role |
+|-----|------|
+| `OHM_BASE_URL` | Edge `/v1` (default `http://127.0.0.1:8081/v1`) |
+| `OHM_API_KEY` | Tenant key (`sk-at-…`) |
+| `OHM_UPSTREAM_KEY` | Optional BYOK for cache misses |
 
 ## OpenAI-compatible base URL
 
 | Field | Value |
 |-------|--------|
 | base URL | `http://127.0.0.1:8081/v1` |
-| API key | Ohm `sk-at-…` |
+| API key | withOhm `sk-at-…` |
 | Upstream | Header `X-Ohm-Upstream-Key` |

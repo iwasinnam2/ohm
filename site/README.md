@@ -1,6 +1,6 @@
-# Ohm site
+# withOhm site
 
-Marketing + docs front door for **Ohm** (`api.withohm.dev` on Vercel while design iterates).
+Marketing + docs front door for **withOhm** (`https://withohm.dev`).
 
 ## Develop
 
@@ -28,10 +28,12 @@ Doctrine checklist when changing UI: one focal point (squint), three type levels
 
 | Path | Purpose |
 |------|---------|
-| `/` | Hero: Ω + promise + design-partner CTA |
+| `/` | Hero: Ω + withOhm + Explore Subscription |
 | `/docs` | Doc index |
 | `/docs/[slug]` | Curated markdown from `content/docs/` |
-| `/design-partners` | Design-partner offer |
+| `/subscriptions` | Free trial · Intermediate · Enterprise |
+| `/design-partners` | Redirects to `/subscriptions` |
+| `/billing` | Self-serve Checkout |
 
 ## Deploy
 

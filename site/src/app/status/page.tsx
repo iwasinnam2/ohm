@@ -3,7 +3,7 @@ import Link from "next/link";
 
 export const metadata: Metadata = {
   title: "Status",
-  description: "Ohm service status — docs, API edge, and limits.",
+  description: "withOhm service status — docs, API edge, and limits.",
 };
 
 const COMPONENTS = [
@@ -20,10 +20,10 @@ const COMPONENTS = [
     detail: "ACM issued; chat cutover per API_CUTOVER runbook",
   },
   {
-    name: "Local MVP edge",
+    name: "Supported edge",
     host: "localhost:8081",
     state: "supported",
-    detail: "Rust gateway — design-partner contract",
+    detail: "Rust gateway — current client entry until public cutover",
   },
 ] as const;
 
@@ -33,8 +33,8 @@ export default function StatusPage() {
       <header className="page-head">
         <h1>Status</h1>
         <p>
-          Component view for Ohm. Attach <code>status.withohm.dev</code> as a
-          Vercel domain pointing at this page.
+          Component view for withOhm. Attach <code>status.withohm.dev</code> as
+          a Vercel domain pointing at this page.
         </p>
       </header>
       <ul className="status-list">

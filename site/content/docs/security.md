@@ -1,6 +1,6 @@
 # Security
 
-Ohm sits between your apps and upstream model providers.
+withOhm sits between your apps and upstream model providers.
 
 ## What is cached
 
@@ -15,7 +15,7 @@ Identical chat completion requests (per tenant) may store the model response in 
 ## Keys
 
 - Customer keys stored hashed (SHA-256) at rest
-- Issued prefix today: `sk-at-…` (Ohm brand; rename deferred)
+- Issued prefix today: `sk-at-…` (withOhm brand; rename deferred)
 - Suspended tenants → HTTP 403
 
 ## Subprocessors

@@ -5,7 +5,7 @@ import { BillingCheckoutForm } from "@/components/BillingCheckoutForm";
 export const metadata: Metadata = {
   title: "Billing",
   description:
-    "Self-serve Ohm seat — pipe access, BYOK model path, metered cache and compliant web fetch.",
+    "Self-serve withOhm seat — pipe access, BYOK model path, metered cache and compliant web fetch.",
 };
 
 export default function BillingPage() {
@@ -14,15 +14,15 @@ export default function BillingPage() {
       <header className="page-head">
         <h1>Start on the pipe</h1>
         <p>
-          Checkout issues your Ohm API key once, then Stripe collects the monthly
-          seat. Model tokens stay on your provider keys. Web fetch and cache are
-          metered by Ohm.
+          Checkout issues your withOhm API key once, then Stripe collects the
+          monthly seat. Model tokens stay on your provider keys. Web fetch and
+          cache are metered by withOhm.
         </p>
       </header>
       <BillingCheckoutForm />
       <p className="billing-form__alt">
-        Prefer complimentary access?{" "}
-        <Link href="/design-partners">Design partners</Link>
+        Compare plans?{" "}
+        <Link href="/subscriptions">Explore Subscription</Link>
       </p>
     </>
   );

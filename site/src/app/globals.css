@@ -1,5 +1,5 @@
 /*
-  Ohm design tokens — primitives → semantic → component usage.
+  withOhm design tokens — primitives → semantic → component usage.
   Spacing is an 8px grid (4px micro). Type uses ~1.25 modular steps.
 */
 
@@ -30,8 +30,8 @@
   --space-10: 5rem; /* 80 */
 
   /* --- Primitives: type --- */
-  --font-display: var(--font-syne), "Segoe UI", sans-serif;
-  --font-body: var(--font-plex), "Segoe UI", sans-serif;
+  --font-display: var(--font-space-grotesk), "Segoe UI", sans-serif;
+  --font-body: var(--font-source-sans), "Segoe UI", sans-serif;
   --font-mono: var(--font-plex-mono), ui-monospace, monospace;
   --text-xs: 0.75rem; /* 12 */
   --text-sm: 0.875rem; /* 14 */
@@ -40,16 +40,16 @@
   --text-lg: 1.25rem; /* 20 */
   --text-xl: 1.5rem; /* 24 */
   --text-2xl: 2rem; /* 32 */
-  --text-3xl: clamp(2.25rem, 5.5vw, 3.25rem);
-  --text-hero: clamp(4.25rem, 14vw, 8.5rem);
+  --text-3xl: clamp(2.35rem, 5.5vw, 3.4rem);
+  --text-hero: clamp(4.5rem, 14vw, 9rem);
   --leading-tight: 1.05;
-  --leading-display: 0.9;
+  --leading-display: 0.88;
   --leading-body: 1.55;
   --leading-prose: 1.65;
   --tracking-tight: -0.03em;
-  --tracking-display: -0.045em;
-  --tracking-label: 0.14em;
-  --tracking-nav: 0.04em;
+  --tracking-display: -0.055em;
+  --tracking-label: 0.12em;
+  --tracking-nav: 0.05em;
 
   /* --- Primitives: motion / shape --- */
   --radius: 1px;
@@ -220,7 +220,7 @@ pre {
   font-weight: 700;
   font-size: var(--text-base);
   letter-spacing: var(--tracking-nav);
-  text-transform: uppercase;
+  text-transform: none;
 }
 
 .site-header__nav {
@@ -683,58 +683,101 @@ pre {
   font-weight: 600;
 }
 
-/* Design partners — same hierarchy + CTA language as hero */
+/* Subscriptions — tier grid (interaction containers) */
 .partner {
-  max-width: var(--measure-partner);
+  max-width: none;
+  width: 100%;
 }
 
-.partner__steps {
-  list-style: none;
+.tier-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-4);
   margin: 0;
   padding: 0;
-  counter-reset: step;
+  list-style: none;
 }
 
-.partner__steps li {
-  counter-increment: step;
-  position: relative;
-  padding: var(--space-4) 0 var(--space-4) var(--space-7);
-  border-top: 1px solid var(--line);
-  color: var(--muted);
-  line-height: var(--leading-prose);
-  font-size: var(--text-base);
+@media (max-width: 900px) {
+  .tier-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
-.partner__steps li:last-child {
-  border-bottom: 1px solid var(--line);
+.tier {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-5);
+  border: 1px solid var(--line);
+  background: var(--bg-elevated);
+  border-radius: var(--radius);
+  min-height: 100%;
 }
 
-.partner__steps li::before {
-  content: counter(step, decimal-leading-zero);
-  position: absolute;
-  left: 0;
-  top: var(--space-4);
+.tier--featured {
+  border-color: var(--accent);
+  box-shadow: inset 0 0 0 1px var(--accent-soft);
+}
+
+.tier__name {
+  margin: 0;
   font-family: var(--font-display);
-  font-size: var(--text-sm);
+  font-size: var(--text-xl);
   font-weight: 700;
-  letter-spacing: 0.06em;
+  letter-spacing: var(--tracking-tight);
+  color: var(--fg);
+}
+
+.tier__price {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+  font-weight: 600;
   color: var(--accent);
 }
 
-.partner__steps code {
-  font-size: 0.88em;
-  color: var(--fg);
-  background: var(--accent-soft);
-  padding: 0.08em 0.3em;
-  border-radius: var(--radius);
+.tier__price span {
+  display: block;
+  margin-top: var(--space-1);
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  font-weight: 400;
+  color: var(--muted);
+  line-height: var(--leading-body);
 }
 
-.partner__success {
-  margin: var(--space-4) 0 0;
+.tier__pros {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.tier__pros li {
+  position: relative;
+  padding-left: var(--space-4);
   color: var(--muted);
-  font-size: var(--text-base);
+  font-size: var(--text-sm);
   line-height: var(--leading-body);
-  max-width: var(--measure);
+}
+
+.tier__pros li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.55em;
+  width: 0.4rem;
+  height: 0.4rem;
+  background: var(--accent);
+  border-radius: 1px;
+}
+
+.tier__cta {
+  margin-top: var(--space-2);
 }
 
 .partner__cta {

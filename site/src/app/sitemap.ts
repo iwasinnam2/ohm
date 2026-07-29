@@ -4,7 +4,14 @@ import { DOC_INDEX } from "@/lib/docs";
 export default function sitemap(): MetadataRoute.Sitemap {
   const base = "https://withohm.dev";
   const now = new Date();
-  const staticRoutes = ["", "/design-partners", "/docs", "/status", "/edge-pending"].map(
+  const staticRoutes = [
+    "",
+    "/subscriptions",
+    "/billing",
+    "/docs",
+    "/status",
+    "/edge-pending",
+  ].map(
     (path) => ({
       url: `${base}${path || "/"}`,
       lastModified: now,

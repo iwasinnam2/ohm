@@ -4,8 +4,8 @@
 
 - **Docs / marketing:** `https://withohm.dev`
 - **Status:** `https://status.withohm.dev` (Vercel → `/status`)
-- **`api.withohm.dev`:** edge-pending until [API cutover](https://withohm.dev/docs/status); ACM issued
-- **API edge (MVP):** local `http://localhost:8081` — control plane `GET /ready`
+- **`api.withohm.dev`:** edge-pending until public API cutover; ACM issued
+- **Supported edge:** local `http://localhost:8081` — control plane `GET /ready`
 
 ## Hosts
 
@@ -14,7 +14,7 @@
 | `withohm.dev` | Marketing + docs |
 | `api.withohm.dev` | Public API (target); ACM certificate issued |
 | `status.withohm.dev` | Status page |
-| Local `:8081` | Supported MVP client entry (Rust edge) |
+| Local `:8081` | Supported client entry (Rust edge) until public cutover |
 
 ## Defaults
 
@@ -24,7 +24,7 @@
 | Burst | 40 |
 | Cache TTL | 3600s |
 | Mid-stream failover | Unsupported |
-| Enterprise uptime SLA | Not published for MVP (SKU text is capacity, not a contractual SLA) |
+| Enterprise uptime SLA | Published under Enterprise agreements only |
 
 ## Compliance gates
 

@@ -4,7 +4,7 @@ import { OhmMark } from "@/components/OhmMark";
 export const metadata: Metadata = {
   title: "API edge pending",
   description:
-    "api.withohm.dev is reserved for the Ohm gateway. Documentation lives on withohm.dev.",
+    "api.withohm.dev is reserved for the withOhm gateway. Documentation lives on withohm.dev.",
   robots: { index: false, follow: true },
 };
 
@@ -18,9 +18,9 @@ export default function EdgePendingPage() {
         </h1>
       </div>
       <p className="hero__promise">
-        <code>api.withohm.dev</code> is reserved for the Ohm OpenAI-compatible
-        gateway (ACM certificate issued). It is not the documentation site and
-        does not serve chat completions yet.
+        <code>api.withohm.dev</code> is reserved for the withOhm
+        OpenAI-compatible gateway (ACM certificate issued). It is not the
+        documentation site and does not serve chat completions yet.
       </p>
       <div className="hero__cta cta-row">
         <a className="btn btn--primary" href="https://withohm.dev">
@@ -31,7 +31,7 @@ export default function EdgePendingPage() {
         </a>
       </div>
       <div className="hero__product">
-        <span className="hero__product-label">MVP contract</span>
+        <span className="hero__product-label">Supported contract</span>
         <pre className="hero__snippet">{`# Supported today
 curl -s http://localhost:8081/v1/chat/completions \\
   -H "Authorization: Bearer sk-at-dev" \\

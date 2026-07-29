@@ -1,10 +1,10 @@
 # Drop-in examples
 
-Ohm’s distribution channel is the OpenAI-compatible API. No new protocol.
+withOhm’s distribution channel is the OpenAI-compatible API. No new protocol.
 
-Keys use legacy prefix `sk-at-…`. Prefer **local edge** until public API cutover. Templates: LangChain / Vercel AI SDK under `examples/templates/` (see [PLATFORM](https://withohm.dev/docs) / repo `docs/PLATFORM.md`).
+Keys use legacy prefix `sk-at-…`. Prefer the **supported local edge** until public API cutover. Templates: LangChain / Vercel AI SDK under `examples/templates/` (see [PLATFORM](https://withohm.dev/docs) / repository `docs/PLATFORM.md`).
 
-## Local (supported MVP)
+## Local (supported)
 
 ```python
 from openai import OpenAI
@@ -28,7 +28,7 @@ curl -s http://localhost:8081/v1/chat/completions \
 
 ## Production host (reserved)
 
-`https://api.withohm.dev/v1` is the documented public hostname (ACM issued). Chat traffic waits on AWS cutover — do not treat HTML on that host as the API.
+`https://api.withohm.dev/v1` is the documented public hostname (ACM issued). Chat traffic awaits AWS cutover — do not treat HTML on that host as the API.
 
 ## Web context (compliance required)
 
@@ -40,3 +40,22 @@ curl -s http://localhost:8081/v1/chat/completions \
   -H "Content-Type: application/json" \
   -d '{"model":"gpt-4o-mini","messages":[{"role":"user","content":"Summarize"}],"fetch_web_context":true,"web_urls":["https://example.com"],"web_purpose":"business_catalog","web_compliance_ack":true,"terms_ack":true,"dpa_ack":true}'
 ```
+
+### JSON scrape
+
+Structured output: `url`, `title`, `text`, optional `meta` / `json_ld`.
+
+```bash
+curl -s http://localhost:8090/v1/ingest \
+  -H "Content-Type: application/json" \
+  -d '{"urls":["https://example.com"],"format":"json","purpose":"public_web_retrieval","compliance_ack":true}'
+```
+
+```bash
+curl -s http://localhost:8081/v1/chat/completions \
+  -H "Authorization: Bearer sk-at-dev" \
+  -H "Content-Type: application/json" \
+  -d '{"model":"mock","messages":[{"role":"user","content":"Extract facts"}],"fetch_web_context":true,"web_format":"json","web_purpose":"public_web_retrieval","web_urls":["https://example.com"],"web_compliance_ack":true,"terms_ack":true,"dpa_ack":true}'
+```
+
+Via Cursor MCP: `ohm_fetch_web(urls=[...], format="json")`. See [cursor](./cursor).

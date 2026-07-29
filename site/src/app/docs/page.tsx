@@ -4,7 +4,7 @@ import { DOC_INDEX } from "@/lib/docs";
 
 export const metadata: Metadata = {
   title: "Docs",
-  description: "Quickstart, streaming, pricing, and security for Ohm.",
+  description: "Quickstart, streaming, pricing, and security for withOhm.",
 };
 
 export default function DocsIndexPage() {
@@ -13,7 +13,7 @@ export default function DocsIndexPage() {
       <header className="page-head">
         <h1>Docs</h1>
         <p>
-          Point your OpenAI SDK at Ohm. One <code>base_url</code> — cache,
+          Point your OpenAI SDK at withOhm. One <code>base_url</code> — cache,
           failover, and a meter you can read.
         </p>
       </header>

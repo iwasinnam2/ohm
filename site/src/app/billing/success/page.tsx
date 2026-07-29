@@ -48,12 +48,12 @@ export default function BillingSuccessPage() {
 
       <h1 className="postpay__title">Feel the difference in Cursor</h1>
       <p className="postpay__lede">
-        One click opens Cursor’s MCP installer with your Ohm seat already wired.
+        One click opens Cursor’s MCP installer with your withOhm seat already wired.
         No JSON to paste. Confirm once — then work with cache replay and
         compliant web context on the pipe.
       </p>
 
-      <div className="postpay__contrast" aria-label="Before and after Ohm">
+      <div className="postpay__contrast" aria-label="Before and after withOhm">
         <p className="postpay__before">
           <span className="postpay__label">Before</span>
           Waiting on clogged model calls. Hand-browsing the public web for
@@ -79,17 +79,17 @@ export default function BillingSuccessPage() {
             />
           </label>
           <a className="btn btn--primary postpay__cta" href={installHref}>
-            Add Ohm to Cursor
+            Add withOhm to Cursor
           </a>
           <p className="postpay__cta-note">
-            Opens Cursor → MCP install confirm. Your Ohm key is already in the
-            config.
+            Opens Cursor → MCP install confirm. Your withOhm key is already in
+            the config.
           </p>
         </div>
       ) : (
         <div className="postpay__cta-block">
           <p className="billing-form__error">
-            Ohm key missing from this browser session. Start again from{" "}
+            withOhm key missing from this browser session. Start again from{" "}
             <Link href="/billing">billing</Link> so we can wire the one-click
             install.
           </p>
@@ -97,7 +97,7 @@ export default function BillingSuccessPage() {
       )}
 
       <details className="postpay__key">
-        <summary>Your Ohm API key</summary>
+        <summary>Your withOhm API key</summary>
         {apiKey ? (
           <p>
             <code>{apiKey}</code>{" "}

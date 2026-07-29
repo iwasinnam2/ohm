@@ -122,15 +122,15 @@ export function BillingCheckoutForm() {
       {error ? <p className="billing-form__error">{error}</p> : null}
       {issuedKey ? (
         <p className="billing-form__key">
-          Ohm key (store now): <code>{issuedKey}</code>
+          withOhm key (store now): <code>{issuedKey}</code>
         </p>
       ) : null}
       <button type="submit" className="btn btn--primary" disabled={busy || !termsAck || !dpaAck}>
         {busy ? "Redirecting…" : "Continue to Checkout"}
       </button>
       <p className="billing-form__note">
-        After you pay, one button adds Ohm to Cursor — seat wired, no JSON to
-        assemble. Model tokens stay on your provider keys (BYOK).{" "}
+        After you pay, one button adds withOhm to Cursor — seat wired, no JSON
+        to assemble. Model tokens stay on your provider keys (BYOK).{" "}
         <Link href="/docs/pricing">Pricing</Link>
       </p>
     </form>

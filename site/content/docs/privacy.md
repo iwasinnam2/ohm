@@ -1,17 +1,17 @@
 # Privacy Policy
 
-**Product:** Ohm (OpenAI-compatible gateway)  
+**Product:** withOhm (OpenAI-compatible gateway)  
 **Effective:** 2026-07-26  
 **Contact:** partners@withohm.dev
 
-This policy describes how Ohm processes information when you use the API and related sites. It is an operator-facing MVP policy for the Ohm service. It is not a substitute for counsel review of your own use case.
+This policy describes how withOhm processes information when you use the API and related sites. It is the operator privacy policy for the withOhm service. It is not a substitute for counsel review of your own use case.
 
 ## Roles
 
 | Party | Role |
 |-------|------|
-| You (tenant) | Controller of prompts, tools, and any personal data you submit or ask Ohm to fetch |
-| Ohm | Processor of that data to provide routing, optional cache replay, metering, and optional public-web context |
+| You (tenant) | Controller of prompts, tools, and any personal data you submit or ask withOhm to fetch |
+| withOhm | Processor of that data to provide routing, optional cache replay, metering, and optional public-web context |
 | Upstream model providers | Sub-processors for inference under their terms |
 
 ## What we process
