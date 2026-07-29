@@ -4,20 +4,22 @@ Marketing Next.js app in `site/` deploys via **AWS Amplify Hosting** (`WEB_COMPU
 
 ## Create / update (CLI)
 
-```powershell
-# One-time: connect GitHub (needs a PAT with repo scope)
-$token = gh auth token
-aws amplify create-app `
-  --name withohm-site `
-  --platform WEB_COMPUTE `
-  --repository https://github.com/iwasinnam2/ohm `
-  --access-token $token `
-  --region us-east-1 `
-  --environment-variables API_EDGE_LIVE=1,OHM_API_URL=https://api.withohm.dev,RESEND_FROM="withOhm Applications <partners@withohm.dev>"
+App already created:
 
-# Note appId from output, then:
-aws amplify create-branch --app-id <APP_ID> --branch-name master --region us-east-1
-aws amplify start-job --app-id <APP_ID> --branch-name master --job-type RELEASE --region us-east-1
+| Field | Value |
+|-------|--------|
+| App ID | `d136djyswic57f` |
+| Default domain | `https://d136djyswic57f.amplifyapp.com` |
+| Feature branch URL | `https://cursor-mesh-phase3-5-prod.d136djyswic57f.amplifyapp.com` |
+| Platform | `WEB_COMPUTE` |
+| SSR role | `arn:aws:iam::594161136574:role/AmplifySSRServiceRole-withohm` |
+
+```powershell
+# Redeploy feature branch
+aws amplify start-job --app-id d136djyswic57f --branch-name cursor/mesh-phase3-5-prod --job-type RELEASE --region us-east-1
+
+# Or master (after merge)
+aws amplify start-job --app-id d136djyswic57f --branch-name master --job-type RELEASE --region us-east-1
 ```
 
 Set secrets in Amplify Console → Environment variables (do **not** commit):
@@ -25,10 +27,12 @@ Set secrets in Amplify Console → Environment variables (do **not** commit):
 | Key | Value |
 |-----|--------|
 | `RESEND_API_KEY` | Resend key for `/api/*/apply` |
-| `API_EDGE_LIVE` | `1` |
-| `OHM_API_URL` | `https://api.withohm.dev` |
+| `API_EDGE_LIVE` | `1` (already set) |
+| `OHM_API_URL` | `https://api.withohm.dev` (already set) |
 
 Build spec: repo-root [`amplify.yml`](../amplify.yml) with `appRoot: site`.
+
+**Next.js:** Amplify Hosting compute supports through **Next.js 15** — the marketing app is pinned to `next@15.5.9` for SSR (`deploy-manifest.json`). Do not bump to Next 16 until Amplify documents support.
 
 ## Custom domain
 
