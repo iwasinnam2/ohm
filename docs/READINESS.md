@@ -22,8 +22,10 @@ Public distribution readiness for **Ohm**. Towers can be walked; the roadway is 
 - [x] ASCII-safe logo: [`brand/ohm-icon.svg`](../brand/ohm-icon.svg), [`site/public/ohm-icon.svg`](../site/public/ohm-icon.svg), [`assets/logo.svg`](../assets/logo.svg)
 - [x] PNG: [`brand/ohm-icon-360.png`](../brand/ohm-icon-360.png) → `https://withohm.dev/ohm-icon-360.png` after site deploy
 - [x] Cursor plugin shape: [`.cursor-plugin/plugin.json`](../.cursor-plugin/plugin.json) + [`mcp.json`](../mcp.json)
-- [x] Local git root commit (`master`)
-- [ ] Public GitHub push — see [GITHUB_PUSH.md](GITHUB_PUSH.md) (`gh auth login` then `gh repo create ohm --public --source=. --remote=origin --push`)
+- [x] Public GitHub push — https://github.com/iwasinnam2/ohm
+- [x] Cursor marketplace submission sent
+- [ ] Redeploy site so `https://withohm.dev/ohm-icon.svg` + `.png` resolve (raw.githubusercontent.com works today)
+- [ ] Public API deck — [API_CUTOVER.md](../infra/runbooks/API_CUTOVER.md) / [GO_LIVE.md](../infra/runbooks/GO_LIVE.md)
 
 Logotype URLs for Cursor submit:
 

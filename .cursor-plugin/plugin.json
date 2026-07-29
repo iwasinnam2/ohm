@@ -7,7 +7,7 @@
     "email": "partners@withohm.dev"
   },
   "homepage": "https://withohm.dev",
-  "repository": "",
+  "repository": "https://github.com/iwasinnam2/ohm",
   "license": "MIT",
   "keywords": ["ohm", "mcp", "ai", "cache", "openai-compatible", "web-context"],
   "logo": "assets/logo.svg",
