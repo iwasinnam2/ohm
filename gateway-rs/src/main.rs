@@ -235,12 +235,21 @@ async fn authorize(app: &App, token: &str) -> bool {
     if ensure_client(&app.redis_read, &app.cfg.redis_addr).await {
         let mut guard = app.redis_read.lock().await;
         if let Some(client) = guard.as_mut() {
-            if let Ok(Some(_)) = client.get(&idx).await {
-                return true;
+            match client.get(&idx).await {
+                Ok(Some(_)) => return true,
+                Ok(None) => return false,
+                Err(e) => {
+                    // Broken Redis (e.g. TLS-only ElastiCache with plain RESP):
+                    // drop the client and let Python authorize.
+                    warn!("redis GET apikey failed: {e}; defer auth to Python");
+                    *guard = None;
+                    return true;
+                }
             }
         }
     }
-    false
+    // Redis unreachable — defer auth to Python upstream.
+    true
 }
 
 async fn resolve_tenant(app: &App, token: &str) -> String {
@@ -295,19 +304,28 @@ async fn handle(app: Arc<App>, req: Request<Incoming>) -> Result<Response<Full<B
         ))));
     }
 
-    let Some(token) = extract_bearer(&req) else {
-        return Ok(unauthorized());
-    };
-    if !authorize(&app, &token).await {
-        return Ok(unauthorized());
-    }
-
     let method = req.method().clone();
     let path_q = req
         .uri()
         .path_and_query()
         .map(|p| p.as_str().to_string())
         .unwrap_or_else(|| req.uri().path().to_string());
+
+    // Stripe webhooks have no Bearer key — signature is verified by Python.
+    let is_stripe_webhook =
+        path_q.starts_with("/v1/billing/webhook") && method == Method::POST;
+    let token = if is_stripe_webhook {
+        None
+    } else {
+        let Some(token) = extract_bearer(&req) else {
+            return Ok(unauthorized());
+        };
+        if !authorize(&app, &token).await {
+            return Ok(unauthorized());
+        }
+        Some(token)
+    };
+
     let headers = req.headers().clone();
     let body = match req.collect().await {
         Ok(c) => c.to_bytes(),
@@ -319,6 +337,51 @@ async fn handle(app: Arc<App>, req: Request<Incoming>) -> Result<Response<Full<B
                 .unwrap());
         }
     };
+
+    if is_stripe_webhook {
+        let proxied = match proxy_once(
+            &app,
+            &cfg.primary_upstream,
+            method,
+            &path_q,
+            headers,
+            body,
+        )
+        .await
+        {
+            Ok(r) => r,
+            Err(e) => {
+                warn!("stripe webhook proxy error: {e}");
+                return Ok(Response::builder()
+                    .status(502)
+                    .body(Full::new(Bytes::from("upstream error")))
+                    .unwrap());
+            }
+        };
+        let status = proxied.status();
+        let out_headers = proxied.headers().clone();
+        let bytes = match proxied.collect().await {
+            Ok(c) => c.to_bytes(),
+            Err(e) => {
+                warn!("stripe webhook body error: {e}");
+                return Ok(Response::builder()
+                    .status(502)
+                    .body(Full::new(Bytes::from("upstream body error")))
+                    .unwrap());
+            }
+        };
+        let mut builder = Response::builder().status(status);
+        for (k, v) in out_headers.iter() {
+            if k == hyper::header::TRANSFER_ENCODING || k == hyper::header::CONTENT_LENGTH {
+                continue;
+            }
+            builder = builder.header(k, v);
+        }
+        builder = builder.header("x-at-plane", "rust");
+        return Ok(builder.body(Full::new(bytes)).unwrap());
+    }
+
+    let token = token.expect("authorized token");
 
     let tenant = resolve_tenant(&app, &token).await;
 
