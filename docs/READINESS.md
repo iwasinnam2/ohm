@@ -12,7 +12,7 @@ Public distribution readiness for **Ohm**. Towers can be walked; the roadway is 
 | Cursor deeplink CTA | Standing |
 | Public GitHub origin | Required for marketplace |
 | Valid logotype SVG/PNG | Required for marketplace |
-| Public API deck (`api.withohm.dev`) | **Not open** — see GO_LIVE |
+| Public API deck (`api.withohm.dev`) | **Open** — single-region NLB (`v0.1.0-railgun`) |
 | Multi-region / Anycast | Deferred |
 
 **Allow global traffic** only after public chat miss/hit on `https://api.withohm.dev`, Stripe lifecycle green on that host, and a public repo for trust + Cursor submit.
@@ -27,10 +27,13 @@ Public distribution readiness for **Ohm**. Towers can be walked; the roadway is 
 - [x] Redis mesh Phase 1–4 in-repo — [REDIS_MESH.md](REDIS_MESH.md) (compose split, lag smoke, Global Datastore TF, `AT_RS_REDIS_WRITE`)
 - [x] Redeploy site so `https://withohm.dev/ohm-icon.svg` + `.png` resolve
 - [x] Leader EKS + NLB edge live (miss/hit on NLB) — [DNS_CUTOVER_PHASE1.md](../infra/runbooks/DNS_CUTOVER_PHASE1.md)
+- [x] GoDaddy: CNAME `api` → NLB hostname (see DNS_CUTOVER_PHASE1)
+- [x] Public API deck hostname — [API_CUTOVER.md](../infra/runbooks/API_CUTOVER.md) / [GO_LIVE.md](../infra/runbooks/GO_LIVE.md) after DNS
 - [x] Pre-DNS TLS smoke: `external_smoke.ps1 -BaseUrl https://api.withohm.dev -ResolveIp <NLB_IP> -SkipOpenAI`
 - [x] Stripe webhook endpoint created → `https://api.withohm.dev/v1/billing/webhook` (awaits DNS + secret roll)
-- [ ] GoDaddy: CNAME `api` → NLB hostname (see DNS_CUTOVER_PHASE1) — **operator login required**
-- [ ] Public API deck hostname — [API_CUTOVER.md](../infra/runbooks/API_CUTOVER.md) / [GO_LIVE.md](../infra/runbooks/GO_LIVE.md) after DNS
+- [x] `external_smoke.ps1 -BaseUrl https://api.withohm.dev` (public DNS)
+- [x] Vercel `API_EDGE_LIVE=1` + site redeploy
+- [x] Tag `v0.1.0-railgun`
 
 Logotype URLs for Cursor submit:
 
