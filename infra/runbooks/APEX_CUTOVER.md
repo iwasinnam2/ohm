@@ -1,56 +1,78 @@
-# Apex DNS cutover (withohm.dev → Vercel)
+# Apex DNS cutover (withohm.dev → Amplify)
 
 **Do not change nameservers.** Keep GoDaddy NS (`ns69` / `ns70.domaincontrol.com`) so Microsoft 365 MX/TXT stay intact.
 
-Vercel project: `site` (domains attached: `withohm.dev`, `www.withohm.dev`, `api.withohm.dev`).
+Amplify app: `withohm-site` (`d136djyswic57f`) · branch `cursor/mesh-phase3-5-prod`  
+CloudFront target: `d2pta05dql0ixa.cloudfront.net`
 
-## GoDaddy → DNS → Add (only these)
+## GoDaddy → DNS → Manage (replace Vercel site records)
+
+### 1) ACM cert validation (required first)
 
 | Type | Name | Value | TTL |
 |------|------|-------|-----|
-| **A** | `@` | `216.198.79.1` | 600 / 1 Hour |
-| **A** | `@` | `64.29.17.1` | 600 / 1 Hour |
-| **CNAME** | `www` | `01dad5366ab21a23.vercel-dns-017.com` | 600 / 1 Hour |
+| **CNAME** | `_b2c27dc90a5aae0a5ed551e27f7c9d9e` | `_0f57ecf208c71a4b12bad60fa8404bf8.jkddzztszm.acm-validations.aws.` | 600 |
+
+### 2) Site hosts → Amplify
+
+| Type | Name | Value | TTL |
+|------|------|-------|-----|
+| **CNAME** | `www` | `d2pta05dql0ixa.cloudfront.net` | 600 |
+| **CNAME** | `fetch` | `d2pta05dql0ixa.cloudfront.net` | 600 |
+| **CNAME** | `status` | `d2pta05dql0ixa.cloudfront.net` | 600 |
+
+**Apex `@`:** GoDaddy often blocks CNAME on `@`. Prefer one of:
+
+1. **Domain Forward** `withohm.dev` → `https://www.withohm.dev` (301), **or**
+2. If GoDaddy offers **ALIAS / ANAME** on `@`, point it at `d2pta05dql0ixa.cloudfront.net`, **or**
+3. Delete the old Vercel **A** records on `@` (`216.198.79.1`, `64.29.17.1`) once www is green, then use Amplify’s apex guidance in Console if they expose IPs.
+
+### Remove (site only — do not touch API/mail)
+
+| Type | Name | Old value (remove) |
+|------|------|--------------------|
+| **A** | `@` | Vercel `216.198.79.1` / `64.29.17.1` (after www works) |
+| **CNAME** | `www` | `*.vercel-dns-*.com` |
+| **CNAME** | `status` | old Vercel target |
 
 ### Leave alone
 
-- All **MX** records (Microsoft 365)
-- M365 **TXT** (verification, DKIM `selector1` / `selector2` CNAMEs, autodiscover)
-- Existing **ACM validation** CNAME under `api` if still present (`_….api`)
-- Current **`api` CNAME** to Vercel until [API_CUTOVER.md](API_CUTOVER.md)
+- All **MX** (Microsoft 365)
+- M365 **TXT** / DKIM / autodiscover
+- **`api` CNAME** → NLB / GA ([API_CUTOVER.md](API_CUTOVER.md))
+- Existing **`api` ACM** validation CNAME if present
 
-### SPF (outbound mail)
-
-Apex **TXT** `@` SPF should authorize Outlook for `partners@withohm.dev`:
+### SPF
 
 ```text
 v=spf1 include:spf.protection.outlook.com -all
 ```
 
-If you still send via GoDaddy as well: `include:spf.protection.outlook.com include:secureserver.net`.
+## Subdomains after cutover
 
-### Status host
+| Host | Role |
+|------|------|
+| `https://withohm.dev` / `www` | Marketing + `/i` |
+| `https://fetch.withohm.dev` | Public fetch toy (middleware → `/fetch`) |
+| `https://status.withohm.dev` | Status |
+| `https://api.withohm.dev` | API edge (unchanged — AWS NLB/GA) |
 
-| Type | Name | Value |
-|------|------|-------|
-| **CNAME** | `status` | `cname.vercel-dns.com` (or project `*.vercel-dns-017.com`) |
+## Status (2026-07-29)
 
-Attach `status.withohm.dev` in the Vercel `site` project (rewrites to `/status` via middleware).
+| Host | DNS | Serving |
+|------|-----|---------|
+| `www.withohm.dev` | CNAME → Amplify CloudFront | **Amplify** (200, `/i` live) |
+| `fetch.withohm.dev` | CNAME → Amplify CloudFront | **Amplify** (200, fetch toy) |
+| `status.withohm.dev` | CNAME → Amplify CloudFront | **Amplify** (200) |
+| `withohm.dev` (apex) | Still **Vercel A** records | **Vercel** until forward / ALIAS |
+| `api.withohm.dev` | AWS NLB/GA | Unchanged |
 
-## Verify
+Amplify Console may show `AWAITING_APP_CNAME` until apex is off Vercel A records.
 
-```powershell
-npx vercel domains verify withohm.dev
-npx vercel domains verify www.withohm.dev
-curl.exe -sI https://withohm.dev
-curl.exe -sI https://www.withohm.dev
-curl.exe -s https://api.withohm.dev/health
-# expect 503 JSON edge_pending until AWS API cutover
-```
+### Finish apex (you — GoDaddy)
 
-## After HTTPS is green on apex
+1. **Domain Forward:** `withohm.dev` → `https://www.withohm.dev` (301 permanent).
+2. **Delete** apex **A** records pointing at Vercel (`216.198.79.1`, `64.29.17.1`).
+3. Optional: remove `withohm.dev` / `www` from the old Vercel project so it stops claiming the domain.
 
-1. Prefer sharing `https://withohm.dev` as the public site.
-2. Keep `api.withohm.dev` for NLB/GA — see [API_CUTOVER.md](API_CUTOVER.md) (ACM already issued).
-3. Confirm `partners@withohm.dev` mailbox exists in M365.
-4. Attach `status.withohm.dev` and verify https://status.withohm.dev.
+Until then, share **`https://www.withohm.dev`** and **`https://fetch.withohm.dev`** as the canonical public URLs.
