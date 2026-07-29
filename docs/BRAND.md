@@ -15,7 +15,9 @@
 
 Ship deeplink first; package a `.cursor-plugin` with MCP + icon for marketplace submission when ready.
 
-Launch GTM (from zero partners): [LAUNCH_GTM.md](LAUNCH_GTM.md).
+Launch GTM (from zero partners): [LAUNCH_GTM.md](LAUNCH_GTM.md).  
+Contextual Cursor install chips: [CURSOR_DISCOVERY.md](CURSOR_DISCOVERY.md).  
+Site on Amplify: [AMPLIFY_SITE.md](../infra/runbooks/AMPLIFY_SITE.md).
 
 **Promise (one sentence):**
 
