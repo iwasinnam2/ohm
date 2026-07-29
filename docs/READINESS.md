@@ -27,7 +27,9 @@ Public distribution readiness for **Ohm**. Towers can be walked; the roadway is 
 - [x] Redis mesh Phase 1–4 in-repo — [REDIS_MESH.md](REDIS_MESH.md) (compose split, lag smoke, Global Datastore TF, `AT_RS_REDIS_WRITE`)
 - [x] Redeploy site so `https://withohm.dev/ohm-icon.svg` + `.png` resolve
 - [x] Leader EKS + NLB edge live (miss/hit on NLB) — [DNS_CUTOVER_PHASE1.md](../infra/runbooks/DNS_CUTOVER_PHASE1.md)
-- [ ] GoDaddy: CNAME `api` → NLB hostname (see DNS_CUTOVER_PHASE1)
+- [x] Pre-DNS TLS smoke: `external_smoke.ps1 -BaseUrl https://api.withohm.dev -ResolveIp <NLB_IP> -SkipOpenAI`
+- [x] Stripe webhook endpoint created → `https://api.withohm.dev/v1/billing/webhook` (awaits DNS + secret roll)
+- [ ] GoDaddy: CNAME `api` → NLB hostname (see DNS_CUTOVER_PHASE1) — **operator login required**
 - [ ] Public API deck hostname — [API_CUTOVER.md](../infra/runbooks/API_CUTOVER.md) / [GO_LIVE.md](../infra/runbooks/GO_LIVE.md) after DNS
 
 Logotype URLs for Cursor submit:
