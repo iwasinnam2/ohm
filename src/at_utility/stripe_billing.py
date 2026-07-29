@@ -52,6 +52,31 @@ def _meter_line_items(settings: Settings) -> list[dict[str, Any]]:
     return items
 
 
+def meter_prices_configured(settings: Settings) -> bool:
+    return bool(
+        settings.stripe_price_meter_web_fetch
+        and settings.stripe_price_meter_cache_hit
+        and settings.stripe_price_meter_cache_miss
+    )
+
+
+def require_meter_prices(settings: Settings, plan: str) -> None:
+    """Fail closed for Intermediate (payg) when meters required."""
+    if plan != "payg":
+        return
+    need = (
+        settings.at_require_meter_prices
+        or settings.at_env.strip().lower() == "production"
+    )
+    if need and not meter_prices_configured(settings):
+        raise RuntimeError(
+            "Intermediate checkout requires STRIPE_PRICE_METER_WEB_FETCH, "
+            "STRIPE_PRICE_METER_CACHE_HIT, and STRIPE_PRICE_METER_CACHE_MISS "
+            "(set AT_ENV=production or AT_REQUIRE_METER_PRICES=true). "
+            "Create meters with scripts/stripe_create_meters.sh"
+        )
+
+
 def create_checkout_session(
     settings: Settings,
     *,
@@ -62,11 +87,12 @@ def create_checkout_session(
     customer_email: str = "",
 ) -> dict[str, Any]:
     """
-    Create a Stripe Checkout Session (subscription seat + optional meters)
+    Create a Stripe Checkout Session (subscription seat + meters)
     for payg or enterprise.
     """
     if not settings.stripe_secret_key:
         raise RuntimeError("STRIPE_SECRET_KEY is not configured")
+    require_meter_prices(settings, plan)
     try:
         import stripe
     except ImportError as exc:  # pragma: no cover
@@ -84,7 +110,11 @@ def create_checkout_session(
     success_url, cancel_url = resolve_checkout_urls(settings, success_url, cancel_url)
     line_items: list[dict[str, Any]] = [{"price": price, "quantity": 1}]
     line_items.extend(_meter_line_items(settings))
-
+    if plan == "payg" and not _meter_line_items(settings):
+        # Defense in depth when require_meter_prices was skipped (non-prod)
+        log.warning(
+            "checkout plan=payg without meter Prices — seat-only subscription"
+        )
     params: dict[str, Any] = {
         "mode": "subscription",
         "success_url": success_url,
@@ -174,16 +204,32 @@ def construct_webhook_event(
     )
 
 
-def apply_webhook_to_status(event_type: str) -> Optional[str]:
-    """Map Stripe event types to tenant status updates."""
+def apply_webhook_to_status(
+    event_type: str,
+    *,
+    subscription_status: str = "",
+) -> Optional[str]:
+    """Map Stripe events to tenant status.
+
+    Do **not** suspend on the first ``invoice.payment_failed`` — Stripe Smart
+    Retries + customer reminder emails need a 1–14 day collection window.
+    Hard cutover: subscription deleted / unpaid / canceled, or uncollectible invoice.
+    """
     if event_type in (
         "customer.subscription.deleted",
-        "invoice.payment_failed",
+        "invoice.marked_uncollectible",
     ):
         return "suspended"
+    if event_type == "customer.subscription.updated":
+        st = (subscription_status or "").strip().lower()
+        if st in ("canceled", "unpaid", "incomplete_expired"):
+            return "suspended"
+        if st in ("active", "trialing"):
+            return "active"
+        # past_due / incomplete: keep pipe open for remediating payment method
+        return None
     if event_type in (
         "checkout.session.completed",
-        "customer.subscription.updated",
         "invoice.paid",
     ):
         return "active"

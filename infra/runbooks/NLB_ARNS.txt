@@ -1,0 +1,4 @@
+us-east-1=arn:aws:elasticloadbalancing:us-east-1:594161136574:loadbalancer/net/a8a4fb2a5e7214a93bc86c9b79a4f3c6/da5bb54336e41479
+us-west-2=arn:aws:elasticloadbalancing:us-west-2:594161136574:loadbalancer/net/a7b308ed52fe746bea82964e9870d003/2f9dc12ace89bebe
+eu-west-2=arn:aws:elasticloadbalancing:eu-west-2:594161136574:loadbalancer/net/a10925d5ed5654720879f1cc84117ded/e8b9b6b7e87c9ca3
+ga_dns=a8d1c391c281079a4.awsglobalaccelerator.com

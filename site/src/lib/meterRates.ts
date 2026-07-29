@@ -1,14 +1,17 @@
 /** Intermediate PAYG list rates (USD) — mirrors at_utility.config defaults. */
 export const PAYG_RATES = {
+  /** USD per 1k tokens (cache hit) */
   cache_hit: 0.0005,
+  /** USD per 1k tokens (cache miss) */
   cache_miss: 0.002,
+  /** USD per URL */
   web_fetch: 0.001,
 } as const;
 
 export const METER_LABELS = {
-  cache_hit: "Cache hit",
-  cache_miss: "Cache miss",
-  web_fetch: "Web fetch (URL)",
+  cache_hit: "Cache hit (per 1k tokens)",
+  cache_miss: "Cache miss (per 1k tokens)",
+  web_fetch: "Web fetch (per URL)",
 } as const;
 
 export type MeterKey = keyof typeof PAYG_RATES;

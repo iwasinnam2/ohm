@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 const API_HOSTS = new Set(["api.withohm.dev"]);
 const STATUS_HOSTS = new Set(["status.withohm.dev"]);
+const FETCH_HOSTS = new Set(["fetch.withohm.dev"]);
 
 /** When true, api.withohm.dev is live on AWS — do not intercept (domain should leave Vercel). */
 function apiEdgeLive(): boolean {
@@ -18,9 +19,26 @@ function hostname(host: string | null): string {
  * api.withohm.dev is reserved for the Ohm edge — do not silently serve marketing
  * until DNS points at AWS and API_EDGE_LIVE=1.
  * status.withohm.dev always rewrites to /status.
+ * fetch.withohm.dev always rewrites to /fetch (public toy).
  */
 export function middleware(request: NextRequest) {
   const host = hostname(request.headers.get("host"));
+
+  if (FETCH_HOSTS.has(host)) {
+    const url = request.nextUrl.clone();
+    if (url.pathname === "/" || url.pathname === "") {
+      url.pathname = "/fetch";
+      return NextResponse.rewrite(url);
+    }
+    if (url.pathname.startsWith("/api/")) {
+      return NextResponse.next();
+    }
+    if (!url.pathname.startsWith("/fetch")) {
+      url.pathname = "/fetch";
+      return NextResponse.rewrite(url);
+    }
+    return NextResponse.next();
+  }
 
   if (STATUS_HOSTS.has(host)) {
     const url = request.nextUrl.clone();
