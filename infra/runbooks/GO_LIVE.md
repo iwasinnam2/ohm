@@ -8,8 +8,8 @@ API DNS handoff: [API_CUTOVER.md](API_CUTOVER.md).
 
 - [x] Buy root domain; hosts decided (`withohm.dev` / `api.withohm.dev` / `status.withohm.dev`)
 - [ ] Section A `release_smoke` green three consecutive days on staging
-- [ ] Section C public hostname serves miss/hit OpenAI from a second network ([API_CUTOVER.md](API_CUTOVER.md) Phase 1)
-- [ ] Section D: `enable_edges=true`; two edge regions show local cache hits within lag budget (&lt;1s lab)
+- [x] Section C public hostname serves miss/hit OpenAI from a second network ([API_CUTOVER.md](API_CUTOVER.md) Phase 1)
+- [x] Section D: `enable_edges=true`; two edge regions show local cache hits within lag budget (&lt;1s lab)
 - [ ] Stripe test mode: Intermediate checkout ($0 seat + meters) → chat miss/hit/fetch → meter events + invoice preview → cancel → 403 ([docs/STRIPE.md](../../docs/STRIPE.md))
 - [ ] Confirm `GET /v1/usage` includes `stripe_synced` after metered traffic
 - [ ] Confirm daily fetch soft-cap (`AT_FREE_TIER_FETCH_CAP_DAY`) until `invoice.paid`
@@ -18,12 +18,12 @@ API DNS handoff: [API_CUTOVER.md](API_CUTOVER.md).
 - [ ] OpenAI hard budget alert set (your ledger)
 - [ ] AWS Budgets alarm set (infra ledger)
 - [x] ACM certificate issued for `api.withohm.dev`; Terraform `domain_name` set
-- [ ] Global Accelerator endpoints healthy on `/health` (`anycast_enabled=true` + NLB ARNs)
+- [x] Global Accelerator endpoints healthy on `/health` (`anycast_enabled=true` + NLB ARNs)
 - [ ] Status page live (`status.withohm.dev` → site `/status`)
 - [x] Marketing site (`site/`) deployed on apex; docs match hostname
 - [x] Terms of service + DPA published
 - [ ] On-call rotation / incident channel defined
-- [ ] Record last-known-good NLB hostname before GA cutover
+- [x] Record last-known-good NLB hostname before GA cutover ([NLB_HOSTNAME.txt](NLB_HOSTNAME.txt))
 
 ## Cutover
 
@@ -31,8 +31,8 @@ Follow [API_CUTOVER.md](API_CUTOVER.md): NLB first, then GA. Set Vercel `API_EDG
 
 1. Lower DNS TTL on `api.withohm.dev` to 60s (day before).
 2. Attach regional NLBs to Global Accelerator; verify health checks.
-3. Point `api.withohm.dev` to GA (CNAME to GA DNS name).
-4. Run `external_smoke.ps1 -BaseUrl https://api.withohm.dev` from two networks / continents if possible.
+3. Point `api.withohm.dev` to GA (CNAME to GA DNS name) — **done** → `a8d1c391c281079a4.awsglobalaccelerator.com` ([DNS_CUTOVER_PHASE2_GA.md](DNS_CUTOVER_PHASE2_GA.md)).
+4. Run `external_smoke.ps1 -BaseUrl https://api.withohm.dev` from two networks / continents if possible — **PASS** on public DNS.
 5. Watch miss ratio, OpenAI error rate, regional latency p99 for 60 minutes.
 
 ## After cutover

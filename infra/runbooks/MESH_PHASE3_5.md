@@ -79,8 +79,17 @@ DNS: CNAME `api` → GA DNS name ([API_CUTOVER.md](API_CUTOVER.md) Phase 2). Abo
 
 Smoke 60 minutes; run [REGION_DRAIN.md](REGION_DRAIN.md). Then undeffer multi-region claims in [docs/READINESS.md](../../docs/READINESS.md).
 
-## Current status (operator)
+## Current status (charged)
 
-- Terraform edge module + `edges.tf` updated in-repo (`enable_edges=true` in local tfvars).
-- Leader resize to `cache.r6g.large` required before Global Datastore — apply in progress / verify with AWS console.
-- Full `terraform apply` after leader shows `cache.r6g.large` and status `available`.
+- [x] Leader Redis `cache.r6g.large`; Global Datastore `ldgnf-ohm`
+- [x] Edges **us-west-2** + **eu-west-2** (EKS, secondaries, NLBs) — [NLB_ARNS.txt](NLB_ARNS.txt)
+- [x] Lag drill **PASS** (&lt;1s lab budget)
+- [x] GA endpoint groups healthy; DNS `api.withohm.dev` → `a8d1c391c281079a4.awsglobalaccelerator.com`
+- [x] Public `external_smoke` **PASS** (SNI + public DNS)
+- [ ] Region-drain drill ([REGION_DRAIN.md](REGION_DRAIN.md)) — record below when complete
+
+### Region-drain log
+
+| When (UTC) | Drained | Result | Notes |
+|------------|---------|--------|-------|
+| _(pending)_ | us-west-2 weight 0 | | Restore after smoke |
