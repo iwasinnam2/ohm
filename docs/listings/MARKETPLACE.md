@@ -37,7 +37,13 @@ Support: partners@withohm.dev
 
 ## Keywords
 
-`ohm`, `withohm`, `withOhm`, `mcp`, `prompt-cache`, `web-fetch`, `web-scrape`, `byok`, `openai-compatible`, `agent-browse`, `url-context`
+`ohm`, `withohm`, `withOhm`, `mcp`, `prompt-cache`, `web-fetch`, `web-scrape`, `byok`, `openai-compatible`, `agent-browse`, `url-context`, `compliant-fetch-for-agents`
+
+## Publish / refresh
+
+1. https://cursor.com/marketplace/publish — paste short + long description above; logo `https://www.withohm.dev/ohm-icon-360.png`
+2. cursor.directory — [CURSOR_DIRECTORY.md](CURSOR_DIRECTORY.md)
+3. One-liner everywhere: `Add withOhm MCP from https://www.withohm.dev/i`
 
 ## Logo
 

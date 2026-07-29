@@ -28,10 +28,11 @@ Keep your OpenAI/Anthropic keys. Founding design partners: free 90 days → http
 
 | Field | Value |
 |-------|--------|
-| Website | https://withohm.dev |
-| Docs | https://withohm.dev/docs/cursor |
+| Website | https://www.withohm.dev |
+| Docs | https://www.withohm.dev/docs/cursor |
+| Install | https://www.withohm.dev/i |
+| Fetch toy | https://fetch.withohm.dev |
 | GitHub | https://github.com/iwasinnam2/ohm |
-| Install | Marketplace search “ohm” or deeplink after Checkout |
 
 ## Tags
 
