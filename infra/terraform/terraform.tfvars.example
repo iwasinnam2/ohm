@@ -7,6 +7,9 @@ image_tag     = "0.1.3"
 # Section D — edge VPCs + regional RL Redis (costful). Set true when mesh is next.
 enable_edges = false
 
+# Global Datastore requires large+ node type on leader (not t4g.micro/small)
+redis_node_type = "cache.r6g.large"
+
 # Section C — EKS in leader VPC for public API NLB
 enable_eks = true
 
