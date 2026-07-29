@@ -38,7 +38,7 @@ Follow [API_CUTOVER.md](API_CUTOVER.md): NLB first, then GA. Set Vercel `API_EDG
 ## After cutover
 
 - [ ] Restore normal DNS TTL
-- [ ] Complete one region-drain drill ([REGION_DRAIN.md](REGION_DRAIN.md))
+- [x] Complete one region-drain drill ([REGION_DRAIN.md](REGION_DRAIN.md)) — PASS 2026-07-29 (us-west-2 weight 0; see [MESH_PHASE3_5.md](MESH_PHASE3_5.md))
 - [ ] Rotate any bootstrap keys that were used in demos
 - [ ] File incident runbook link in the team wiki
 
