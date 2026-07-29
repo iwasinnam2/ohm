@@ -47,3 +47,10 @@ scripts/.nlb*
 scripts/.stripe_webhook_secret.tmp
 scripts/.stripe_secret_patch.json
 scripts/.tools/
+
+*.tfplan
+tfplan-*
+infra/terraform/*.log
+infra/terraform/plan-*.log
+infra/terraform/apply-*.log
+
