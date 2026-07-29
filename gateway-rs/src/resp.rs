@@ -21,7 +21,13 @@ pub struct RespClient {
 
 impl RespClient {
     pub async fn connect(addr: &str) -> Result<Self> {
-        let stream = TcpStream::connect(addr).await?;
+        let stream = tokio::time::timeout(
+            std::time::Duration::from_secs(2),
+            TcpStream::connect(addr),
+        )
+        .await
+        .map_err(|_| anyhow!("redis connect timeout to {addr}"))?
+        .map_err(|e| anyhow!("redis connect to {addr}: {e}"))?;
         Ok(Self {
             stream,
             buf: BytesMut::with_capacity(4096),
@@ -38,8 +44,13 @@ impl RespClient {
 
     pub async fn command(&mut self, args: &[&str]) -> Result<RespValue> {
         let payload = Self::encode_command(args);
-        self.stream.write_all(&payload).await?;
-        self.read_value().await
+        tokio::time::timeout(std::time::Duration::from_secs(2), self.stream.write_all(&payload))
+            .await
+            .map_err(|_| anyhow!("redis write timeout"))?
+            .map_err(|e| anyhow!("redis write: {e}"))?;
+        tokio::time::timeout(std::time::Duration::from_secs(2), self.read_value())
+            .await
+            .map_err(|_| anyhow!("redis read timeout"))?
     }
 
     pub async fn get(&mut self, key: &str) -> Result<Option<String>> {

@@ -30,7 +30,9 @@ Write-Host "== release_smoke: health =="
 Assert-Http "http://127.0.0.1:8080/health"
 Assert-Http "http://127.0.0.1:8081/health"
 $rustHealth = & curl.exe -s http://127.0.0.1:8081/health
-if ($rustHealth -notmatch "at-gateway-rs") { throw "Rust health body unexpected: $rustHealth" }
+if ($rustHealth -notmatch '"plane"\s*:\s*"rust"' -and $rustHealth -notmatch "at-gateway-rs") {
+  throw "Rust health body unexpected: $rustHealth"
+}
 
 Write-Host "== release_smoke: mock miss then hit on Python =="
 $mockBody = Join-Path $Root "scripts\.release_mock.json"
@@ -61,7 +63,7 @@ if ($openaiConfigured) {
   Chat "http://127.0.0.1:8080" $oaBody $oh1 $oo1
   $missCode = (Get-Content -Raw $oh1) -match "HTTP/1\.\d\s+(\d+)" | Out-Null; $missCode = $Matches[1]
   if ($missCode -eq "401" -or $missCode -eq "429") {
-    Write-Host "OpenAI upstream $missCode — treat as environment issue, not gateway regression"
+    Write-Host "OpenAI upstream $missCode - treat as environment issue, not gateway regression"
     Get-Content -Raw $oo1 | ForEach-Object { $_.Substring(0, [Math]::Min(240, $_.Length)) }
   } else {
     if ((Header-Value (Get-Content -Raw $oh1) "x-at-cache") -ne "MISS") { throw "openai expected MISS" }
@@ -71,7 +73,7 @@ if ($openaiConfigured) {
     if ((Header-Value (Get-Content -Raw $oh2) "x-at-cache") -ne "HIT") { throw "openai expected HIT" }
   }
 } else {
-  Write-Host "OpenAI not configured — skipping live model checks"
+  Write-Host "OpenAI not configured - skipping live model checks"
 }
 
 Write-Host "== release_smoke: Rust plane mock =="
