@@ -7,7 +7,7 @@ from at_utility.config import get_settings
 from at_utility.main import app
 from at_utility.redis_store import MemoryStore
 from at_utility.metering import Meter
-from at_utility.providers import MockProvider
+from at_utility.providers import MockProvider, build_compat_shells
 from at_utility.tenants import TenantRegistry
 import at_utility.main as main_mod
 
@@ -24,6 +24,7 @@ async def _mem_state():
     main_mod.state.mock = MockProvider()
     main_mod.state.openai = None
     main_mod.state.anthropic = None
+    main_mod.state.compat = build_compat_shells(settings)
     yield
     await store.close()
     get_settings.cache_clear()

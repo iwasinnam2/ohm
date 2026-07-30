@@ -8,6 +8,8 @@ import time
 from contextlib import asynccontextmanager
 from typing import Any, AsyncIterator, Optional
 
+import httpx
+
 from fastapi import Depends, FastAPI, Header, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse, StreamingResponse
@@ -23,10 +25,12 @@ from at_utility.config import Settings, get_settings
 from at_utility.ingest import fetch_web_context, inject_context_messages
 from at_utility.metering import Meter
 from at_utility.providers import (
+    OPENAI_COMPAT_VENDORS,
     AnthropicProvider,
     MockProvider,
     OpenAIProvider,
     ProviderUpstreamError,
+    build_compat_shells,
     model_needs_upstream,
     provider_key_available,
     resolve_provider,
@@ -73,6 +77,8 @@ class AppState:
     mock: MockProvider
     openai: Optional[OpenAIProvider]
     anthropic: Optional[AnthropicProvider]
+    # OpenAI-compatible vendor shells (gemini/deepseek/moonshot/zai/qwen/xai)
+    compat: dict[str, OpenAIProvider]
 
 
 state = AppState()
@@ -92,6 +98,7 @@ async def lifespan(_app: FastAPI):
         settings.openai_api_key or "", settings.openai_base_url
     )
     state.anthropic = AnthropicProvider(settings.anthropic_api_key or "")
+    state.compat = build_compat_shells(settings)
     log.info("ohm gateway ready region=%s", settings.at_region)
     yield
     await store.close()
@@ -301,6 +308,10 @@ async def ready() -> JSONResponse:
             "mock": True,
             "openai": bool(state.openai and state.openai._api_key),
             "anthropic": bool(state.anthropic and state.anthropic._api_key),
+            **{
+                vendor: bool(shell._api_key)
+                for vendor, shell in getattr(state, "compat", {}).items()
+            },
             "byok_header": "X-Ohm-Upstream-Key",
         }
         body["mvp"] = {
@@ -308,6 +319,7 @@ async def ready() -> JSONResponse:
             "local_edge": "http://localhost:8081/v1",
             "key_prefix": "sk-at",
             "mid_stream_failover": False,
+            "pre_first_byte_stream_failover": True,
         }
     return JSONResponse(status_code=200 if redis_ok else 503, content=body)
 
@@ -324,8 +336,25 @@ async def list_models(
             {"id": "mock", "object": "model", "owned_by": "ohm"},
             {"id": "gpt-4o-mini", "object": "model", "owned_by": "openai"},
             {"id": "claude-3-5-sonnet-latest", "object": "model", "owned_by": "anthropic"},
+            {"id": "gemini-3.1-pro", "object": "model", "owned_by": "gemini"},
+            {"id": "deepseek-v4", "object": "model", "owned_by": "deepseek"},
+            {"id": "kimi-k3", "object": "model", "owned_by": "moonshot"},
+            {"id": "glm-5.2", "object": "model", "owned_by": "zai"},
+            {"id": "qwen3-max", "object": "model", "owned_by": "qwen"},
+            {"id": "grok-4", "object": "model", "owned_by": "xai"},
         ],
         "byok_header": "X-Ohm-Upstream-Key",
+        "routing": {
+            "prefixes": {
+                "gpt-/o1/o3": "openai",
+                "claude": "anthropic",
+                **{
+                    "/".join(prefixes): vendor
+                    for vendor, prefixes, _base in OPENAI_COMPAT_VENDORS
+                },
+            },
+            "note": "Model ids are illustrative; any id under a routed prefix is forwarded verbatim to that vendor's OpenAI-compatible endpoint.",
+        },
         "note": "Non-mock models require X-Ohm-Upstream-Key (BYOK) unless env/enterprise managed keys are configured.",
     }
 
@@ -463,6 +492,16 @@ async def providers_status(
                 "configured": bool(state.settings.anthropic_api_key),
                 "ready": bool(state.anthropic),
                 "byok": True,
+            },
+            **{
+                vendor: {
+                    "configured": bool(shell._api_key),
+                    "ready": True,
+                    "base_url": shell._base_url,
+                    "byok": True,
+                    "protocol": "openai-compatible",
+                }
+                for vendor, shell in state.compat.items()
             },
         },
         "byok_header": "X-Ohm-Upstream-Key",
@@ -816,6 +855,57 @@ async def stripe_webhook(request: Request) -> dict[str, Any]:
     return {"received": True, "type": event_type}
 
 
+async def _open_stream_with_retry(
+    provider: Any,
+    *,
+    model: str,
+    messages: list[dict[str, Any]],
+    kwargs: dict[str, Any],
+) -> tuple[AsyncIterator[str], Optional[str]]:
+    """Open an upstream SSE stream and eagerly pull the first line.
+
+    Pre-first-byte failover: if the upstream fails before emitting anything
+    (connect error or upstream HTTP error), retry once on a fresh connection.
+    A second pre-first-byte failure raises ProviderUpstreamError so the caller
+    can return an honest HTTP error status instead of a 200 stream that only
+    carries an error frame. Mid-stream handoff after the first byte remains
+    out of scope (`mid_stream_failover: false`).
+    """
+    last_exc: Exception | None = None
+    for attempt in range(2):
+        stream = await provider.chat_completion(
+            model=model, messages=messages, stream=True, **kwargs
+        )
+        try:
+            first = await stream.__anext__()  # type: ignore[union-attr]
+        except StopAsyncIteration:
+            return stream, None
+        except ProviderUpstreamError as exc:
+            last_exc = exc
+            log.warning(
+                "stream pre-first-byte upstream error attempt=%d provider=%s: %s",
+                attempt + 1,
+                exc.provider,
+                exc,
+            )
+            continue
+        except httpx.HTTPError as exc:
+            last_exc = exc
+            log.warning(
+                "stream pre-first-byte transport error attempt=%d: %s", attempt + 1, exc
+            )
+            continue
+        text = first if isinstance(first, str) else first.decode("utf-8", errors="replace")
+        return stream, text
+    if isinstance(last_exc, ProviderUpstreamError):
+        raise last_exc
+    raise ProviderUpstreamError(
+        getattr(provider, "name", "upstream"),
+        502,
+        {"error": {"message": str(last_exc) if last_exc else "upstream stream failed"}},
+    )
+
+
 @app.post("/v1/chat/completions")
 async def chat_completions(
     body: ChatCompletionRequest,
@@ -974,6 +1064,7 @@ async def chat_completions(
         openai=state.openai,
         anthropic=state.anthropic,
         allow_env_fallback=allow_fallback,
+        compat=state.compat,
     ):
         raise HTTPException(
             status_code=400,
@@ -996,6 +1087,7 @@ async def chat_completions(
         fallback=state.settings.at_fallback_model,
         upstream_key=upstream_key,
         allow_env_fallback=allow_fallback,
+        compat=state.compat,
     )
 
     kwargs: dict[str, Any] = {}
@@ -1006,14 +1098,24 @@ async def chat_completions(
 
     try:
         if body.stream:
-            stream = await provider.chat_completion(
-                model=model, messages=messages, stream=True, **kwargs
+            # Pre-first-byte failover: pull the first SSE line eagerly so an
+            # upstream that dies before emitting anything gets one clean retry
+            # and, failing that, an honest HTTP error status — never a 200
+            # stream that only carries an error frame.
+            stream, first_line = await _open_stream_with_retry(
+                provider, model=model, messages=messages, kwargs=kwargs
             )
 
             async def event_stream() -> AsyncIterator[bytes]:
                 collected: list[str] = []
                 usage_total: int | None = None
                 try:
+                    if first_line is not None:
+                        collected.append(first_line)
+                        parsed_first = usage_from_sse_line(first_line)
+                        if parsed_first is not None:
+                            usage_total = parsed_first
+                        yield first_line.encode("utf-8")
                     async for line in stream:  # type: ignore[union-attr]
                         text = line if isinstance(line, str) else line.decode("utf-8", errors="replace")
                         collected.append(text)
@@ -1053,6 +1155,7 @@ async def chat_completions(
                 headers={
                     **cache_headers,
                     "X-AT-Cache": "BYPASS" if no_store else "MISS",
+                    "X-Ohm-Stream-Failover": "pre-first-byte",
                     "Cache-Control": "no-cache",
                 },
             )

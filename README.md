@@ -16,7 +16,7 @@ Unified AI infrastructure utility: OpenAI-compatible model routing, Redis prompt
 | **Internal control plane** | `http://localhost:8080` | Python FastAPI. Rust proxies here on cache miss. Do not give this to strangers. |
 | **Authentication** | `Authorization: Bearer <ohm-api-key>` | Local bootstrap key: `sk-at-dev` (see `.env`). |
 | **BYOK** | `X-Ohm-Upstream-Key: <provider-key>` | Required on cache miss for gpt/claude unless env/enterprise managed keys. |
-| **Model selection** | JSON field `model` | `mock` stays local; `gpt-*` / `o*` → OpenAI; `claude-*` → Anthropic. |
+| **Model selection** | JSON field `model` | `mock` stays local; `gpt-*` / `o*` → OpenAI; `claude-*` → Anthropic; `gemini-*` → Google; `deepseek-*` → DeepSeek; `kimi-*` / `moonshot-*` → Moonshot; `glm-*` → Z.ai; `qwen*` → Qwen; `grok-*` → xAI (all OpenAI-compatible, BYOK). |
 
 ```python
 from at_utility_sdk import openai_client, LOCAL_BASE_URL
