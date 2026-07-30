@@ -29,7 +29,7 @@ const plexMono = IBM_Plex_Mono({
 const siteUrl = "https://www.withohm.dev";
 
 const description =
-  "Change one base URL. Keep your prompts, tools, and SDKs. Gain cache, failover, web context, and a bill you can explain.";
+  "AI public API model switching, prompt caching and web browsing. All handled in a zero-latency zero-resistance engine that allows user to streamline AI workflow with unprecedented speed and efficiency.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
