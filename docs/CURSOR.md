@@ -39,6 +39,30 @@ pip install -e ".[mcp]"
 
 `OHM_API_KEY` is required (Checkout at https://www.withohm.dev/billing/intermediate). Terms/DPA are bound at seat mint — MCP does not forge per-request legal acks. See [`.cursor/mcp.json.example`](../.cursor/mcp.json.example) for local-only smoke.
 
+## Remote MCP (stateless streamable HTTP)
+
+For a zero-install attach, run the same tools as a stateless HTTP server (MCP 2026-07-28 stateless core — no session ids, LB-friendly):
+
+```powershell
+OHM_MCP_TRANSPORT=http ohm-mcp     # or: ohm-mcp-http — serves POST /mcp on :8091
+```
+
+```json
+{
+  "mcpServers": {
+    "ohm": {
+      "url": "https://mcp.withohm.dev/mcp",
+      "headers": {
+        "Authorization": "Bearer sk-at-YOUR_ISSUED_KEY",
+        "X-Ohm-Upstream-Key": ""
+      }
+    }
+  }
+}
+```
+
+Auth is resolved per request: `Authorization: Bearer sk-at-*` (and optional `X-Ohm-Upstream-Key`) on the incoming HTTP request win over `OHM_API_KEY` / `OHM_UPSTREAM_KEY` env, so one deployment serves many seats. Env knobs: `OHM_MCP_HOST`, `OHM_MCP_PORT` (8091), `OHM_MCP_ALLOWED_HOSTS` / `OHM_MCP_ALLOWED_ORIGINS` (DNS-rebinding allowlists), `OHM_MCP_JSON_RESPONSE` (default `true`).
+
 ## Usable commands (MCP tools)
 
 | Command | Purpose |

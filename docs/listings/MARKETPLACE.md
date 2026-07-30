@@ -71,4 +71,4 @@ Store under `docs/listings/screenshots/` when ready (git-lfs or compressed PNG).
 Required: `OHM_API_KEY`  
 Optional: `OHM_UPSTREAM_KEY`
 
-Remote URL MCP is **not** shipped — local stdio only.
+Remote URL MCP ships as a stateless streamable-HTTP server (`ohm-mcp-http`, per-request `Authorization: Bearer sk-at-*`); the hosted `mcp.withohm.dev` endpoint is operator follow-up. Local stdio remains the default attach.

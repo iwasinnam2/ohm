@@ -14,7 +14,8 @@ Public distribution readiness for **withOhm** (Ohm). Hosted pipe is live; this c
 | Public GitHub | https://github.com/iwasinnam2/ohm |
 | Logotype PNG/SVG | In-repo + `site/public/ohm-icon-360.png` |
 | Repo LICENSE | MIT (matches plugin.json) |
-| Local stdio MCP | Shipped — remote URL MCP **deferred** |
+| Local stdio MCP | Shipped |
+| Remote MCP (stateless streamable HTTP) | Shipped in-repo (`ohm-mcp-http`); hosted `mcp.withohm.dev` endpoint is operator follow-up |
 | Apex `withohm.dev` | Prefer **www** until GoDaddy 301 cutover |
 
 ## Marketplace blockers cleared (this sprint)
@@ -39,12 +40,13 @@ Public distribution readiness for **withOhm** (Ohm). Hosted pipe is live; this c
 - [ ] cursor.directory: [listings/CURSOR_DIRECTORY.md](listings/CURSOR_DIRECTORY.md)
 - [ ] Screenshots in [listings/screenshots/](listings/screenshots/)
 - [ ] Design-partner quotes on homepage (inbound via [/design-partners](https://www.withohm.dev/design-partners))
+- [ ] Host remote MCP at `mcp.withohm.dev` (`OHM_MCP_TRANSPORT=http ohm-mcp`, stateless; per-request `Authorization: Bearer sk-at-*`)
+- [ ] Publish Web Bot Auth key directory (`/.well-known/http-message-signatures-directory`) and register OhmBot as a verified crawler
 
 ## Deferred (do not claim)
 
-- Mid-stream failover
+- Mid-stream failover (pre-first-byte retry **is** shipped; handoff after first byte is not)
 - Enterprise contractual SLA
 - Managed-key capacity pools
-- Hosted remote MCP URL (zero `pip install`)
 - Tokyo (`ap-northeast-1`) edge (optional third region)
 - Full package/key rename away from `at-utility` / `sk-at-*`

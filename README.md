@@ -47,13 +47,18 @@ Release smoke asserts health, mock miss/hit, OpenAI miss/hit (when a key is pres
 
 ## Cursor / MCP
 
-Local **stdio** MCP (remote URL MCP is not shipped). Public base: `https://api.withohm.dev/v1`. Partners: [docs/LAUNCH_GTM.md](docs/LAUNCH_GTM.md) · https://www.withohm.dev/design-partners
+Local **stdio** MCP plus a **stateless remote MCP** over streamable HTTP (MCP 2026-07-28 stateless core). Public base: `https://api.withohm.dev/v1`. Partners: [docs/LAUNCH_GTM.md](docs/LAUNCH_GTM.md) · https://www.withohm.dev/design-partners
 
 ```powershell
 # From a clone, or: pip install "at-utility[mcp] @ git+https://github.com/iwasinnam2/ohm.git"
 pip install -e ".[mcp]"
-# Set OHM_API_KEY (required). Optional: OHM_UPSTREAM_KEY, OHM_BASE_URL
+# stdio (Cursor local attach): set OHM_API_KEY (required). Optional: OHM_UPSTREAM_KEY, OHM_BASE_URL
 # Plugin: .cursor-plugin/ + mcp.json — see docs/CURSOR.md
+
+# Remote (stateless streamable HTTP at /mcp, default port 8091):
+#   OHM_MCP_TRANSPORT=http ohm-mcp     (or: ohm-mcp-http)
+# Auth is per-request: clients send `Authorization: Bearer sk-at-*`
+# (falls back to OHM_API_KEY env). Host allowlist: OHM_MCP_ALLOWED_HOSTS.
 ```
 
 ## Streaming and failover honesty

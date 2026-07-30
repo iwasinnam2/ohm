@@ -39,6 +39,7 @@ dev = [
 [project.scripts]
 at-utility = "at_utility.main:run"
 ohm-mcp = "ohm_mcp:main"
+ohm-mcp-http = "ohm_mcp:main_http"
 
 [tool.setuptools.packages.find]
 where = ["src"]
