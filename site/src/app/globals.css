@@ -354,7 +354,7 @@ pre {
 }
 
 .hero__promise {
-  max-width: var(--measure-narrow);
+  max-width: min(42rem, 100%);
   font-size: clamp(var(--text-md), 2.4vw, var(--text-lg));
   line-height: var(--leading-body);
   color: var(--muted);

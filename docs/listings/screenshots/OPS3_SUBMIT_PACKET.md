@@ -18,4 +18,17 @@ See CURSOR_DIRECTORY.md
 Web evidence: ohm-icon-360.png committed; /i and /status captured in browser session.
 
 ## Apex
-A record deleted. Domain Forward still needs GoDaddy login (verify_apex.ps1).
+
+| Step | Status |
+|------|--------|
+| Delete Vercel A on `@` | **Done** (no A record; NXDOMAIN) |
+| Domain Forward / ALIAS → www | **Needs GoDaddy login** — `scripts/verify_apex.ps1` |
+
+## Marketplace / directory
+
+| Step | Status |
+|------|--------|
+| Evidence packet + logo + `/i` screenshot | **Done** in `docs/listings/screenshots/` |
+| Paste refresh at cursor.com/marketplace/publish | **Needs Cursor account login** |
+| cursor.directory update | **Needs account** — copy in CURSOR_DIRECTORY.md |
+| Cursor IDE mcp/fetch/usage screenshots | **Needs live seat key in IDE** |
