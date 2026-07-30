@@ -43,6 +43,14 @@ _USAGE_COLUMNS = (
     "cache_hit_ratio",
 )
 
+# NOT NULL columns whose SQL DEFAULT only applies when omitted — never when an
+# explicit NULL is sent. Coerce missing values so partial dicts don't error.
+_ACCOUNT_NOT_NULL_DEFAULTS = {
+    "billing_paid": False,
+    "soft_quota_usd": 0,
+    "request_cap": 0,
+}
+
 
 def mirror_enabled(settings: Settings) -> bool:
     return bool(settings.ohm_db_enabled and settings.database_url)
@@ -74,7 +82,12 @@ def ensure_schema(conn: Any) -> None:
 def upsert_account(conn: Any, record: dict[str, Any]) -> None:
     """Idempotent upsert of a TenantRecord-shaped dict into ``accounts``."""
     cols = list(_ACCOUNT_COLUMNS)
-    values = [record.get(c) for c in cols]
+    values = []
+    for c in cols:
+        v = record.get(c)
+        if v is None and c in _ACCOUNT_NOT_NULL_DEFAULTS:
+            v = _ACCOUNT_NOT_NULL_DEFAULTS[c]
+        values.append(v)
     placeholders = ", ".join(["%s"] * len(cols))
     updates = ", ".join(f"{c} = EXCLUDED.{c}" for c in cols if c != "tenant_id")
     sql = (

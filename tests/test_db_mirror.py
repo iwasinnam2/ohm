@@ -54,6 +54,17 @@ def test_upsert_account_is_idempotent_upsert():
     assert conn.commits == 1
 
 
+def test_upsert_account_coerces_not_null_defaults():
+    conn = FakeConn()
+    # Partial dict omitting the NOT NULL columns -> must not send NULL for them.
+    mirror.upsert_account(conn, {"tenant_id": "tenant_x", "plan": "payg", "status": "active"})
+    _sql, params = conn.calls[0]
+    row = dict(zip(mirror._ACCOUNT_COLUMNS, params))
+    assert row["billing_paid"] is False
+    assert row["soft_quota_usd"] == 0
+    assert row["request_cap"] == 0
+
+
 def test_record_usage_daily_upsert():
     conn = FakeConn()
     mirror.record_usage_daily(
