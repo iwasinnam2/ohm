@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import json
 import logging
 import math
+import re
 import time
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -25,10 +27,17 @@ class UsageEvent:
     billed_usd: float = 0.0
     stripe_synced: bool = False
     billable_units: int = 0
+    model: str = ""
 
 
 def _day_stamp() -> str:
     return datetime.now(timezone.utc).strftime("%Y%m%d")
+
+
+def _safe_model_id(model: str) -> str:
+    """Redis-safe model id for per-route meters."""
+    m = (model or "unknown").strip() or "unknown"
+    return re.sub(r"[^a-zA-Z0-9._+-]+", "_", m)[:128]
 
 
 def billable_1k_units(total_tokens: int) -> int:
@@ -49,6 +58,19 @@ class Meter:
         await self._store.incr_by_float(
             tenant_key(tenant, "ledger", f"{day}:{metric}"), amount
         )
+
+    async def _track_model(self, tenant: str, model: str) -> str:
+        mid = _safe_model_id(model)
+        key = tenant_key(tenant, "meter", "models_seen")
+        raw = await self._store.get(key)
+        try:
+            seen = json.loads(raw) if raw else []
+        except json.JSONDecodeError:
+            seen = []
+        if mid not in seen:
+            seen.append(mid)
+            await self._store.set(key, json.dumps(seen), ttl_seconds=0)
+        return mid
 
     async def _mark_stripe_sync(self, tenant: str, ok: bool) -> None:
         await self._store.set(
@@ -93,6 +115,7 @@ class Meter:
         cache_hit: bool,
         total_tokens: int,
         stripe_customer_id: str = "",
+        model: str = "",
     ) -> UsageEvent:
         if cache_hit:
             price = self._settings.at_price_per_1k_tokens_hit
@@ -104,6 +127,9 @@ class Meter:
         await self._bump(tenant, f"{kind}_tokens", float(total_tokens))
         await self._bump(tenant, f"{kind}_usd", billed)
         await self._bump(tenant, "requests", 1.0)
+        mid = await self._track_model(tenant, model or "unknown")
+        await self._bump(tenant, f"m:{mid}:requests", 1.0)
+        await self._bump(tenant, f"m:{mid}:{kind}_tokens", float(total_tokens))
         # Billable units match AT_PRICE_PER_1K_* meter Prices (ceil tokens/1000)
         units = billable_1k_units(total_tokens)
         synced = self._sync_stripe(
@@ -120,6 +146,7 @@ class Meter:
             billed_usd=billed,
             stripe_synced=synced,
             billable_units=units,
+            model=mid,
         )
 
     async def record_fetch(
@@ -204,4 +231,18 @@ class Meter:
                 "web_fetch": self._settings.at_price_per_fetch,
             },
         }
+        # Per-model / per-route breakdown (Neon-style usage analytics)
+        by_model: dict[str, Any] = {}
+        seen_raw = await self._store.get(tenant_key(tenant, "meter", "models_seen"))
+        try:
+            seen = json.loads(seen_raw) if seen_raw else []
+        except json.JSONDecodeError:
+            seen = []
+        for mid in seen:
+            entry: dict[str, float] = {}
+            for metric in ("requests", "cache_hit_tokens", "cache_miss_tokens"):
+                raw = await self._store.get(tenant_key(tenant, "meter", f"m:{mid}:{metric}"))
+                entry[metric] = float(raw) if raw is not None else 0.0
+            by_model[mid] = entry
+        out["by_model"] = by_model
         return out

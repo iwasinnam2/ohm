@@ -7,9 +7,10 @@ import json
 import secrets
 import time
 import uuid
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from typing import Any, Optional
 
+from at_utility.catalog import DEFAULT_SCOPES, normalize_scopes
 from at_utility.config import Settings
 from at_utility.redis_store import CacheStore, tenant_key
 
@@ -41,6 +42,11 @@ class TenantRecord:
     expires_at: int = 0  # unix; 0 = no expiry
     soft_quota_usd: float = 0.0  # 0 = no soft USD cap
     request_cap: int = 0  # 0 = no request cap (metered via Redis separately)
+    # Neon-style granular scopes (ohm:chat | ohm:fetch | ohm:admin)
+    scopes: list[str] = field(default_factory=lambda: list(DEFAULT_SCOPES))
+    # Preview/env lineage: child tenants bind to a parent (analytics + inheritance)
+    parent_tenant_id: str = ""
+    env_label: str = ""  # e.g. preview, ci, staging
 
     def to_json(self) -> str:
         return json.dumps(asdict(self))
@@ -48,9 +54,11 @@ class TenantRecord:
     @staticmethod
     def from_json(raw: str) -> "TenantRecord":
         data = json.loads(raw)
-        return TenantRecord(
+        rec = TenantRecord(
             **{k: data[k] for k in TenantRecord.__dataclass_fields__ if k in data}
         )
+        rec.scopes = normalize_scopes(rec.scopes)
+        return rec
 
     def is_expired(self, now: int | None = None) -> bool:
         if not self.expires_at:
@@ -81,6 +89,7 @@ class TenantRegistry:
                 # Local bootstrap inherits current ToS/DPA so MCP need not forge acks.
                 terms_version=self._settings.at_compliance_terms_version,
                 dpa_version=self._settings.at_compliance_dpa_version,
+                scopes=list(DEFAULT_SCOPES),
             )
         key_hash = hash_api_key(raw_key)
         tenant_id = await self._store.get(self._key_index(key_hash))
@@ -102,6 +111,9 @@ class TenantRegistry:
         soft_quota_usd: float = 0.0,
         request_cap: int = 0,
         partner_days: int = DEFAULT_DESIGN_PARTNER_DAYS,
+        scopes: list[str] | None = None,
+        parent_tenant_id: str = "",
+        env_label: str = "",
     ) -> tuple[str, TenantRecord]:
         tenant_id = f"tenant_{uuid.uuid4().hex[:12]}"
         raw_key = f"sk-at-{secrets.token_urlsafe(24)}"
@@ -111,6 +123,27 @@ class TenantRegistry:
         exp = expires_at
         if resolved_plan == "design_partner" and not exp:
             exp = created + max(1, partner_days) * 86400
+
+        parent = (parent_tenant_id or "").strip()
+        if parent:
+            parent_raw = await self._store.get(self._tenant_meta(parent))
+            if not parent_raw:
+                raise ValueError(f"parent tenant not found: {parent}")
+            parent_rec = TenantRecord.from_json(parent_raw)
+            # Inherit plan/terms/quotas unless explicitly overridden
+            if not terms_version:
+                terms_version = parent_rec.terms_version
+            if not dpa_version:
+                dpa_version = parent_rec.dpa_version
+            if soft_quota_usd <= 0 and parent_rec.soft_quota_usd:
+                soft_quota_usd = parent_rec.soft_quota_usd
+            if request_cap <= 0 and parent_rec.request_cap:
+                request_cap = parent_rec.request_cap
+            if not exp and parent_rec.expires_at:
+                exp = parent_rec.expires_at
+            if resolved_plan == "payg" and parent_rec.plan:
+                resolved_plan = parent_rec.plan
+
         record = TenantRecord(
             tenant_id=tenant_id,
             plan=resolved_plan,
@@ -123,6 +156,9 @@ class TenantRegistry:
             expires_at=exp,
             soft_quota_usd=float(soft_quota_usd or 0),
             request_cap=int(request_cap or 0),
+            scopes=normalize_scopes(scopes),
+            parent_tenant_id=parent,
+            env_label=(env_label or "").strip(),
         )
         payload = record.to_json()
         await self._store.set(self._key_index(key_hash), tenant_id, ttl_seconds=0)
@@ -131,6 +167,14 @@ class TenantRegistry:
             await self._store.set(
                 tenant_key(tenant_id, "meta", "label"), label, ttl_seconds=0
             )
+        if parent:
+            # Index children for lineage walks (comma-separated id list)
+            kids_key = tenant_key(parent, "meta", "children")
+            existing = await self._store.get(kids_key)
+            kids = [x for x in (existing or "").split(",") if x]
+            if tenant_id not in kids:
+                kids.append(tenant_id)
+            await self._store.set(kids_key, ",".join(kids), ttl_seconds=0)
         return raw_key, record
 
     async def _save(self, record: TenantRecord) -> TenantRecord:
@@ -218,4 +262,7 @@ class TenantRegistry:
             "billing_delinquent_since": record.billing_delinquent_since or None,
             "terms_version": record.terms_version or None,
             "dpa_version": record.dpa_version or None,
+            "scopes": list(record.scopes or DEFAULT_SCOPES),
+            "parent_tenant_id": record.parent_tenant_id or None,
+            "env_label": record.env_label or None,
         }

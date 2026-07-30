@@ -17,6 +17,14 @@ from starlette.responses import Response
 
 from at_utility.auth import extract_bearer
 from at_utility.cache import cache_key_for_request
+from at_utility.catalog import (
+    SCOPE_CHAT,
+    SCOPE_FETCH,
+    has_scope,
+    models_json_document,
+    models_list_payload,
+    normalize_scopes,
+)
 from at_utility.compliance.policy import ALLOWED_PURPOSES, BLOCKED_PURPOSES, PURPOSE_RISK
 from at_utility.compliance.terms import assert_cache_training_denied, terms_metadata
 from at_utility.config import Settings, get_settings
@@ -208,6 +216,27 @@ async def auth_tenant(
                 "or contact partners@withohm.dev"
             ),
         )
+    # Neon-style lineage: if parent is suspended, children fail closed too
+    if record.parent_tenant_id:
+        parent_raw = await state.store.get(
+            f"at:{record.parent_tenant_id}:meta:record"
+        )
+        if parent_raw:
+            from at_utility.tenants import TenantRecord as TR
+
+            parent = TR.from_json(parent_raw)
+            if parent.status != "active" or parent.is_expired():
+                raise HTTPException(
+                    status_code=403,
+                    detail={
+                        "code": "parent_inactive",
+                        "message": (
+                            f"Parent tenant {record.parent_tenant_id} is inactive — "
+                            "preview/env credentials inherit parent status"
+                        ),
+                        "parent_tenant_id": record.parent_tenant_id,
+                    },
+                )
     if record.soft_quota_usd and record.soft_quota_usd > 0:
         snap = await state.meter.snapshot(record.tenant_id)
         revenue = float(snap.get("revenue_usd") or 0)
@@ -236,6 +265,19 @@ async def auth_tenant(
                 },
             )
     return key, record
+
+
+def require_scope(record: TenantRecord, needed: str) -> None:
+    if not has_scope(record.scopes, needed):
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "code": "scope_denied",
+                "message": f"API key lacks required scope '{needed}'",
+                "required": needed,
+                "scopes": list(record.scopes or []),
+            },
+        )
 
 
 async def auth_dep(
@@ -312,22 +354,20 @@ async def ready() -> JSONResponse:
     return JSONResponse(status_code=200 if redis_ok else 503, content=body)
 
 
+@app.get("/models.json")
+async def public_models_json() -> dict[str, Any]:
+    """Public catalog (Neon models.json analogue) — no auth required."""
+    return models_json_document()
+
+
 @app.get("/v1/models")
 async def list_models(
     auth: tuple[str, TenantRecord] = Depends(auth_tenant),
 ) -> dict[str, Any]:
     api_key, tenant = auth
+    require_scope(tenant, SCOPE_CHAT)
     await rate_limit(api_key, tenant.tenant_id)
-    return {
-        "object": "list",
-        "data": [
-            {"id": "mock", "object": "model", "owned_by": "ohm"},
-            {"id": "gpt-4o-mini", "object": "model", "owned_by": "openai"},
-            {"id": "claude-3-5-sonnet-latest", "object": "model", "owned_by": "anthropic"},
-        ],
-        "byok_header": "X-Ohm-Upstream-Key",
-        "note": "Non-mock models require X-Ohm-Upstream-Key (BYOK) unless env/enterprise managed keys are configured.",
-    }
+    return models_list_payload()
 
 
 @app.get("/v1/usage")
@@ -335,10 +375,14 @@ async def usage(
     auth: tuple[str, TenantRecord] = Depends(auth_tenant),
 ) -> dict[str, Any]:
     api_key, tenant = auth
+    require_scope(tenant, SCOPE_CHAT)
     await rate_limit(api_key, tenant.tenant_id)
     snap = await state.meter.snapshot(tenant.tenant_id)
     snap["plan"] = tenant.plan
     snap["status"] = tenant.status
+    snap["scopes"] = list(tenant.scopes or [])
+    snap["parent_tenant_id"] = tenant.parent_tenant_id or None
+    snap["env_label"] = tenant.env_label or None
     snap["invoice_basis"] = "seat_plus_meters"
     snap["usage_estimate_only"] = False
     snap["billing_model"] = stripe_billing.BILLING_MODEL
@@ -530,6 +574,9 @@ class IssueTenantBody(BaseModel):
     soft_quota_usd: float = 0.0
     request_cap: int = 0
     partner_days: int = 0
+    scopes: list[str] = Field(default_factory=list)
+    parent_tenant_id: str = ""
+    env_label: str = ""
 
 
 class TenantStatusBody(BaseModel):
@@ -652,16 +699,22 @@ async def admin_issue_tenant(
             caps = s.at_design_partner_request_cap
         if days <= 0:
             days = s.at_design_partner_days
-    raw_key, record = await state.tenants.issue(
-        plan=body.plan,
-        label=body.label,
-        terms_version=s.at_compliance_terms_version if body.terms_ack else "",
-        dpa_version=s.at_compliance_dpa_version if body.dpa_ack else "",
-        expires_at=body.expires_at,
-        soft_quota_usd=soft,
-        request_cap=caps,
-        partner_days=days or s.at_design_partner_days,
-    )
+    try:
+        raw_key, record = await state.tenants.issue(
+            plan=body.plan,
+            label=body.label,
+            terms_version=s.at_compliance_terms_version if body.terms_ack else "",
+            dpa_version=s.at_compliance_dpa_version if body.dpa_ack else "",
+            expires_at=body.expires_at,
+            soft_quota_usd=soft,
+            request_cap=caps,
+            partner_days=days or s.at_design_partner_days,
+            scopes=normalize_scopes(body.scopes) if body.scopes else None,
+            parent_tenant_id=body.parent_tenant_id,
+            env_label=body.env_label,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
     return {
         "api_key": raw_key,
         "tenant": await state.tenants.public_view(record),
@@ -824,6 +877,7 @@ async def chat_completions(
     x_ohm_upstream_key: Optional[str] = Header(default=None, alias="X-Ohm-Upstream-Key"),
 ):
     api_key, tenant_rec = auth
+    require_scope(tenant_rec, SCOPE_CHAT)
     await rate_limit(api_key, tenant_rec.tenant_id)
     tenant = tenant_rec.tenant_id
     stripe_customer = tenant_rec.stripe_customer_id or ""
@@ -840,6 +894,7 @@ async def chat_completions(
     fetch_count = 0
     web_purpose = body.web_purpose or ""
     if body.fetch_web_context:
+        require_scope(tenant_rec, SCOPE_FETCH)
         # Soft daily fetch cap until invoice.paid / usage spend unlocks Intermediate.
         # Delinquent tenants (failed invoice in dunning window): hard-block web fetch.
         if tenant_rec.billing_delinquent_since:
@@ -958,6 +1013,7 @@ async def chat_completions(
                 cache_hit=True,
                 total_tokens=total,
                 stripe_customer_id=stripe_customer,
+                model=body.model,
             )
             return JSONResponse(
                 payload,
@@ -1045,6 +1101,7 @@ async def chat_completions(
                     cache_hit=False,
                     total_tokens=total_tokens,
                     stripe_customer_id=stripe_customer,
+                    model=body.model,
                 )
 
             return StreamingResponse(
@@ -1090,6 +1147,7 @@ async def chat_completions(
         cache_hit=False,
         total_tokens=total,
         stripe_customer_id=stripe_customer,
+        model=body.model,
     )
     return JSONResponse(
         result,
