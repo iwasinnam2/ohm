@@ -298,3 +298,35 @@ spec:
   selector:
     matchLabels:
       app: gateway-rs
+---
+# GitHub Actions deployer (group mapped via EKS access entry, see
+# infra/terraform/cicd.tf): may roll images in this namespace, nothing else.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: ohm-deployer
+  namespace: at-utility
+rules:
+  - apiGroups: ["apps"]
+    resources: ["deployments"]
+    verbs: ["get", "list", "watch", "patch", "update"]
+  - apiGroups: ["apps"]
+    resources: ["replicasets"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: ohm-deployer
+  namespace: at-utility
+subjects:
+  - kind: Group
+    name: ohm-deployers
+    apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: Role
+  name: ohm-deployer
+  apiGroup: rbac.authorization.k8s.io

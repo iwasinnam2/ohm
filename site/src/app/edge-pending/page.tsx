@@ -18,27 +18,25 @@ export default function EdgePendingPage() {
         </h1>
       </div>
       <p className="hero__promise">
-        <code>api.withohm.dev</code> is reserved for the withOhm
-        OpenAI-compatible gateway (ACM certificate issued). It is not the
-        documentation site and does not serve chat completions yet.
+        This host is not serving the withOhm OpenAI-compatible gateway. The
+        live API is at <code>api.withohm.dev</code>; documentation lives on
+        withohm.dev.
       </p>
       <div className="hero__cta cta-row">
         <a className="btn btn--primary" href="https://www.withohm.dev">
           Go to withohm.dev
         </a>
         <a href="https://www.withohm.dev/docs/quickstart" className="link-quiet">
-          Quickstart (local :8081)
+          Quickstart
         </a>
       </div>
       <div className="hero__product">
         <span className="hero__product-label">Supported contract</span>
-        <pre className="hero__snippet">{`# Supported today
-curl -s http://localhost:8081/v1/chat/completions \\
-  -H "Authorization: Bearer sk-at-dev" \\
+        <pre className="hero__snippet">{`# Live API
+curl -s https://api.withohm.dev/v1/chat/completions \\
+  -H "Authorization: Bearer sk-at-..." \\
   -H "Content-Type: application/json" \\
-  -d '{"model":"mock","messages":[{"role":"user","content":"hi"}]}'
-
-# This host → HTTP 503 JSON for /v1 and /health until AWS cutover`}</pre>
+  -d '{"model":"mock","messages":[{"role":"user","content":"hi"}]}'`}</pre>
         <p className="hero__note">
           Keys use legacy <code>sk-at-…</code> · Docs & legal:{" "}
           <a href="https://www.withohm.dev/docs/terms">Terms</a> ·{" "}
