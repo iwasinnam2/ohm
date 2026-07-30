@@ -30,11 +30,12 @@ export function InstallClient() {
   return (
     <section className="steal">
       <OhmMark className="steal__mark" />
-      <p className="steal__eyebrow">compliant fetch for agents</p>
+      <p className="steal__eyebrow">Install withOhm in Cursor</p>
       <h1 className="steal__title">withOhm</h1>
       <p className="steal__lede">
-        One attach. Prompt cache + public URL context in Cursor. BYOK. Paste the
-        line to a teammate — that is the product.
+        One attach adds prompt cache replay and compliant public-web context to
+        Cursor over MCP. BYOK for model calls; metered rates on a $0
+        Intermediate seat.
       </p>
 
       <pre className="steal__share" tabIndex={0}>
@@ -71,11 +72,11 @@ export function InstallClient() {
       )}
 
       <p className="steal__foot">
-        <Link href="/fetch">Try compliant fetch</Link>
+        <Link href="/fetch">Try the fetch demo</Link>
         {" · "}
-        <Link href="/templates">Steal the template</Link>
+        <Link href="/docs/quickstart">Quickstart</Link>
         {" · "}
-        <Link href="/bounty">Artifact bounty</Link>
+        <Link href="/docs/pricing">Pricing</Link>
       </p>
     </section>
   );

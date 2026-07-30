@@ -5,6 +5,7 @@ export const metadata: Metadata = {
   title: "Artifact bounty",
   description:
     "Earn a $29 withOhm credit by publishing a public Cursor skill or rule that requires Ohm — compliant fetch for agents.",
+  robots: { index: false, follow: false },
 };
 
 export default function BountyPage() {

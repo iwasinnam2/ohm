@@ -4,7 +4,8 @@ import Link from "next/link";
 export const metadata: Metadata = {
   title: "Templates",
   description:
-    "Steal cursor-agent-with-web — compliant fetch for agents via withOhm MCP.",
+    "cursor-agent-with-web — compliant fetch for agents via withOhm MCP.",
+  robots: { index: false, follow: false },
 };
 
 export default function TemplatesPage() {
@@ -35,9 +36,6 @@ cd ohm/templates/cursor-agent-with-web
           </a>
           <Link className="link-quiet" href="/i">
             Install line
-          </Link>
-          <Link className="link-quiet" href="/docs/steal-kit">
-            Steal-kit / PR pack
           </Link>
         </p>
       </div>

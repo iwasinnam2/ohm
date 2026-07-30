@@ -43,6 +43,7 @@ scripts/.release*
 # Local cutover / smoke artifacts
 scripts/.cutover_*
 scripts/.final_*
+scripts/.ga_*
 scripts/.nlb*
 scripts/.stripe_webhook_secret.tmp
 scripts/.stripe_secret_patch.json
