@@ -2,10 +2,14 @@
 //!
 //! Maintains Redis RESP cache lookups and reverse-proxies to the Python
 //! control-plane (or directly to provider base URLs) with connection reuse.
-//! Pre-first-byte failover: if the primary upstream errors on connect or
-//! answers 5xx before any body byte is forwarded, retry the fallback base URL
-//! on a pre-warmed path. Streaming (SSE) responses are piped through
-//! unbuffered after the first byte; mid-stream handoff is not attempted.
+//! Failover is pre-commit only: if the primary upstream fails on connect (or
+//! returns a non-success status for cacheable requests / a 5xx before the
+//! first body byte for pass-through streams), the fallback base URL is
+//! retried. Mid-stream handoff after first byte is NOT supported.
+//!
+//! Cache HITs are only served after Python accepts them via
+//! `/internal/edge-hit` (metering + tenant enforcement). Without the shared
+//! secret the edge full-proxies so the control plane bills the hit itself.
 //!
 //! Redis split (Phase 4): AT_RS_REDIS = GET (replica); AT_RS_REDIS_WRITE = SET
 //! (leader). Cache keys match Python `cache_key_for_request` (docs/REDIS_MESH.md).
@@ -42,6 +46,8 @@ struct Config {
     fallback_upstream: String,
     cache_ttl: u64,
     api_keys: Vec<String>,
+    /// Shared secret for /internal/edge-hit. Empty disables edge HIT serving.
+    edge_secret: String,
 }
 
 impl Config {
@@ -71,8 +77,16 @@ impl Config {
                 .map(|s| s.trim().to_string())
                 .filter(|s| !s.is_empty())
                 .collect(),
+            edge_secret: env::var("AT_RS_EDGE_SECRET").unwrap_or_default(),
         }
     }
+}
+
+/// Response body: either a buffered chunk or a streamed upstream body.
+type ProxyBody = BoxBody<Bytes, hyper::Error>;
+
+fn full_body(data: impl Into<Bytes>) -> ProxyBody {
+    Full::new(data.into()).map_err(|never| match never {}).boxed()
 }
 
 struct App {
@@ -85,20 +99,13 @@ struct App {
     >,
 }
 
-/// Unified response body: buffered (cache hits, errors) or streamed (SSE pass-through).
-type OutBody = BoxBody<Bytes, hyper::Error>;
-
-fn full_body(bytes: Bytes) -> OutBody {
-    Full::new(bytes).map_err(|never| match never {}).boxed()
-}
-
-fn unauthorized() -> Response<OutBody> {
+fn unauthorized() -> Response<ProxyBody> {
     Response::builder()
         .status(StatusCode::UNAUTHORIZED)
         .header("content-type", "application/json")
-        .body(full_body(Bytes::from(
+        .body(full_body(
             "{\"error\":{\"message\":\"Invalid API key\",\"type\":\"invalid_request_error\",\"code\":\"unauthorized\"}}",
-        )))
+        ))
         .unwrap()
 }
 
@@ -278,6 +285,42 @@ async fn resolve_tenant(app: &App, token: &str) -> String {
     format!("tenant_{suffix}")
 }
 
+/// Ask the Python control plane to meter + enforce a cache HIT.
+///
+/// Returns `Some((status, body))` when Python answered: 2xx means "serve the
+/// cached body"; 4xx (401/402/403/429) is a tenant denial to relay verbatim.
+/// Returns `None` when the gate is unreachable or 5xx (including 503 when
+/// metering is unconfigured) — the caller must fall back to a full proxy.
+async fn edge_hit_gate(
+    app: &App,
+    token: &str,
+    total_tokens: i64,
+) -> Option<(StatusCode, Bytes)> {
+    let cfg = &app.cfg;
+    let uri: Uri = format!(
+        "{}/internal/edge-hit",
+        cfg.primary_upstream.trim_end_matches('/')
+    )
+    .parse()
+    .ok()?;
+    let payload = serde_json::json!({ "total_tokens": total_tokens }).to_string();
+    let req = Request::builder()
+        .method(Method::POST)
+        .uri(uri)
+        .header(hyper::header::AUTHORIZATION, format!("Bearer {token}"))
+        .header("x-ohm-edge-secret", cfg.edge_secret.as_str())
+        .header(hyper::header::CONTENT_TYPE, "application/json")
+        .body(Full::new(Bytes::from(payload)))
+        .ok()?;
+    let res = app.http.request(req).await.ok()?;
+    let status = res.status();
+    if status.is_server_error() {
+        return None;
+    }
+    let bytes = res.collect().await.ok()?.to_bytes();
+    Some((status, bytes))
+}
+
 async fn proxy_once(
     app: &App,
     upstream_base: &str,
@@ -305,15 +348,15 @@ async fn proxy_once(
     Ok(res)
 }
 
-async fn handle(app: Arc<App>, req: Request<Incoming>) -> Result<Response<OutBody>, Infallible> {
+async fn handle(app: Arc<App>, req: Request<Incoming>) -> Result<Response<ProxyBody>, Infallible> {
     let cfg = &app.cfg;
     let path_only = req.uri().path();
     // Liveness is answered at the edge; readiness is proxied without auth so
     // load balancers can probe Redis/provider state on Python.
     if path_only == "/health" {
-        return Ok(Response::new(full_body(Bytes::from(
+        return Ok(Response::new(full_body(
             "{\"ok\":true,\"service\":\"ohm\",\"plane\":\"rust\"}",
-        ))));
+        )));
     }
 
     let method = req.method().clone();
@@ -346,7 +389,7 @@ async fn handle(app: Arc<App>, req: Request<Incoming>) -> Result<Response<OutBod
             warn!("body read error: {e}");
             return Ok(Response::builder()
                 .status(500)
-                .body(full_body(Bytes::from("body error")))
+                .body(full_body("body error"))
                 .unwrap());
         }
     };
@@ -368,7 +411,7 @@ async fn handle(app: Arc<App>, req: Request<Incoming>) -> Result<Response<OutBod
                 warn!("{label} proxy error: {e}");
                 return Ok(Response::builder()
                     .status(502)
-                    .body(full_body(Bytes::from("upstream error")))
+                    .body(full_body("upstream error"))
                     .unwrap());
             }
         };
@@ -380,7 +423,7 @@ async fn handle(app: Arc<App>, req: Request<Incoming>) -> Result<Response<OutBod
                 warn!("{label} body error: {e}");
                 return Ok(Response::builder()
                     .status(502)
-                    .body(full_body(Bytes::from("upstream body error")))
+                    .body(full_body("upstream body error"))
                     .unwrap());
             }
         };
@@ -419,19 +462,58 @@ async fn handle(app: Arc<App>, req: Request<Incoming>) -> Result<Response<OutBod
                 format!("at:{tenant}:cache:{digest}")
             }
         };
-        {
-            if ensure_client(&app.redis_read, &cfg.redis_addr).await {
-                let mut guard = app.redis_read.lock().await;
-                if let Some(client) = guard.as_mut() {
-                    if let Ok(Some(cached)) = client.get(&key).await {
-                        info!("cache HIT {key}");
+        let cached: Option<String> = if ensure_client(&app.redis_read, &cfg.redis_addr).await {
+            let mut guard = app.redis_read.lock().await;
+            match guard.as_mut() {
+                Some(client) => client.get(&key).await.ok().flatten(),
+                None => None,
+            }
+        } else {
+            None
+        };
+        if let Some(cached) = cached {
+            // Metering + tenant enforcement live in Python: a HIT is only
+            // served after /internal/edge-hit accepts it. Without the shared
+            // secret, or when the gate is unreachable, fall through to a full
+            // proxy so the control plane bills the hit itself.
+            if !cfg.edge_secret.is_empty() {
+                let total_tokens = serde_json::from_str::<serde_json::Value>(&cached)
+                    .ok()
+                    .and_then(|v| {
+                        v.get("usage")
+                            .and_then(|u| u.get("total_tokens"))
+                            .and_then(|t| t.as_i64())
+                    })
+                    .unwrap_or(0);
+                match edge_hit_gate(&app, &token, total_tokens).await {
+                    Some((status, gate_body)) if status.is_success() => {
+                        info!("cache HIT {key} (metered)");
+                        let billed = serde_json::from_slice::<serde_json::Value>(&gate_body)
+                            .ok()
+                            .and_then(|v| v.get("billed_usd").and_then(|b| b.as_f64()))
+                            .unwrap_or(0.0);
                         return Ok(Response::builder()
                             .status(200)
                             .header("content-type", "application/json")
                             .header("x-at-cache", "HIT")
                             .header("x-at-plane", "rust")
-                            .body(full_body(Bytes::from(cached)))
+                            .header("x-at-billed-usd", format!("{billed:.6}"))
+                            .body(full_body(cached))
                             .unwrap());
+                    }
+                    Some((status, gate_body)) => {
+                        // Tenant denied (401/402/403/429) — relay verbatim so
+                        // suspended/capped tenants are never served from cache.
+                        warn!("cache HIT denied by control plane: {status}");
+                        return Ok(Response::builder()
+                            .status(status)
+                            .header("content-type", "application/json")
+                            .header("x-at-plane", "rust")
+                            .body(full_body(gate_body))
+                            .unwrap());
+                    }
+                    None => {
+                        warn!("edge-hit gate unreachable; full-proxying {key}");
                     }
                 }
             }
@@ -506,18 +588,23 @@ async fn handle(app: Arc<App>, req: Request<Incoming>) -> Result<Response<OutBod
                     }
                     builder = builder.header(k, v);
                 }
-                builder = builder.header("x-at-cache", "MISS").header("x-at-plane", "rust");
+                // Python already labels its own cache result (e.g. HIT when the
+                // edge fell through) — only stamp MISS when it did not.
+                if !headers_out.contains_key("x-at-cache") {
+                    builder = builder.header("x-at-cache", "MISS");
+                }
+                builder = builder.header("x-at-plane", "rust");
                 Ok(builder.body(full_body(bytes)).unwrap())
             }
             Err(e) => Ok(Response::builder()
                 .status(502)
-                .body(full_body(Bytes::from(format!("{{\"error\":\"{e}\"}}"))))
+                .body(full_body(format!("{{\"error\":\"{e}\"}}")))
                 .unwrap()),
         }
     } else {
-        // Pass-through (including SSE streams): pre-first-byte failover on
-        // connect error *or* 5xx status, then pipe the body through unbuffered
-        // so SSE tokens reach the client as the provider emits them.
+        // Pass-through with pre-first-byte failover: connect error *or* a 5xx
+        // status read before any body byte is forwarded. Bodies (including
+        // SSE streams) are forwarded chunk-by-chunk — never buffered at the edge.
         let result = match proxy_once(
             &app,
             &cfg.primary_upstream,
@@ -546,7 +633,9 @@ async fn handle(app: Arc<App>, req: Request<Incoming>) -> Result<Response<OutBod
                 let (parts, upstream_body) = res.into_parts();
                 let mut builder = Response::builder().status(parts.status);
                 for (k, v) in parts.headers.iter() {
-                    if k == hyper::header::TRANSFER_ENCODING {
+                    if k == hyper::header::TRANSFER_ENCODING
+                        || k == hyper::header::CONTENT_LENGTH
+                    {
                         continue;
                     }
                     builder = builder.header(k, v);
@@ -559,7 +648,7 @@ async fn handle(app: Arc<App>, req: Request<Incoming>) -> Result<Response<OutBod
             }
             Err(e) => Ok(Response::builder()
                 .status(502)
-                .body(full_body(Bytes::from(format!("{{\"error\":\"{e}\"}}"))))
+                .body(full_body(format!("{{\"error\":\"{e}\"}}")))
                 .unwrap()),
         }
     }

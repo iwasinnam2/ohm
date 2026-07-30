@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Analytics } from "@vercel/analytics/next";
 import { IBM_Plex_Mono, Source_Sans_3, Space_Grotesk } from "next/font/google";
 import { SiteHeader } from "@/components/SiteHeader";
 import "./globals.css";
@@ -26,6 +25,11 @@ const plexMono = IBM_Plex_Mono({
   display: "swap",
 });
 
+// Cap CDN TTL: fully-static prerenders otherwise emit s-maxage=31536000 and
+// Amplify's CloudFront serves year-old pages after a deploy. ISR every 5 min
+// keeps www fresh without giving up edge caching.
+export const revalidate = 300;
+
 const siteUrl = "https://www.withohm.dev";
 
 const description =
@@ -38,9 +42,6 @@ export const metadata: Metadata = {
     template: "%s · withOhm",
   },
   description,
-  icons: {
-    icon: "/ohm.svg",
-  },
   openGraph: {
     type: "website",
     locale: "en_US",
@@ -90,7 +91,6 @@ export default function RootLayout({
             </nav>
           </footer>
         </div>
-        <Analytics />
       </body>
     </html>
   );

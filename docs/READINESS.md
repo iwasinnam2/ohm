@@ -7,7 +7,7 @@ Public distribution readiness for **withOhm** (Ohm). Hosted pipe is live; this c
 | Layer | Status |
 |-------|--------|
 | Marketing / legal (`www.withohm.dev`) | Live — AWS Amplify + CloudFront |
-| Public API (`api.withohm.dev`) | Live — EKS + Global Accelerator |
+| Public API (`api.withohm.dev`) | Live — EKS, single-region us-east-1 |
 | Fetch toy (`fetch.withohm.dev`) | Live — demo strip (not full compliance pipe) |
 | Stripe seat Checkout + meters | Live |
 | Cursor deeplink CTA | Live |

@@ -15,11 +15,13 @@ data:
   AT_RATE_LIMIT_BURST: "100"
   AT_COMPLIANCE_ENFORCE: "true"
   AT_BYOK_ALLOW_ENV_FALLBACK: "false"
+  AT_ENV: "production"
   INGEST_WORKER_URL: "http://ingest-worker:8090"
   OPENAI_BASE_URL: "https://api.openai.com/v1"
-  # Leader Phase 2: REDIS_URL=reader, REDIS_WRITE_URL=primary, REDIS_RL_URL=primary.
-  # Edge Phase 3: REDIS_URL=Global Datastore secondary, WRITE=leader, RL=regional.
-  # Secrets must also include AT_RS_REDIS (GET) and AT_RS_REDIS_WRITE (SET).
+  # Single-region posture: REDIS_URL=reader, REDIS_WRITE_URL=primary, REDIS_RL_URL=primary.
+  # Secrets must also include AT_RS_REDIS (GET), AT_RS_REDIS_WRITE (SET), and
+  # AT_EDGE_SHARED_SECRET / AT_RS_EDGE_SECRET (same value — metered edge HITs).
+  # Edge-region wiring notes live in infra/runbooks (mesh paused).
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -38,7 +40,7 @@ spec:
     spec:
       containers:
         - name: gateway
-          image: 594161136574.dkr.ecr.us-east-1.amazonaws.com/at-utility/gateway:0.1.7
+          image: 594161136574.dkr.ecr.us-east-1.amazonaws.com/at-utility/gateway:0.1.9
           ports:
             - containerPort: 8080
           envFrom:
@@ -48,10 +50,17 @@ spec:
                 name: at-utility-secrets
           readinessProbe:
             httpGet:
-              path: /health
+              path: /ready
               port: 8080
             initialDelaySeconds: 3
             periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 15
+            failureThreshold: 3
           resources:
             requests:
               cpu: "100m"
@@ -90,7 +99,7 @@ spec:
     spec:
       containers:
         - name: gateway-rs
-          image: 594161136574.dkr.ecr.us-east-1.amazonaws.com/at-utility/gateway-rs:0.1.8
+          image: 594161136574.dkr.ecr.us-east-1.amazonaws.com/at-utility/gateway-rs:0.1.9
           ports:
             - containerPort: 8081
           env:
@@ -115,12 +124,27 @@ spec:
                 secretKeyRef:
                   name: at-utility-secrets
                   key: AT_API_KEYS
+            # Shared secret for metered cache HITs (/internal/edge-hit).
+            # Empty/missing => edge full-proxies and Python meters the hit.
+            - name: AT_RS_EDGE_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: at-utility-secrets
+                  key: AT_EDGE_SHARED_SECRET
+                  optional: true
           readinessProbe:
             httpGet:
               path: /health
               port: 8081
             initialDelaySeconds: 2
             periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8081
+            initialDelaySeconds: 5
+            periodSeconds: 15
+            failureThreshold: 3
           resources:
             requests:
               cpu: "50m"
@@ -171,7 +195,7 @@ spec:
     spec:
       containers:
         - name: ingest
-          image: 594161136574.dkr.ecr.us-east-1.amazonaws.com/at-utility/ingest-worker:0.1.7
+          image: 594161136574.dkr.ecr.us-east-1.amazonaws.com/at-utility/ingest-worker:0.1.9
           ports:
             - containerPort: 8090
           env:
@@ -181,6 +205,13 @@ spec:
             httpGet:
               path: /health
               port: 8090
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8090
+            initialDelaySeconds: 10
+            periodSeconds: 20
+            failureThreshold: 3
           resources:
             requests:
               cpu: "200m"

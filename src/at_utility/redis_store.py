@@ -40,6 +40,10 @@ class CacheStore(Protocol):
     async def set(self, key: str, value: str, ttl_seconds: int) -> None: ...
     async def incr_by_float(self, key: str, amount: float) -> float: ...
     async def eval_token_bucket(self, key: str, rate: float, burst: float, now: float) -> bool: ...
+    async def list_push(self, key: str, value: str) -> int: ...
+    async def list_pop(self, key: str) -> Optional[str]: ...
+    async def list_len(self, key: str) -> int: ...
+    async def scan_keys(self, pattern: str, limit: int = 10_000) -> list[str]: ...
     async def ping(self) -> bool: ...
     async def close(self) -> None: ...
 
@@ -118,6 +122,24 @@ class RedisStore:
         result = await self._rl.eval(TOKEN_BUCKET_LUA, 1, key, rate, burst, now)
         return int(result) == 1
 
+    async def list_push(self, key: str, value: str) -> int:
+        # Billing queues live on the leader (write) endpoint.
+        return int(await self._write.rpush(key, value))
+
+    async def list_pop(self, key: str) -> Optional[str]:
+        return await self._write.lpop(key)
+
+    async def list_len(self, key: str) -> int:
+        return int(await self._write.llen(key))
+
+    async def scan_keys(self, pattern: str, limit: int = 10_000) -> list[str]:
+        out: list[str] = []
+        async for key in self._write.scan_iter(match=pattern, count=500):
+            out.append(key)
+            if len(out) >= limit:
+                break
+        return out
+
     async def ping(self) -> bool:
         await self._write.ping()
         return True
@@ -137,6 +159,7 @@ class MemoryStore:
         self._data: dict[str, str] = {}
         self._buckets: dict[str, tuple[float, float]] = {}
         self._counters: dict[str, float] = {}
+        self._lists: dict[str, list[str]] = {}
 
     async def get(self, key: str) -> Optional[str]:
         if key in self._data:
@@ -161,6 +184,24 @@ class MemoryStore:
             return False
         self._buckets[key] = (tokens - 1, now)
         return True
+
+    async def list_push(self, key: str, value: str) -> int:
+        self._lists.setdefault(key, []).append(value)
+        return len(self._lists[key])
+
+    async def list_pop(self, key: str) -> Optional[str]:
+        items = self._lists.get(key)
+        if not items:
+            return None
+        return items.pop(0)
+
+    async def list_len(self, key: str) -> int:
+        return len(self._lists.get(key, []))
+
+    async def scan_keys(self, pattern: str, limit: int = 10_000) -> list[str]:
+        import fnmatch
+
+        return [k for k in list(self._data) if fnmatch.fnmatch(k, pattern)][:limit]
 
     async def ping(self) -> bool:
         return True

@@ -17,7 +17,7 @@ withOhm (ohm): BYOK Cursor MCP — prompt cache replay, compliant web fetch, Ope
 ```
 withOhm is an AI traffic utility for Cursor (search: ohm, withOhm, prompt-cache, web-fetch).
 
-Attach once via local stdio MCP (pip install at-utility[mcp]) and get:
+Attach once via local stdio MCP (pip install ohm-mcp) and get:
 • ohm_chat — OpenAI-compatible chat through Ohm’s pipe (Redis prompt replay)
 • ohm_fetch_web — purpose-bound public URL scrape → markdown or JSON for agents
 • ohm_usage — cache hits, fetches, and estimated pipe rent

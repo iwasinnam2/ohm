@@ -30,11 +30,11 @@ cursor://anysphere.cursor-deeplink/mcp/install?name=ohm&config=<base64>
 }
 ```
 
-Install once:
+Install once (slim client — no gateway stack):
 
 ```powershell
-pip install -e ".[mcp]"
-# or: pip install "at-utility[mcp] @ git+https://github.com/iwasinnam2/ohm.git"
+pip install ohm-mcp
+# monorepo dev alternative: pip install -e ".[mcp]"
 ```
 
 `OHM_API_KEY` is required (Checkout at https://www.withohm.dev/billing/intermediate). Terms/DPA are bound at seat mint — MCP does not forge per-request legal acks. See [`.cursor/mcp.json.example`](../.cursor/mcp.json.example) for local-only smoke.

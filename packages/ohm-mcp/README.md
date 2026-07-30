@@ -1,0 +1,62 @@
+# ohm-mcp
+
+Slim MCP server for [withOhm](https://www.withohm.dev): prompt cache
+replay, dynamic model switching (BYOK), and compliant public-web fetch as
+Cursor tools — without installing the full gateway stack. Runs over stdio
+(default) or as a stateless remote streamable-HTTP server.
+
+## Install
+
+```bash
+pip install ohm-mcp
+```
+
+## Cursor attach
+
+```json
+{
+  "mcpServers": {
+    "ohm": {
+      "command": "ohm-mcp",
+      "env": {
+        "OHM_API_KEY": "sk-at-YOUR_ISSUED_KEY",
+        "OHM_UPSTREAM_KEY": "sk-proj-optional-byok-key"
+      }
+    }
+  }
+}
+```
+
+Get a key from the $0 Intermediate seat at
+[withohm.dev/billing/intermediate](https://www.withohm.dev/billing/intermediate).
+
+## Tools
+
+- `ohm_chat` — chat through the pipe; identical prompts replay from Redis cache.
+- `ohm_fetch_web` — compliant public URL fetch (robots-gated, PII-redacted, metered).
+- `ohm_usage` — usage snapshot: cache hit ratio, fetches, estimated pipe rent.
+
+## Remote (stateless streamable HTTP)
+
+```bash
+OHM_MCP_TRANSPORT=http ohm-mcp   # or: ohm-mcp-http — serves POST /mcp on :8091
+```
+
+Auth is per-request: clients send `Authorization: Bearer sk-at-*` (and
+optional `X-Ohm-Upstream-Key`) on the MCP HTTP request; `OHM_API_KEY` env is
+the stdio/local fallback. Knobs: `OHM_MCP_HOST`, `OHM_MCP_PORT`,
+`OHM_MCP_ALLOWED_HOSTS` / `OHM_MCP_ALLOWED_ORIGINS`, `OHM_MCP_JSON_RESPONSE`.
+
+## Env
+
+| Variable | Required | Purpose |
+|---|---|---|
+| `OHM_API_KEY` | stdio: yes | Your withOhm tenant key (`sk-at-…`); HTTP mode can use per-request `Authorization` instead |
+| `OHM_BASE_URL` | no | Defaults to `https://api.withohm.dev/v1` |
+| `OHM_UPSTREAM_KEY` | no | BYOK provider key for cache-miss model calls |
+
+MIT licensed. The hosted service is commercial — see
+[Terms](https://www.withohm.dev/docs/terms).
+
+Note for maintainers: `src/ohm_mcp/__init__.py` in the monorepo root is the
+source of truth; run `scripts/sync_ohm_mcp.ps1` before building this package.

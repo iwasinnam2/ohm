@@ -2,7 +2,7 @@
 
 Ohm’s distribution channel is the OpenAI-compatible API. No new protocol.
 
-Prefer **local** edge until public AWS cutover. Host `api.withohm.dev` is reserved (ACM issued) — cutover: [API_CUTOVER.md](../infra/runbooks/API_CUTOVER.md). Publish SDKs per [PLATFORM.md](PLATFORM.md).
+Public edge is live at `https://api.withohm.dev/v1`; use the local edge for development. Publish SDKs per [PLATFORM.md](PLATFORM.md).
 
 ## Local (supported MVP)
 

@@ -12,7 +12,7 @@ export type ClientOptions = {
   defaultHeaders?: Record<string, string>;
 };
 
-/** Public API host — prefer LOCAL_BASE_URL until AWS cutover (docs/PLATFORM.md). */
+/** Public API host (live). Use LOCAL_BASE_URL for local development. */
 export const DEFAULT_BASE_URL = "https://api.withohm.dev/v1";
 export const LOCAL_BASE_URL = "http://127.0.0.1:8081/v1";
 export const UPSTREAM_KEY_HEADER = "X-Ohm-Upstream-Key";

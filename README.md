@@ -51,8 +51,8 @@ Release smoke asserts health, mock miss/hit, OpenAI miss/hit (when a key is pres
 Local **stdio** MCP plus a **stateless remote MCP** over streamable HTTP (MCP 2026-07-28 stateless core). Public base: `https://api.withohm.dev/v1`. Partners: [docs/LAUNCH_GTM.md](docs/LAUNCH_GTM.md) · https://www.withohm.dev/design-partners
 
 ```powershell
-# From a clone, or: pip install "at-utility[mcp] @ git+https://github.com/iwasinnam2/ohm.git"
-pip install -e ".[mcp]"
+pip install ohm-mcp
+# monorepo dev alternative: pip install -e ".[mcp]"
 # stdio (Cursor local attach): set OHM_API_KEY (required). Optional: OHM_UPSTREAM_KEY, OHM_BASE_URL
 # Plugin: .cursor-plugin/ + mcp.json — see docs/CURSOR.md
 
@@ -65,7 +65,7 @@ pip install -e ".[mcp]"
 ## Streaming and failover honesty
 
 - **Non-streaming** chat completions: the Rust edge may retry the Python upstream (primary then fallback URL) before returning a body. Cache writes happen after a successful full response.
-- **Streaming** chat completions: **pre-first-byte failover is shipped.** The Python plane eagerly opens the upstream stream, retries once if it dies before the first byte, and returns an honest HTTP error (not a 200 error-frame stream) if both attempts fail; the Rust edge falls back on connect errors or pre-first-byte 5xx and pipes SSE through unbuffered. Mid-stream provider handoff after the first byte without a client reconnect is **not** guaranteed — plan for reconnect or non-stream for critical paths.
+- **Streaming** chat completions: **pre-first-byte failover is shipped.** The Python plane eagerly opens the upstream stream, retries once if it dies before the first byte, and returns an honest HTTP error (not a 200 error-frame stream) if both attempts fail; the Rust edge falls back on connect errors or pre-first-byte 5xx and forwards the token stream chunk-by-chunk (no buffering at the edge). Mid-stream provider handoff after the first byte without a client reconnect is **not** supported — plan for reconnect or non-stream for critical paths.
 
 ## Environment rules
 
@@ -97,7 +97,7 @@ Inspect live policy: `GET /v1/compliance/policy`. Templates: Terms, DPA, upstrea
 | `src/at_utility/compliance/` | Purpose matrix, URL gate, robots.txt, PII redaction |
 | `src/ohm_mcp/` | Cursor MCP attach (`ohm_fetch_web`, `ohm_usage`, `ohm_chat`) |
 | Redis leader / replica | Cache + RL; GET on replica/reader, SET on leader — [docs/REDIS_MESH.md](docs/REDIS_MESH.md) |
-| `infra/` | Terraform + Kubernetes: Global Datastore edges + Anycast |
+| `infra/` | Terraform + Kubernetes: single-region EKS (mesh retained behind flags) |
 | `site/` | Marketing + docs + self-serve `/billing` |
 
 ## Tenancy and billing

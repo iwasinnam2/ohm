@@ -4,9 +4,9 @@ const WINDOW_MS = 60_000;
 const MAX_PER_WINDOW = 8;
 const MAX_BYTES = 400_000;
 const WATERMARK_OHM =
-  "\n\n---\nvia withOhm — compliant fetch for agents · https://www.withohm.dev/i\n";
+  "\n\n---\nvia withOhm — compliant fetch for agents · https://www.withohm.dev\n";
 const WATERMARK_TOY =
-  "\n\n---\nvia withOhm public fetch toy (demo HTML strip — not the compliance pipe) · https://www.withohm.dev/i\n";
+  "\n\n---\nvia withOhm public fetch toy (demo HTML strip — not the compliance pipe) · https://www.withohm.dev\n";
 
 const hits = new Map<string, { n: number; reset: number }>();
 
@@ -99,8 +99,8 @@ export async function GET(req: NextRequest) {
   if (!rateLimit(ip)) {
     return NextResponse.json(
       {
-        error: "Soft rate limit — try again shortly, or get a seat at /i",
-        install: "https://www.withohm.dev/i",
+        error: "Soft rate limit — try again shortly, or get a seat",
+        subscriptions: "https://www.withohm.dev/subscriptions",
       },
       { status: 429 },
     );
@@ -151,7 +151,6 @@ export async function GET(req: NextRequest) {
           markdown: content + WATERMARK_OHM,
           via: "ohm",
           phrase: "compliant fetch for agents",
-          install: "https://www.withohm.dev/i",
         });
       }
     } catch {
@@ -199,14 +198,12 @@ export async function GET(req: NextRequest) {
       markdown: markdown + WATERMARK_TOY,
       via: "toy",
       phrase: "public fetch toy (demo)",
-      install: "https://www.withohm.dev/i",
-      note: "Demo HTML strip only — not robots/purpose-gated. Full Cursor pipe: https://www.withohm.dev/i",
+      note: "Demo HTML strip only — not robots/purpose-gated. Full pipe: https://www.withohm.dev/subscriptions",
     });
   } catch (err) {
     return NextResponse.json(
       {
         error: err instanceof Error ? err.message : "Fetch failed",
-        install: "https://www.withohm.dev/i",
       },
       { status: 502 },
     );

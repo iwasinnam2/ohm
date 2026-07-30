@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ohm-mcp"
+version = "0.1.3"
+description = "withOhm MCP server for Cursor — prompt cache replay + compliant public-web fetch over one OpenAI-compatible pipe"
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.11"
+dependencies = [
+  "httpx>=0.27.0",
+  "mcp>=2.0.0",
+]
+
+[project.urls]
+Homepage = "https://www.withohm.dev"
+Documentation = "https://www.withohm.dev/docs/cursor"
+Source = "https://github.com/iwasinnam2/ohm"
+
+[project.scripts]
+ohm-mcp = "ohm_mcp:main"
+ohm-mcp-http = "ohm_mcp:main_http"
+
+[tool.setuptools.packages.find]
+where = ["src"]

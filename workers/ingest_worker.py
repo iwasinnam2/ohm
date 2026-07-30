@@ -9,7 +9,7 @@ import re
 import sys
 from pathlib import Path
 from typing import Any, Optional
-from urllib.parse import quote_plus
+from urllib.parse import quote_plus, urlparse
 
 import httpx
 from bs4 import BeautifulSoup
@@ -28,6 +28,7 @@ from at_utility.compliance import (  # noqa: E402
     evaluate_ingest_request,
     gate_url,
     redact_personal_data,
+    resolve_public_ip,
 )
 from at_utility.compliance.robots import USER_AGENT, allowed_by_robots  # noqa: E402
 from at_utility.compliance.web_bot_auth import (  # noqa: E402
@@ -316,6 +317,73 @@ async def meta_search(query: str, max_results: int = 3) -> list[str]:
     return links
 
 
+class PinnedFetchBlocked(Exception):
+    """A redirect hop (or the origin) failed the URL gate or IP pinning."""
+
+    def __init__(self, code: str, reason: str, final_url: str):
+        super().__init__(reason)
+        self.code = code
+        self.reason = reason
+        self.final_url = final_url
+
+
+_MAX_REDIRECT_HOPS = 5
+
+
+async def _pinned_get(url: str) -> tuple[httpx.Response, str]:
+    """GET with connect-time IP pinning and per-hop redirect re-gating.
+
+    Each hop is gated with ``gate_url`` and then fetched against the exact
+    public IP resolved at gate time (SNI + cert verification still use the
+    hostname), closing the DNS-rebinding TOCTOU between check and connect.
+    Every hop is Web Bot Auth signed for its logical authority. Returns
+    (response, final_url) without raising for non-redirect HTTP statuses so
+    the caller can shape 402/403 refusals before ``raise_for_status``.
+    """
+    current = url
+    async with httpx.AsyncClient(
+        timeout=TIMEOUT_MS / 1000.0, follow_redirects=False
+    ) as client:
+        for _ in range(_MAX_REDIRECT_HOPS):
+            g = gate_url(current)
+            if not g.allowed:
+                raise PinnedFetchBlocked(g.code, g.reason, current)
+            parsed = urlparse(current)
+            host = parsed.hostname or ""
+            ip = resolve_public_ip(host)
+            if ip is None:
+                raise PinnedFetchBlocked(
+                    "dns_private_target",
+                    "Host has no public address to pin — refusing fetch",
+                    current,
+                )
+            port = parsed.port or (443 if parsed.scheme == "https" else 80)
+            netloc_ip = f"[{ip}]:{port}" if ":" in ip else f"{ip}:{port}"
+            pinned = parsed._replace(netloc=netloc_ip).geturl()
+            extensions = {"sni_hostname": host} if parsed.scheme == "https" else {}
+            res = await client.get(
+                pinned,
+                headers={
+                    "User-Agent": BOT_UA,
+                    "Host": host,
+                    # Sign the logical authority (what the origin verifies),
+                    # not the pinned-IP request target.
+                    **signature_headers(current),
+                },
+                extensions=extensions,
+            )
+            location = res.headers.get("location")
+            if res.is_redirect and location:
+                current = str(httpx.URL(current).join(location))
+                continue
+            return res, current
+        raise PinnedFetchBlocked(
+            "too_many_redirects",
+            f"More than {_MAX_REDIRECT_HOPS} redirect hops — refusing fetch",
+            current,
+        )
+
+
 async def fetch_url(
     url: str,
     *,
@@ -324,7 +392,8 @@ async def fetch_url(
     max_chars_per_source: int,
     fmt: str = "markdown",
 ) -> dict[str, Any]:
-    """Prefer Playwright; fall back to httpx if browser not installed."""
+    """Prefer Playwright (best-effort: final-URL re-gate only); fall back to
+    httpx with connect-time IP pinning + per-hop redirect re-gating."""
     fmt = (fmt or "markdown").strip().lower()
     if fmt not in ("markdown", "json"):
         fmt = "markdown"
@@ -351,6 +420,9 @@ async def fetch_url(
     try:
         from playwright.async_api import async_playwright
 
+        # Playwright path is best-effort against rebinding: the browser does
+        # its own DNS resolution, so protection here is gate-time DNS check +
+        # final-URL re-gate below. The httpx fallback pins the connect IP.
         async with async_playwright() as p:
             browser = await p.chromium.launch(headless=True)
             sig = signature_headers(url)
@@ -391,7 +463,7 @@ async def fetch_url(
             )
             return {"url": final, "ok": True, **fin}
     except Exception as exc:  # noqa: BLE001
-        log.info("playwright unavailable or failed (%s); httpx fallback", exc)
+        log.info("playwright unavailable or failed (%s); httpx pinned fallback", exc)
         return await _fetch_via_httpx(
             url,
             fmt=fmt,
@@ -409,39 +481,39 @@ async def _fetch_via_httpx(
     max_chars_per_source: int,
     respect_robots: bool,
 ) -> dict[str, Any]:
-    """httpx fetch path (also the Playwright fallback), Web Bot Auth signed."""
+    """Pinned httpx fetch path (also the Playwright fallback).
+
+    Connect-time IP pinning + per-hop redirect re-gating via ``_pinned_get``,
+    Web Bot Auth signed, with 402 pay-per-crawl / 401/403 revocations surfaced
+    as structured refusals.
+    """
     try:
-        async with httpx.AsyncClient(
-            timeout=TIMEOUT_MS / 1000.0, follow_redirects=True
-        ) as client:
-            res = await client.get(url, headers=_bot_headers(url))
-            refusal = _refusal_for_status(url, res.status_code, res.headers, fmt)
-            if refusal is not None:
-                return refusal
-            res.raise_for_status()
-            final = str(res.url)
-            final_gate = gate_url(final)
-            if not final_gate.allowed:
-                return {
-                    "url": url,
-                    "ok": False,
-                    "error": f"Redirected to blocked surface: {final_gate.reason}",
-                    "compliance": {
-                        "code": final_gate.code,
-                        "allowed": False,
-                        "final_url": final,
-                    },
-                    **({"json": {}} if fmt == "json" else {"markdown": ""}),
-                }
-            fin = _finalize_content(
-                res.text,
-                final,
-                fmt=fmt,
-                redact_pii=redact_pii,
-                max_chars=max_chars_per_source,
-                respect_robots=respect_robots,
-            )
-            return {"url": final, "ok": True, **fin}
+        res, final = await _pinned_get(url)
+        refusal = _refusal_for_status(url, res.status_code, res.headers, fmt)
+        if refusal is not None:
+            return refusal
+        res.raise_for_status()
+        fin = _finalize_content(
+            res.text,
+            final,
+            fmt=fmt,
+            redact_pii=redact_pii,
+            max_chars=max_chars_per_source,
+            respect_robots=respect_robots,
+        )
+        return {"url": final, "ok": True, **fin}
+    except PinnedFetchBlocked as blocked:
+        return {
+            "url": url,
+            "ok": False,
+            "error": f"Blocked surface: {blocked.reason}",
+            "compliance": {
+                "code": blocked.code,
+                "allowed": False,
+                "final_url": blocked.final_url,
+            },
+            **({"json": {}} if fmt == "json" else {"markdown": ""}),
+        }
     except Exception as exc2:  # noqa: BLE001
         return {
             "url": url,

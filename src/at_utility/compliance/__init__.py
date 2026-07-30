@@ -20,7 +20,7 @@ from at_utility.compliance.terms import (
     require_terms_acks,
     terms_metadata,
 )
-from at_utility.compliance.url_gate import UrlGateResult, gate_url
+from at_utility.compliance.url_gate import UrlGateResult, gate_url, resolve_public_ip
 
 __all__ = [
     "ALLOWED_PURPOSES",
@@ -36,6 +36,7 @@ __all__ = [
     "gate_url",
     "redact_personal_data",
     "require_purpose",
+    "resolve_public_ip",
     "require_terms_acks",
     "terms_metadata",
 ]

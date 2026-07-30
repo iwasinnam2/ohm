@@ -14,26 +14,18 @@ export default function EnterpriseBillingPage() {
       <header className="page-head">
         <h1>Enterprise at withOhm</h1>
         <p>
-          For those who seek long-term partnerships with us, we offer the
-          Enterprise subscription: everything in the Intermediate package, plus
-          metered transactional usage fees agreed at fixed prices for
-          unlimited or budgeted monthly rates (cache hits, cache misses, and URL
-          fetches). The extra bonus is design-partner rank — a special standing
-          that lets you negotiate a fixed contract for transaction usage. This
-          option is designed for large-scale operations that engage in heavy
-          scraping daily and on a regular basis. Transaction usage agreements
-          offer long-term, substantial discounts on transaction costs through
-          fixed monthly prices for cache hits, cache misses, and web fetches —
-          treat them as the modern SMS / call-minutes / data model: unlimited-feel
-          usage for a salaried fee. Unlimited usage is the main feature of the
-          subscription. Alongside that, Enterprise offers live stats emailed
-          weekly detailing dedicated usage budgets and utilisation — so you see
-          the benefit of fixed-cost agreements in near real time — personal admin
-          contact, and an invite to the design-partner forum where clients
-          converse directly with withOhm engineers about usage and data
-          processing. The ultimate client experience and the most efficient AI
-          software-builder workflow, with us at withOhm.
+          Everything in Intermediate, plus fixed-price transaction bundles for
+          cache hits, cache misses, and web fetches — the modern SMS / minutes /
+          data model: unlimited-feel usage for a salaried fee, from{" "}
+          <strong>$2,500/month</strong>. Built for large-scale operations with
+          heavy daily scraping.
         </p>
+        <ul className="tier__pros">
+          <li>Negotiated fixed monthly bundles with substantial volume discounts</li>
+          <li>Weekly live stats: dedicated usage budgets and utilisation</li>
+          <li>Personal admin contact and design-partner forum access</li>
+          <li>Managed provider key pools and single-tenant options</li>
+        </ul>
       </header>
       <EnterpriseApplicationForm />
       <p className="billing-form__alt">

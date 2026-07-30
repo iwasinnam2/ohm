@@ -20,11 +20,6 @@ export const DOC_INDEX: DocMeta[] = [
     description: "Compliant fetch for agents — attach withOhm in Cursor.",
   },
   {
-    slug: "steal-kit",
-    title: "Steal-kit",
-    description: "Templates, /i line, bounty — distribution without pitches.",
-  },
-  {
     slug: "examples",
     title: "Drop-in examples",
     description: "OpenAI-compatible API — no new protocol.",

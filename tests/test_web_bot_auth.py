@@ -103,28 +103,17 @@ async def test_httpx_fetch_surfaces_402(monkeypatch):
     class FakeResponse:
         status_code = 402
         headers = {"crawler-price": "0.05", "content-type": "text/plain"}
-        url = "https://paid.example/article"
         text = "payment required"
 
         def raise_for_status(self):
             raise AssertionError("must not raise before 402 handling")
 
-    class FakeClient:
-        def __init__(self, *a, **k):
-            pass
+    async def fake_pinned_get(url):
+        return FakeResponse(), url
 
-        async def __aenter__(self):
-            return self
-
-        async def __aexit__(self, *a):
-            return False
-
-        async def get(self, url, headers=None):
-            # Identified crawler: UA always present
-            assert headers and headers.get("User-Agent")
-            return FakeResponse()
-
-    monkeypatch.setattr(iw.httpx, "AsyncClient", FakeClient)
+    # _pinned_get owns transport (IP pinning + per-hop gating); refusal
+    # shaping on the returned status lives in _fetch_via_httpx.
+    monkeypatch.setattr(iw, "_pinned_get", fake_pinned_get)
     doc = await iw._fetch_via_httpx(
         "https://paid.example/article",
         fmt="markdown",
@@ -138,7 +127,7 @@ async def test_httpx_fetch_surfaces_402(monkeypatch):
     assert "does not auto-pay" in doc["error"]
 
 
-async def test_httpx_fetch_sends_signature_headers(monkeypatch):
+async def test_pinned_fetch_sends_signature_headers(monkeypatch):
     import workers.ingest_worker as iw
 
     monkeypatch.setenv(wba.ENV_SEED, SEED_B64)
@@ -147,7 +136,7 @@ async def test_httpx_fetch_sends_signature_headers(monkeypatch):
     class FakeResponse:
         status_code = 200
         headers = {}
-        url = "https://open.example/page"
+        is_redirect = False
         text = "<html><title>t</title><body>hello world</body></html>"
 
         def raise_for_status(self):
@@ -163,19 +152,22 @@ async def test_httpx_fetch_sends_signature_headers(monkeypatch):
         async def __aexit__(self, *a):
             return False
 
-        async def get(self, url, headers=None):
+        async def get(self, url, headers=None, extensions=None):
+            seen["url"] = url
             seen["headers"] = headers or {}
+            seen["extensions"] = extensions or {}
             return FakeResponse()
-
-    monkeypatch.setattr(iw.httpx, "AsyncClient", FakeClient)
 
     class AllowedGate:
         allowed = True
         reason = ""
         code = ""
 
-    # gate_url does live DNS (SSRF fail-closed); stub it for the fake host
+    monkeypatch.setattr(iw.httpx, "AsyncClient", FakeClient)
+    # gate_url / resolve_public_ip do live DNS (SSRF fail-closed); stub both
     monkeypatch.setattr(iw, "gate_url", lambda _u: AllowedGate())
+    monkeypatch.setattr(iw, "resolve_public_ip", lambda _h: "93.184.216.34")
+
     doc = await iw._fetch_via_httpx(
         "https://open.example/page",
         fmt="markdown",
@@ -184,6 +176,12 @@ async def test_httpx_fetch_sends_signature_headers(monkeypatch):
         respect_robots=True,
     )
     assert doc["ok"] is True
+    # Connect-time pinning: request target uses the resolved IP, Host + SNI
+    # keep the logical hostname
+    assert "93.184.216.34" in seen["url"]
+    assert seen["headers"]["Host"] == "open.example"
+    assert seen["extensions"] == {"sni_hostname": "open.example"}
+    # Web Bot Auth signs the logical authority on the pinned request
     assert seen["headers"]["Signature"].startswith("sig1=:")
     assert '"@authority"' in seen["headers"]["Signature-Input"]
     assert ';tag="web-bot-auth"' in seen["headers"]["Signature-Input"]

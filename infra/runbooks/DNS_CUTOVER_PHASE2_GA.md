@@ -1,3 +1,7 @@
+> **Historical — mesh paused (Jul 2026).** api.withohm.dev points at the
+> us-east-1 NLB directly (see SINGLE_REGION.md). Global Accelerator was torn
+> down. Keep for when Anycast is re-enabled.
+
 # Phase 2 DNS — api.withohm.dev → Global Accelerator
 
 **Abort target (NLB):** see [NLB_HOSTNAME.txt](NLB_HOSTNAME.txt)

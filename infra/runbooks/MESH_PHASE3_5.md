@@ -1,3 +1,7 @@
+> **Historical — mesh paused (Jul 2026).** withOhm runs single-region
+> (us-east-1). Edges, Global Datastore, and Global Accelerator were torn down
+> until paid traffic justifies them. Keep for when the mesh is re-enabled.
+
 # Phases 3–5 in production (Redis mesh + Anycast)
 
 Run after **`v0.1.0-railgun`** and public miss/hit on `https://api.withohm.dev`.

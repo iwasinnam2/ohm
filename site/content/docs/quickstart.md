@@ -5,7 +5,7 @@ Change one base URL (or one Cursor attach). Keep your keys and SDKs.
 ## Paths
 
 1. **Self-serve:** [/billing/intermediate](/billing/intermediate) — Checkout issues your withOhm key once.
-2. **Subscriptions:** [/subscriptions](/subscriptions) — Free trial, Intermediate, and Enterprise (design-partner rank).
+2. **Subscriptions:** [/subscriptions](/subscriptions) — Intermediate ($0 membership + meters) and Enterprise (fixed monthly bundles).
 3. Point SDKs at `http://localhost:8081/v1` (or `https://api.withohm.dev/v1` after cutover).
 4. BYOK: send your provider key as `X-Ohm-Upstream-Key`. Authorization stays `sk-at-…`.
 5. Optional: [Add withOhm to Cursor](/docs/cursor).
