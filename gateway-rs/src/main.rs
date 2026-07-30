@@ -297,7 +297,10 @@ async fn proxy_once(
 
 async fn handle(app: Arc<App>, req: Request<Incoming>) -> Result<Response<Full<Bytes>>, Infallible> {
     let cfg = &app.cfg;
-    if req.uri().path() == "/health" {
+    let path_only = req.uri().path();
+    // Liveness is answered at the edge; readiness is proxied without auth so
+    // load balancers can probe Redis/provider state on Python.
+    if path_only == "/health" {
         return Ok(Response::new(Full::new(Bytes::from(
             "{\"ok\":true,\"service\":\"ohm\",\"plane\":\"rust\"}",
         ))));
@@ -313,7 +316,8 @@ async fn handle(app: Arc<App>, req: Request<Incoming>) -> Result<Response<Full<B
     // Stripe webhooks have no Bearer key — signature is verified by Python.
     let is_stripe_webhook =
         path_q.starts_with("/v1/billing/webhook") && method == Method::POST;
-    let token = if is_stripe_webhook {
+    let is_ready = path_only == "/ready" && method == Method::GET;
+    let token = if is_stripe_webhook || is_ready {
         None
     } else {
         let Some(token) = extract_bearer(&req) else {
@@ -337,7 +341,8 @@ async fn handle(app: Arc<App>, req: Request<Incoming>) -> Result<Response<Full<B
         }
     };
 
-    if is_stripe_webhook {
+    if is_stripe_webhook || is_ready {
+        let label = if is_ready { "ready" } else { "stripe webhook" };
         let proxied = match proxy_once(
             &app,
             &cfg.primary_upstream,
@@ -350,7 +355,7 @@ async fn handle(app: Arc<App>, req: Request<Incoming>) -> Result<Response<Full<B
         {
             Ok(r) => r,
             Err(e) => {
-                warn!("stripe webhook proxy error: {e}");
+                warn!("{label} proxy error: {e}");
                 return Ok(Response::builder()
                     .status(502)
                     .body(Full::new(Bytes::from("upstream error")))
@@ -362,7 +367,7 @@ async fn handle(app: Arc<App>, req: Request<Incoming>) -> Result<Response<Full<B
         let bytes = match proxied.collect().await {
             Ok(c) => c.to_bytes(),
             Err(e) => {
-                warn!("stripe webhook body error: {e}");
+                warn!("{label} body error: {e}");
                 return Ok(Response::builder()
                     .status(502)
                     .body(Full::new(Bytes::from("upstream body error")))
