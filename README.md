@@ -2,6 +2,7 @@
 
 Unified AI infrastructure utility: OpenAI-compatible model routing, Redis prompt cache, provider failover, and compliant web ingestion—metered as a tollbooth between your applications and upstream model providers.
 
+> **Exact-replay hits that cost zero upstream tokens. Cross-provider consistency. Locality — Redis edge reads. Replay and audit value.**
 > Change one base URL (or one Cursor attach). Keep your keys and SDKs. Gain prompt replay, a clearer pipe, compliant web context — and a bill that rents the plumbing, not the model.
 
 **Site:** https://www.withohm.dev · **API:** https://api.withohm.dev/v1 · **Status:** https://status.withohm.dev · **Vision:** [`docs/VISION.md`](docs/VISION.md)

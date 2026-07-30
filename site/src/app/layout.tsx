@@ -29,7 +29,7 @@ const plexMono = IBM_Plex_Mono({
 const siteUrl = "https://www.withohm.dev";
 
 const description =
-  "AI public API model switching, prompt caching and web browsing. All handled in a zero-latency zero-resistance engine that allows user to streamline AI workflow with unprecedented speed and efficiency.";
+  "Exact-replay hits that cost zero upstream tokens. Cross-provider consistency. Locality — Redis edge reads. Replay and audit value. One base URL in front of every model, plus compliant web context.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),

@@ -370,6 +370,41 @@ pre {
   animation: cta-settle var(--dur-cta) var(--ease-out) 0.55s both;
 }
 
+.hero__pillars {
+  list-style: none;
+  margin: var(--space-6) 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+  gap: var(--space-3);
+  max-width: min(64rem, 100%);
+  animation: rise-in var(--dur-slow) var(--ease-out) 0.55s both;
+}
+
+.hero__pillar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-3) var(--space-4);
+  border-left: 2px solid var(--accent);
+  background: linear-gradient(90deg, var(--accent-soft), transparent 85%);
+}
+
+.hero__pillar-title {
+  font-family: var(--font-display);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.hero__pillar-body {
+  font-size: var(--text-sm);
+  line-height: var(--leading-body);
+  color: var(--muted);
+}
+
 .hero__product {
   margin-top: var(--space-7);
   max-width: var(--measure-snippet);
@@ -465,6 +500,7 @@ pre {
   .hero__brand,
   .hero__promise,
   .hero__cta,
+  .hero__pillars,
   .hero__product,
   .hero__cta .btn--primary {
     animation: none !important;
