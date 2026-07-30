@@ -64,7 +64,7 @@ pip install -e ".[mcp]"
 ## Streaming and failover honesty
 
 - **Non-streaming** chat completions: the Rust edge may retry the Python upstream (primary then fallback URL) before returning a body. Cache writes happen after a successful full response.
-- **Streaming** chat completions: the edge largely pass-through-proxies the upstream token stream. Mid-stream provider handoff without a client reconnect is **not** guaranteed yet. Plan for reconnect or non-stream until that work lands.
+- **Streaming** chat completions: **pre-first-byte failover is shipped.** The Python plane eagerly opens the upstream stream, retries once if it dies before the first byte, and returns an honest HTTP error (not a 200 error-frame stream) if both attempts fail; the Rust edge falls back on connect errors or pre-first-byte 5xx and pipes SSE through unbuffered. Mid-stream provider handoff after the first byte without a client reconnect is **not** guaranteed — plan for reconnect or non-stream for critical paths.
 
 ## Environment rules
 

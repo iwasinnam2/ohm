@@ -2,8 +2,10 @@
 //!
 //! Maintains Redis RESP cache lookups and reverse-proxies to the Python
 //! control-plane (or directly to provider base URLs) with connection reuse.
-//! Mid-stream failover: if primary upstream errors before first byte, retry
-//! fallback base URL on a pre-warmed path.
+//! Pre-first-byte failover: if the primary upstream errors on connect or
+//! answers 5xx before any body byte is forwarded, retry the fallback base URL
+//! on a pre-warmed path. Streaming (SSE) responses are piped through
+//! unbuffered after the first byte; mid-stream handoff is not attempted.
 //!
 //! Redis split (Phase 4): AT_RS_REDIS = GET (replica); AT_RS_REDIS_WRITE = SET
 //! (leader). Cache keys match Python `cache_key_for_request` (docs/REDIS_MESH.md).
@@ -17,6 +19,7 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use bytes::Bytes;
+use http_body_util::combinators::BoxBody;
 use http_body_util::{BodyExt, Full};
 use hyper::body::Incoming;
 use hyper::server::conn::http1;
@@ -82,11 +85,18 @@ struct App {
     >,
 }
 
-fn unauthorized() -> Response<Full<Bytes>> {
+/// Unified response body: buffered (cache hits, errors) or streamed (SSE pass-through).
+type OutBody = BoxBody<Bytes, hyper::Error>;
+
+fn full_body(bytes: Bytes) -> OutBody {
+    Full::new(bytes).map_err(|never| match never {}).boxed()
+}
+
+fn unauthorized() -> Response<OutBody> {
     Response::builder()
         .status(StatusCode::UNAUTHORIZED)
         .header("content-type", "application/json")
-        .body(Full::new(Bytes::from(
+        .body(full_body(Bytes::from(
             "{\"error\":{\"message\":\"Invalid API key\",\"type\":\"invalid_request_error\",\"code\":\"unauthorized\"}}",
         )))
         .unwrap()
@@ -295,13 +305,13 @@ async fn proxy_once(
     Ok(res)
 }
 
-async fn handle(app: Arc<App>, req: Request<Incoming>) -> Result<Response<Full<Bytes>>, Infallible> {
+async fn handle(app: Arc<App>, req: Request<Incoming>) -> Result<Response<OutBody>, Infallible> {
     let cfg = &app.cfg;
     let path_only = req.uri().path();
     // Liveness is answered at the edge; readiness is proxied without auth so
     // load balancers can probe Redis/provider state on Python.
     if path_only == "/health" {
-        return Ok(Response::new(Full::new(Bytes::from(
+        return Ok(Response::new(full_body(Bytes::from(
             "{\"ok\":true,\"service\":\"ohm\",\"plane\":\"rust\"}",
         ))));
     }
@@ -336,7 +346,7 @@ async fn handle(app: Arc<App>, req: Request<Incoming>) -> Result<Response<Full<B
             warn!("body read error: {e}");
             return Ok(Response::builder()
                 .status(500)
-                .body(Full::new(Bytes::from("body error")))
+                .body(full_body(Bytes::from("body error")))
                 .unwrap());
         }
     };
@@ -358,7 +368,7 @@ async fn handle(app: Arc<App>, req: Request<Incoming>) -> Result<Response<Full<B
                 warn!("{label} proxy error: {e}");
                 return Ok(Response::builder()
                     .status(502)
-                    .body(Full::new(Bytes::from("upstream error")))
+                    .body(full_body(Bytes::from("upstream error")))
                     .unwrap());
             }
         };
@@ -370,7 +380,7 @@ async fn handle(app: Arc<App>, req: Request<Incoming>) -> Result<Response<Full<B
                 warn!("{label} body error: {e}");
                 return Ok(Response::builder()
                     .status(502)
-                    .body(Full::new(Bytes::from("upstream body error")))
+                    .body(full_body(Bytes::from("upstream body error")))
                     .unwrap());
             }
         };
@@ -382,7 +392,7 @@ async fn handle(app: Arc<App>, req: Request<Incoming>) -> Result<Response<Full<B
             builder = builder.header(k, v);
         }
         builder = builder.header("x-at-plane", "rust");
-        return Ok(builder.body(Full::new(bytes)).unwrap());
+        return Ok(builder.body(full_body(bytes)).unwrap());
     }
 
     let token = token.expect("authorized token");
@@ -420,7 +430,7 @@ async fn handle(app: Arc<App>, req: Request<Incoming>) -> Result<Response<Full<B
                             .header("content-type", "application/json")
                             .header("x-at-cache", "HIT")
                             .header("x-at-plane", "rust")
-                            .body(Full::new(Bytes::from(cached)))
+                            .body(full_body(Bytes::from(cached)))
                             .unwrap());
                     }
                 }
@@ -497,15 +507,17 @@ async fn handle(app: Arc<App>, req: Request<Incoming>) -> Result<Response<Full<B
                     builder = builder.header(k, v);
                 }
                 builder = builder.header("x-at-cache", "MISS").header("x-at-plane", "rust");
-                Ok(builder.body(Full::new(bytes)).unwrap())
+                Ok(builder.body(full_body(bytes)).unwrap())
             }
             Err(e) => Ok(Response::builder()
                 .status(502)
-                .body(Full::new(Bytes::from(format!("{{\"error\":\"{e}\"}}"))))
+                .body(full_body(Bytes::from(format!("{{\"error\":\"{e}\"}}"))))
                 .unwrap()),
         }
     } else {
-        // Pass-through (including SSE streams) with failover on connect error
+        // Pass-through (including SSE streams): pre-first-byte failover on
+        // connect error *or* 5xx status, then pipe the body through unbuffered
+        // so SSE tokens reach the client as the provider emits them.
         let result = match proxy_once(
             &app,
             &cfg.primary_upstream,
@@ -516,6 +528,13 @@ async fn handle(app: Arc<App>, req: Request<Incoming>) -> Result<Response<Full<B
         )
         .await
         {
+            Ok(r) if r.status().is_server_error() => {
+                warn!(
+                    "stream/primary status {} pre-first-byte; fallback",
+                    r.status()
+                );
+                proxy_once(&app, &cfg.fallback_upstream, method, &path_q, headers, body).await
+            }
             Ok(r) => Ok(r),
             Err(e) => {
                 warn!("stream/primary fail {e}; fallback");
@@ -524,11 +543,9 @@ async fn handle(app: Arc<App>, req: Request<Incoming>) -> Result<Response<Full<B
         };
         match result {
             Ok(res) => {
-                let status = res.status();
-                let headers_out = res.headers().clone();
-                let bytes = res.collect().await.map(|c| c.to_bytes()).unwrap_or_default();
-                let mut builder = Response::builder().status(status);
-                for (k, v) in headers_out.iter() {
+                let (parts, upstream_body) = res.into_parts();
+                let mut builder = Response::builder().status(parts.status);
+                for (k, v) in parts.headers.iter() {
                     if k == hyper::header::TRANSFER_ENCODING {
                         continue;
                     }
@@ -536,12 +553,13 @@ async fn handle(app: Arc<App>, req: Request<Incoming>) -> Result<Response<Full<B
                 }
                 Ok(builder
                     .header("x-at-plane", "rust")
-                    .body(Full::new(bytes))
+                    .header("x-ohm-stream-failover", "pre-first-byte")
+                    .body(upstream_body.boxed())
                     .unwrap())
             }
             Err(e) => Ok(Response::builder()
                 .status(502)
-                .body(Full::new(Bytes::from(format!("{{\"error\":\"{e}\"}}"))))
+                .body(full_body(Bytes::from(format!("{{\"error\":\"{e}\"}}"))))
                 .unwrap()),
         }
     }
