@@ -94,6 +94,8 @@ Inspect live policy: `GET /v1/compliance/policy`. Templates: Terms, DPA, upstrea
 | `infra/` | Terraform + Kubernetes: Global Datastore edges + Anycast |
 | `site/` | Marketing + docs + self-serve `/billing` |
 
+Gateway packaging (scopes, catalog, env lineage, per-model usage): [`docs/GATEWAY_SURFACE.md`](docs/GATEWAY_SURFACE.md).
+
 ## Tenancy and billing
 
 Bootstrap key `sk-at-dev` works locally. Self-serve: `POST /v1/billing/checkout` (site `/billing`). Ops: issue with admin key (`AT_ADMIN_API_KEYS`):
