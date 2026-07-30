@@ -86,10 +86,10 @@ Smoke 60 minutes; run [REGION_DRAIN.md](REGION_DRAIN.md). Then undeffer multi-re
 - [x] Lag drill **PASS** (&lt;1s lab budget)
 - [x] GA endpoint groups healthy; DNS `api.withohm.dev` → `a8d1c391c281079a4.awsglobalaccelerator.com`
 - [x] Public `external_smoke` **PASS** (SNI + public DNS)
-- [ ] Region-drain drill ([REGION_DRAIN.md](REGION_DRAIN.md)) — record below when complete
+- [x] Region-drain drill ([REGION_DRAIN.md](REGION_DRAIN.md)) — **PASS** 2026-07-29
 
 ### Region-drain log
 
 | When (UTC) | Drained | Result | Notes |
 |------------|---------|--------|-------|
-| _(pending)_ | us-west-2 weight 0 | | Restore after smoke |
+| 2026-07-29 12:35 | us-west-2 weight 0 → 128 | **PASS** | `/health` 200; 0/20 probe errors; restored weight 128 |

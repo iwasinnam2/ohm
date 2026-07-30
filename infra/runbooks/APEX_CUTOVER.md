@@ -64,15 +64,22 @@ v=spf1 include:spf.protection.outlook.com -all
 | `www.withohm.dev` | CNAME → Amplify CloudFront | **Amplify** (200, `/i` live) |
 | `fetch.withohm.dev` | CNAME → Amplify CloudFront | **Amplify** (200, fetch toy) |
 | `status.withohm.dev` | CNAME → Amplify CloudFront | **Amplify** (200) |
-| `withohm.dev` (apex) | Still **Vercel A** records | **Vercel** until forward / ALIAS |
-| `api.withohm.dev` | AWS NLB/GA | Unchanged |
+| `withohm.dev` (apex) | **A deleted** (no apex address; NXDOMAIN/unresolvable) | **Forward still required** — set GoDaddy Domain Forward → `https://www.withohm.dev` (301) or ALIAS `@` → CloudFront |
+| `api.withohm.dev` | AWS GA | Unchanged / healthy |
 
-Amplify Console may show `AWAITING_APP_CNAME` until apex is off Vercel A records.
+Amplify domain association: **AVAILABLE** (`www` / `fetch` / `status` verified). Apex subdomain still `verified: false` until `@` stops using the Vercel A record.
 
-### Finish apex (you — GoDaddy)
+Vercel project `site` no longer owns `withohm.dev` (removed from account).
 
-1. **Domain Forward:** `withohm.dev` → `https://www.withohm.dev` (301 permanent).
-2. **Delete** apex **A** records pointing at Vercel (`216.198.79.1`, `64.29.17.1`).
-3. Optional: remove `withohm.dev` / `www` from the old Vercel project so it stops claiming the domain.
+### Finish apex NOW (GoDaddy — Domain Forward only)
 
-Until then, share **`https://www.withohm.dev`** and **`https://fetch.withohm.dev`** as the canonical public URLs.
+**Done:** Apex **A** (Vercel `76.76.21.21`) is removed — `withohm.dev` no longer resolves to a dead Vercel deploy (verified 2026-07-30 via Google DNS / local resolver: no A record).
+
+**Still required (GoDaddy login):** Domain Forward or ALIAS — Amplify apex subdomain remains `verified: false` until `@` points at CloudFront or forwards:
+
+1. Sign in at GoDaddy → Domains → `withohm.dev` → **Forwarding** (or DNS).
+2. **Domain Forward:** `withohm.dev` → `https://www.withohm.dev` (301 permanent), **or** ALIAS/ANAME `@` → `d2pta05dql0ixa.cloudfront.net`.
+3. Verify: `powershell -File scripts/verify_apex.ps1` — apex should 301 to www (or serve Amplify).
+4. Confirm SNS email for AWS budget (`admin@withohm.dev`) if you have a pending subscription mail.
+
+Until forward is live, share **`https://www.withohm.dev`** and **`https://fetch.withohm.dev`**.

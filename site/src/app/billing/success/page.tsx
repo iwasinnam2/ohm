@@ -113,7 +113,7 @@ export default function BillingSuccessPage() {
       <div className="postpay__share">
         <p className="postpay__share-label">Viral unit — paste to a teammate</p>
         <pre className="postpay__share-line">
-          Add withOhm MCP from https://withohm.dev/i
+          Add withOhm MCP from https://www.withohm.dev/i
         </pre>
         <p className="postpay__cta-note">
           They get their own $0 Intermediate seat, then duplicate this attach.

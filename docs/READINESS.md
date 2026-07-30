@@ -1,71 +1,50 @@
-# Readiness — suspension bridge before traffic
+# Readiness — marketplace pre-approval window
 
-Public distribution readiness for **Ohm**. Towers can be walked; the roadway is not open until the deck is complete.
+Public distribution readiness for **withOhm** (Ohm). Hosted pipe is live; this checklist tracks Cursor Marketplace review readiness.
 
-## Verdict
+## Verdict (live)
 
 | Layer | Status |
 |-------|--------|
-| Marketing / legal (`withohm.dev`) | Standing |
-| Local edge (`:8081`) + railgun smoke | Standing |
-| Stripe seat Checkout (test) | Standing |
-| Cursor deeplink CTA | Standing |
-| Public GitHub origin | Required for marketplace |
-| Valid logotype SVG/PNG | Required for marketplace |
-| Public API deck (`api.withohm.dev`) | **Open** — public miss/hit via GA (`v0.1.0-railgun` / `v0.1.1-mesh`) |
-| Multi-region / Anycast | **Open** — edges us-west-2 + eu-west-2; `api` → GA DNS |
+| Marketing / legal (`www.withohm.dev`) | Live — AWS Amplify + CloudFront |
+| Public API (`api.withohm.dev`) | Live — EKS + Global Accelerator |
+| Fetch toy (`fetch.withohm.dev`) | Live — demo strip (not full compliance pipe) |
+| Stripe seat Checkout + meters | Live |
+| Cursor deeplink CTA | Live |
+| Public GitHub | https://github.com/iwasinnam2/ohm |
+| Logotype PNG/SVG | In-repo + `site/public/ohm-icon-360.png` |
+| Repo LICENSE | MIT (matches plugin.json) |
+| Local stdio MCP | Shipped — remote URL MCP **deferred** |
+| Apex `withohm.dev` | Prefer **www** until GoDaddy 301 cutover |
 
-**Allow global traffic** only after public chat miss/hit on `https://api.withohm.dev`, Stripe lifecycle green on that host, and a public repo for trust + Cursor submit.
+## Marketplace blockers cleared (this sprint)
 
-## Immediate (this pass)
+- [x] MIT LICENSE + NOTICE
+- [x] Logo PNG in `site/public/`
+- [x] Status page truth (Amplify + live API)
+- [x] False claims removed (managed keys / 30-day trial)
+- [x] MCP: no forged legal acks; `OHM_API_KEY` required
+- [x] SSRF DNS re-check; robots fail-closed
+- [x] Checkout mint rate limit; Rust fail-closed; `/ready` sanitized
+- [x] Ingest NetworkPolicy; `request_cap` enforced
+- [x] Fetch toy labeled demo vs Ohm pipe
+- [x] Self-audit: [listings/MARKETPLACE_AUDIT.md](listings/MARKETPLACE_AUDIT.md)
 
-- [x] ASCII-safe logo: [`brand/ohm-icon.svg`](../brand/ohm-icon.svg), [`site/public/ohm-icon.svg`](../site/public/ohm-icon.svg), [`assets/logo.svg`](../assets/logo.svg)
-- [x] PNG: [`brand/ohm-icon-360.png`](../brand/ohm-icon-360.png) → `https://withohm.dev/ohm-icon-360.png` after site deploy
-- [x] Cursor plugin shape: [`.cursor-plugin/plugin.json`](../.cursor-plugin/plugin.json) + [`mcp.json`](../mcp.json)
-- [x] Public GitHub push — https://github.com/iwasinnam2/ohm
-- [x] Cursor marketplace submission sent
-- [x] Redis mesh Phase 1–4 in-repo — [REDIS_MESH.md](REDIS_MESH.md) (compose split, lag smoke, Global Datastore TF, `AT_RS_REDIS_WRITE`)
-- [x] Redeploy site so `https://withohm.dev/ohm-icon.svg` + `.png` resolve
-- [x] Leader EKS + NLB edge live (miss/hit on NLB) — [DNS_CUTOVER_PHASE1.md](../infra/runbooks/DNS_CUTOVER_PHASE1.md)
-- [x] GoDaddy: CNAME `api` → NLB hostname (see DNS_CUTOVER_PHASE1)
-- [x] Public API deck hostname — [API_CUTOVER.md](../infra/runbooks/API_CUTOVER.md) / [GO_LIVE.md](../infra/runbooks/GO_LIVE.md) after DNS
-- [x] Pre-DNS TLS smoke: `external_smoke.ps1 -BaseUrl https://api.withohm.dev -ResolveIp <NLB_IP> -SkipOpenAI`
-- [x] Stripe webhook endpoint created → `https://api.withohm.dev/v1/billing/webhook` (awaits DNS + secret roll)
-- [x] `external_smoke.ps1 -BaseUrl https://api.withohm.dev` (public DNS)
-- [x] Vercel `API_EDGE_LIVE=1` + site redeploy
-- [x] Tag `v0.1.0-railgun`
+## Still operator / follow-up
 
-Logotype URLs for Cursor submit:
+- [ ] GoDaddy apex → www ([APEX_CUTOVER.md](../infra/runbooks/APEX_CUTOVER.md))
+- [ ] Amplify redeploy so `www` serves new PNG + status + copy
+- [ ] Gateway/edge image roll with compliance + auth hardening
+- [ ] Cursor Marketplace submit / refresh: [listings/MARKETPLACE.md](listings/MARKETPLACE.md)
+- [ ] cursor.directory: [listings/CURSOR_DIRECTORY.md](listings/CURSOR_DIRECTORY.md)
+- [ ] Screenshots in [listings/screenshots/](listings/screenshots/)
+- [ ] Design-partner quotes on homepage (inbound via [/design-partners](https://www.withohm.dev/design-partners))
 
-- Prefer PNG: `https://withohm.dev/ohm-icon-360.png`
-- Or SVG: `https://withohm.dev/ohm-icon.svg`
-- Or relative in-repo: `assets/logo.svg`
-
-## Deck before traffic (from [GO_LIVE.md](../infra/runbooks/GO_LIVE.md))
-
-- [ ] `release_smoke` green on staging (consecutive days as required)
-- [ ] [API_CUTOVER.md](../infra/runbooks/API_CUTOVER.md) Phase 1+ — NLB then GA for `api.withohm.dev`
-- [ ] `external_smoke.ps1 -BaseUrl https://api.withohm.dev` from a second network
-- [ ] Vercel `API_EDGE_LIVE=1` after DNS leaves edge-pending
-- [ ] Stripe webhook against public API; checkout → cancel → 403
-- [ ] OpenAI + AWS budget alerts
-- [ ] On-call / incident channel
-- [ ] Status page: `status.withohm.dev`
-
-## After first traffic
-
-- [x] Tag `v0.1.0-railgun` (single-region public deck)
-- [x] Tag `v0.1.1-mesh` (Global Datastore + two edges + Anycast on `api.withohm.dev`)
-- [ ] Cursor Marketplace submit / refresh: https://cursor.com/marketplace/publish — copy in [listings/MARKETPLACE.md](listings/MARKETPLACE.md)
-- [ ] cursor.directory listing — [listings/CURSOR_DIRECTORY.md](listings/CURSOR_DIRECTORY.md)
-- [ ] Daily partner fishing loop — [LAUNCH_GTM.md](LAUNCH_GTM.md) + [OUTREACH_TEMPLATES.md](OUTREACH_TEMPLATES.md)
-- [ ] SDK publish ([PLATFORM.md](PLATFORM.md)) only after public smoke
-- [ ] Design-partner quotes on homepage (inbound via [/design-partners](https://withohm.dev/design-partners))
-
-## Deferred (do not claim yet)
+## Deferred (do not claim)
 
 - Mid-stream failover
 - Enterprise contractual SLA
 - Managed-key capacity pools
 - Hosted remote MCP URL (zero `pip install`)
 - Tokyo (`ap-northeast-1`) edge (optional third region)
+- Full package/key rename away from `at-utility` / `sk-at-*`

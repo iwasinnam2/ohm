@@ -5,7 +5,7 @@ import Link from "next/link";
 import { OhmMark } from "@/components/OhmMark";
 import { cursorOhmInstallHref } from "@/lib/cursorMcp";
 
-const SHARE_LINE = "Add withOhm MCP from https://withohm.dev/i";
+const SHARE_LINE = "Add withOhm MCP from https://www.withohm.dev/i";
 
 export function InstallClient() {
   const [apiKey, setApiKey] = useState("");

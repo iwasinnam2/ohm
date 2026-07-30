@@ -1,12 +1,12 @@
-# Ohm
+# Ohm (withOhm)
 
 Unified AI infrastructure utility: OpenAI-compatible model routing, Redis prompt cache, provider failover, and compliant web ingestion—metered as a tollbooth between your applications and upstream model providers.
 
 > Change one base URL (or one Cursor attach). Keep your keys and SDKs. Gain prompt replay, a clearer pipe, compliant web context — and a bill that rents the plumbing, not the model.
 
-**Site:** https://withohm.dev · **API:** https://api.withohm.dev/v1 (cutover: [`infra/runbooks/API_CUTOVER.md`](infra/runbooks/API_CUTOVER.md)) · **Status:** https://status.withohm.dev · **Vision:** [`docs/VISION.md`](docs/VISION.md)
+**Site:** https://www.withohm.dev · **API:** https://api.withohm.dev/v1 · **Status:** https://status.withohm.dev · **Vision:** [`docs/VISION.md`](docs/VISION.md)
 
-Repo and cloud resource names may still say `at-utility` until an internal rename cutover.
+**License:** MIT (see [`LICENSE`](LICENSE) + [`NOTICE`](NOTICE)). Source is open; the hosted withOhm pipe remains a commercial metered service. Package/key names may still say `at-utility` / `sk-at-*` (legacy AT prefix); the product is **withOhm**.
 
 ## Local developer contract (stable)
 
@@ -47,11 +47,13 @@ Release smoke asserts health, mock miss/hit, OpenAI miss/hit (when a key is pres
 
 ## Cursor / MCP
 
-Default public base: `https://api.withohm.dev/v1`. Founding partners (no warm list needed): [docs/LAUNCH_GTM.md](docs/LAUNCH_GTM.md) · apply at https://withohm.dev/design-partners
+Local **stdio** MCP (remote URL MCP is not shipped). Public base: `https://api.withohm.dev/v1`. Partners: [docs/LAUNCH_GTM.md](docs/LAUNCH_GTM.md) · https://www.withohm.dev/design-partners
 
 ```powershell
+# From a clone, or: pip install "at-utility[mcp] @ git+https://github.com/iwasinnam2/ohm.git"
 pip install -e ".[mcp]"
-# Copy .cursor/mcp.json.example into Cursor MCP settings — see docs/CURSOR.md
+# Set OHM_API_KEY (required). Optional: OHM_UPSTREAM_KEY, OHM_BASE_URL
+# Plugin: .cursor-plugin/ + mcp.json — see docs/CURSOR.md
 ```
 
 ## Streaming and failover honesty

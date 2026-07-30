@@ -1,7 +1,10 @@
 ---
 name: ohm-fetch-web
-description: Compliant Ohm URL scrape via MCP ohm_fetch_web (markdown or JSON).
-disable-model-invocation: true
+description: >
+  Compliant public URL scrape via withOhm MCP ohm_fetch_web (markdown or JSON).
+  Use when the user or agent needs page content from public URLs, web context for
+  coding agents, docs scrape, catalog pages, or browse-without-browser — withOhm,
+  ohm, web-fetch, web-scrape, URL context.
 ---
 
 # Ohm fetch web
@@ -29,4 +32,6 @@ ohm_fetch_web(
 
 **JSON shape:** `url`, `title`, `text`, optional `meta`, `json_ld`.
 
-Requires Ohm MCP attached (`OHM_BASE_URL`, `OHM_API_KEY`). See `docs/CURSOR.md`.
+Requires Ohm MCP attached (`OHM_BASE_URL`, `OHM_API_KEY`). Terms/DPA bound at Checkout. See `docs/CURSOR.md`.
+
+Share line: `Add withOhm MCP from https://www.withohm.dev/i`

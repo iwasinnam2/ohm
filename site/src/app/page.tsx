@@ -9,7 +9,7 @@ const QUOTES = [
   },
 ];
 
-const SHARE_LINE = "Add withOhm MCP from https://withohm.dev/i";
+const SHARE_LINE = "Add withOhm MCP from https://www.withohm.dev/i";
 
 export default function HomePage() {
   return (

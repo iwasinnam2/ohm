@@ -3,27 +3,33 @@ import Link from "next/link";
 
 export const metadata: Metadata = {
   title: "Status",
-  description: "withOhm service status — docs, API edge, and limits.",
+  description: "withOhm service status — docs, API, and limits.",
 };
 
 const COMPONENTS = [
   {
     name: "Docs / marketing",
-    host: "withohm.dev",
+    host: "www.withohm.dev",
     state: "operational",
-    detail: "Vercel production",
+    detail: "AWS Amplify (WEB_COMPUTE) + CloudFront",
   },
   {
     name: "Public API",
     host: "api.withohm.dev",
-    state: "edge_pending",
-    detail: "ACM issued; chat cutover per API_CUTOVER runbook",
+    state: "operational",
+    detail: "EKS edges + Global Accelerator Anycast",
   },
   {
-    name: "Supported edge",
+    name: "Fetch toy",
+    host: "fetch.withohm.dev",
+    state: "operational",
+    detail: "Public demo strip — not the full compliance pipe",
+  },
+  {
+    name: "Local edge (dev)",
     host: "localhost:8081",
     state: "supported",
-    detail: "Rust gateway — current client entry until public cutover",
+    detail: "Rust gateway for local smoke — optional for production attach",
   },
 ] as const;
 
@@ -33,8 +39,8 @@ export default function StatusPage() {
       <header className="page-head">
         <h1>Status</h1>
         <p>
-          Component view for withOhm. Attach <code>status.withohm.dev</code> as
-          a Vercel domain pointing at this page.
+          Live component view for withOhm. Also at{" "}
+          <code>status.withohm.dev</code>.
         </p>
       </header>
       <ul className="status-list">
@@ -53,8 +59,8 @@ export default function StatusPage() {
       </ul>
       <p className="status-foot">
         Limits and compliance caps:{" "}
-        <Link href="/docs/status">docs/status</Link>. Cutover:{" "}
-        <Link href="/docs/status">API edge notes</Link>.
+        <Link href="/docs/status">docs/status</Link>. Privacy:{" "}
+        <Link href="/docs/privacy">docs/privacy</Link>.
       </p>
     </>
   );

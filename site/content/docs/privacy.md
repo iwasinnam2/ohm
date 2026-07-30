@@ -44,7 +44,7 @@ Depending on UK GDPR / EU GDPR / CCPA applicability, you may have rights of acce
 
 ## Cookies / marketing site
 
-The marketing site is static documentation. No advertising trackers are required for core docs. Hosting (e.g. Vercel) may process standard request logs.
+The marketing site is documentation plus self-serve billing. No advertising trackers are required for core docs. Hosting (AWS Amplify / CloudFront) may process standard request logs.
 
 ## Changes
 

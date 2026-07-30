@@ -7,7 +7,7 @@ export default function robots(): MetadataRoute.Robots {
       allow: "/",
       disallow: ["/billing/"],
     },
-    sitemap: "https://withohm.dev/sitemap.xml",
-    host: "https://withohm.dev",
+    sitemap: "https://www.withohm.dev/sitemap.xml",
+    host: "www.withohm.dev",
   };
 }

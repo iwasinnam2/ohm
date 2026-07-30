@@ -7,4 +7,18 @@ Capture PNG/GIF here before refreshing Marketplace / cursor.directory:
 3. `usage.png` — ohm_usage snapshot
 4. `add-to-cursor.png` — billing success deeplink CTA
 
-Keep files small (&lt;1MB each). See [MARKETPLACE.md](MARKETPLACE.md).
+Keep files small (<1MB each). See [MARKETPLACE.md](MARKETPLACE.md) and [MARKETPLACE_AUDIT.md](../MARKETPLACE_AUDIT.md).
+
+## Capture checklist (operator)
+
+Until captures are committed, use this smoke as evidence of attachability:
+
+```powershell
+pip install -e ".[mcp]"
+$env:OHM_API_KEY = "sk-at-…"   # from Checkout
+$env:OHM_BASE_URL = "https://api.withohm.dev/v1"
+# Attach mcp.json in Cursor, then exercise ohm_usage / ohm_fetch_web / ohm_chat
+.\scripts\external_smoke.ps1 -BaseUrl https://api.withohm.dev -ApiKey $env:OHM_API_KEY
+```
+
+Follow-up if Marketplace silent >10 days: marketplace@cursor.com with plugin `ohm`, repo URL, submission date.

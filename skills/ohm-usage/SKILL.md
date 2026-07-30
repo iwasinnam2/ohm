@@ -1,7 +1,8 @@
 ---
 name: ohm-usage
-description: Ohm usage snapshot via MCP ohm_usage (cache hits, fetches, web attach).
-disable-model-invocation: true
+description: >
+  withOhm usage snapshot via MCP ohm_usage (cache hits, fetches, web attach).
+  Use when checking meter spend, hit ratio, or fetch caps — withOhm, ohm, usage.
 ---
 
 # Ohm usage

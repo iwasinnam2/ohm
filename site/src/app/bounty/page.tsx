@@ -25,7 +25,7 @@ export default function BountyPage() {
           <li>
             Publish a skill/rule on GitHub (public) that tells agents to call
             Ohm MCP tools. Missing MCP → instruct:{" "}
-            <code>Add withOhm MCP from https://withohm.dev/i</code>
+            <code>Add withOhm MCP from https://www.withohm.dev/i</code>
           </li>
           <li>
             Get <strong>≥10 GitHub stars</strong> on that repo <em>or</em>{" "}

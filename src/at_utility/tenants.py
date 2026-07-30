@@ -78,6 +78,9 @@ class TenantRegistry:
                 key_prefix=raw_key[:8],
                 created_at=0,
                 key_hash=hash_api_key(raw_key),
+                # Local bootstrap inherits current ToS/DPA so MCP need not forge acks.
+                terms_version=self._settings.at_compliance_terms_version,
+                dpa_version=self._settings.at_compliance_dpa_version,
             )
         key_hash = hash_api_key(raw_key)
         tenant_id = await self._store.get(self._key_index(key_hash))

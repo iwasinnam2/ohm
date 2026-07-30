@@ -23,10 +23,10 @@ export default function EdgePendingPage() {
         documentation site and does not serve chat completions yet.
       </p>
       <div className="hero__cta cta-row">
-        <a className="btn btn--primary" href="https://withohm.dev">
+        <a className="btn btn--primary" href="https://www.withohm.dev">
           Go to withohm.dev
         </a>
-        <a href="https://withohm.dev/docs/quickstart" className="link-quiet">
+        <a href="https://www.withohm.dev/docs/quickstart" className="link-quiet">
           Quickstart (local :8081)
         </a>
       </div>
@@ -41,9 +41,9 @@ curl -s http://localhost:8081/v1/chat/completions \\
 # This host → HTTP 503 JSON for /v1 and /health until AWS cutover`}</pre>
         <p className="hero__note">
           Keys use legacy <code>sk-at-…</code> · Docs & legal:{" "}
-          <a href="https://withohm.dev/docs/terms">Terms</a> ·{" "}
-          <a href="https://withohm.dev/docs/privacy">Privacy</a> ·{" "}
-          <a href="https://withohm.dev/docs/dpa">DPA</a>
+          <a href="https://www.withohm.dev/docs/terms">Terms</a> ·{" "}
+          <a href="https://www.withohm.dev/docs/privacy">Privacy</a> ·{" "}
+          <a href="https://www.withohm.dev/docs/dpa">DPA</a>
         </p>
       </div>
     </section>

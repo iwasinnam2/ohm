@@ -5,7 +5,7 @@ Traditional outreach is optional icing. Primary engine: **assets people copy**.
 ## One-liner
 
 ```text
-Add withOhm MCP from https://withohm.dev/i
+Add withOhm MCP from https://www.withohm.dev/i
 ```
 
 Phrase: **compliant fetch for agents**
@@ -14,16 +14,16 @@ Phrase: **compliant fetch for agents**
 
 | # | Play | Where |
 |---|------|--------|
-| 1 | Virus template | [`templates/cursor-agent-with-web`](../templates/cursor-agent-with-web) · [/templates](https://withohm.dev/templates) |
-| 2 | Meme install URL | [/i](https://withohm.dev/i) |
+| 1 | Virus template | [`templates/cursor-agent-with-web`](../templates/cursor-agent-with-web) · [/templates](https://www.withohm.dev/templates) |
+| 2 | Meme install URL | [/i](https://www.withohm.dev/i) |
 | 3 | Dependency PRs | [`docs/distribution/STEAL_KIT.md`](distribution/STEAL_KIT.md) |
-| 4 | Fetch toy | [/fetch](https://withohm.dev/fetch) · `fetch.withohm.dev` when DNS set |
-| 5 | Artifact bounty | [/bounty](https://withohm.dev/bounty) — $29 credit for public Ohm-required skills |
+| 4 | Fetch toy | [/fetch](https://www.withohm.dev/fetch) · `fetch.withohm.dev` when DNS set |
+| 5 | Artifact bounty | [/bounty](https://www.withohm.dev/bounty) — $29 credit for public Ohm-required skills |
 | 6 | Phrase ownership | Stamped on homepage, plugin, skills, watermark |
 | 7 | Bundle | [`tools/docs-context-packer`](../tools/docs-context-packer) |
 | 8 | Intermediate loop | Checkout success → share line + deeplink |
 
-Design partners remain available at [/design-partners](https://withohm.dev/design-partners) — not the growth engine.
+Design partners remain available at [/design-partners](https://www.withohm.dev/design-partners) — not the growth engine.
 
 ## This week (non-salesman)
 

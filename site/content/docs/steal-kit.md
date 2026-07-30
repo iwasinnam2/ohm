@@ -5,7 +5,7 @@
 One-liner:
 
 ```text
-Add withOhm MCP from https://withohm.dev/i
+Add withOhm MCP from https://www.withohm.dev/i
 ```
 
 Full PR pack and list targets: see the repo file `docs/distribution/STEAL_KIT.md`.
