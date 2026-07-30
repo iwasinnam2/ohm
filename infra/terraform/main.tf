@@ -196,18 +196,14 @@ resource "aws_route_table_association" "private" {
 }
 
 # --- Security groups ---
+# NOTE: no inline ingress rules — inline rules are exclusive and every SG
+# reconciliation would strip the aws_security_group_rule resources (this took
+# down pod→Redis once). All ingress lives in aws_security_group_rule.
 resource "aws_security_group" "redis" {
   provider    = aws.leader
   name        = "${local.name_prefix}-redis"
   description = "ElastiCache Redis"
   vpc_id      = aws_vpc.leader.id
-
-  ingress {
-    from_port       = 6379
-    to_port         = 6379
-    protocol        = "tcp"
-    security_groups = [aws_security_group.gateway.id]
-  }
 
   egress {
     from_port   = 0
@@ -217,6 +213,17 @@ resource "aws_security_group" "redis" {
   }
 
   tags = { Name = "${local.name_prefix}-redis-sg" }
+}
+
+resource "aws_security_group_rule" "redis_from_gateway" {
+  provider                 = aws.leader
+  type                     = "ingress"
+  from_port                = 6379
+  to_port                  = 6379
+  protocol                 = "tcp"
+  security_group_id        = aws_security_group.redis.id
+  source_security_group_id = aws_security_group.gateway.id
+  description              = "Redis from gateway SG"
 }
 
 resource "aws_security_group" "gateway" {

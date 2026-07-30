@@ -25,6 +25,11 @@ const plexMono = IBM_Plex_Mono({
   display: "swap",
 });
 
+// Cap CDN TTL: fully-static prerenders otherwise emit s-maxage=31536000 and
+// Amplify's CloudFront serves year-old pages after a deploy. ISR every 5 min
+// keeps www fresh without giving up edge caching.
+export const revalidate = 300;
+
 const siteUrl = "https://www.withohm.dev";
 
 const description =
