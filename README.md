@@ -91,7 +91,7 @@ Inspect live policy: `GET /v1/compliance/policy`. Templates: Terms, DPA, upstrea
 | `src/at_utility/compliance/` | Purpose matrix, URL gate, robots.txt, PII redaction |
 | `src/ohm_mcp/` | Cursor MCP attach (`ohm_fetch_web`, `ohm_usage`, `ohm_chat`) |
 | Redis leader / replica | Cache + RL; GET on replica/reader, SET on leader — [docs/REDIS_MESH.md](docs/REDIS_MESH.md) |
-| `infra/` | Terraform + Kubernetes: Global Datastore edges + Anycast |
+| `infra/` | Terraform + Kubernetes: single-region EKS (mesh retained behind flags) |
 | `site/` | Marketing + docs + self-serve `/billing` |
 
 ## Tenancy and billing

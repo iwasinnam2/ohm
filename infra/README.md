@@ -1,5 +1,10 @@
 # Multi-region Redis mesh + Anycast edge
 
+> **Current posture (Jul 2026): single-region us-east-1.** The mesh below was
+> live and has been torn down until paid traffic justifies it (burn control).
+> See [runbooks/SINGLE_REGION.md](runbooks/SINGLE_REGION.md) for what runs
+> today and how to re-enable the mesh.
+
 ## Topology
 
 - **Leader** (`us-east-1` by default): all cache `SET`s, metering ledger writes, global quota grants (ElastiCache replication group).

@@ -1,3 +1,6 @@
+> **Historical — mesh paused (Jul 2026).** Single-region us-east-1 today; there
+> are no edges to drain. Keep for when the mesh is re-enabled.
+
 # Region drain drill
 
 Prove clients keep one `base_url` when an edge dies.
