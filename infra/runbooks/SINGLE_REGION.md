@@ -17,34 +17,29 @@ behind `enable_edges` / `anycast_enabled` for when paid traffic justifies it.
 - Redis GET/SET both land on the leader replication group (reader + primary
   endpoints). No Global Datastore.
 
-## Teardown state (check before re-running)
+## Teardown state
 
-Done:
+Done (Jul 30):
 
-- eu-west-2: k8s namespace deleted (NLB released), full edge stack destroyed
-  via `terraform apply -target=module.edge_eu_west_2`.
+- eu-west-2 + us-west-2: k8s namespaces deleted (NLBs released), full edge
+  stacks destroyed via targeted `terraform apply`.
+- Global Datastore `ldgnf-ohm` destroyed (us-west-2 secondary disassociated
+  via the us-east-1 API during the regional outage).
+- Leader right-sized: node group desired=1 (t3.medium), Redis
+  `cache.t4g.small`, snapshots 7d (window 05:00-07:00), stale edge routes
+  removed.
 - Leader manifests: liveness probes, `/ready` readiness on gateway, edge-hit
   secret wiring, images `0.1.9`.
-- Leader Redis: snapshot retention 7d staged in Terraform.
+- Redis SG ingress moved out of inline rules (inline rules are exclusive; a
+  reconciliation once stripped the VPC rule and cut pods off from Redis).
 
-Blocked on us-west-2 network reachability from the operator machine (TCP 443
-to all us-west-2 endpoints blackholed at time of teardown; the Global
-Accelerator API is also homed in us-west-2):
+Remaining — ONLY the Global Accelerator, kept alive so `api.withohm.dev`
+(CNAME -> GA) stays up. After the GoDaddy DNS flip below, finish with:
 
 ```powershell
-# 1. Confirm reachability
-Test-NetConnection eks.us-west-2.amazonaws.com -Port 443
-# 2. Release the us-west-2 NLB (k8s-owned, outside Terraform)
-kubectl --context ohm-us-west-2 delete namespace at-utility --wait=false
-# 3. Finish the teardown + right-size (destroys us-west-2 stack, Global
-#    Datastore, Global Accelerator; scales leader node group to 1)
 cd infra/terraform
-terraform plan -out=teardown.tfplan   # review: only us-west-2/GD/GA destroys
-terraform apply teardown.tfplan
-# 4. After the GD is gone, flip redis_node_type = "cache.t4g.small" in
-#    terraform.tfvars (t-family is GD-incompatible; usage is ~11 MB) and apply.
-# 5. Remove the temporary skip_credentials_validation block from the
-#    us_west_2 provider in edges.tf.
+terraform plan    # should show only the 5 globalaccelerator resources
+terraform apply   # destroys GA; saves ~$20-40/mo
 ```
 
 ## DNS (GoDaddy — operator step, do BEFORE the GA teardown apply)
