@@ -50,8 +50,8 @@ Release smoke asserts health, mock miss/hit, OpenAI miss/hit (when a key is pres
 Local **stdio** MCP (remote URL MCP is not shipped). Public base: `https://api.withohm.dev/v1`. Partners: [docs/LAUNCH_GTM.md](docs/LAUNCH_GTM.md) · https://www.withohm.dev/design-partners
 
 ```powershell
-# From a clone, or: pip install "at-utility[mcp] @ git+https://github.com/iwasinnam2/ohm.git"
-pip install -e ".[mcp]"
+pip install ohm-mcp
+# monorepo dev alternative: pip install -e ".[mcp]"
 # Set OHM_API_KEY (required). Optional: OHM_UPSTREAM_KEY, OHM_BASE_URL
 # Plugin: .cursor-plugin/ + mcp.json — see docs/CURSOR.md
 ```
@@ -59,7 +59,7 @@ pip install -e ".[mcp]"
 ## Streaming and failover honesty
 
 - **Non-streaming** chat completions: the Rust edge may retry the Python upstream (primary then fallback URL) before returning a body. Cache writes happen after a successful full response.
-- **Streaming** chat completions: the edge largely pass-through-proxies the upstream token stream. Mid-stream provider handoff without a client reconnect is **not** guaranteed yet. Plan for reconnect or non-stream until that work lands.
+- **Streaming** chat completions: the edge forwards the upstream token stream chunk-by-chunk (no buffering at the edge). Mid-stream provider handoff without a client reconnect is **not** supported. Plan for reconnect or non-stream until that work lands.
 
 ## Environment rules
 

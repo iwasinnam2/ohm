@@ -5,7 +5,7 @@ Change one base URL (or one Cursor attach). Keep your keys and SDKs.
 ## Design-partner path
 
 1. Email `partners@withohm.dev` (or operator issues `POST /v1/admin/tenants`). Keys use legacy prefix `sk-at-…`.
-2. Point your OpenAI SDK at the **local** edge: `base_url="http://localhost:8081/v1"` until public AWS cutover on `https://api.withohm.dev/v1`.
+2. Point your OpenAI SDK at the public edge: `base_url="https://api.withohm.dev/v1"` (or the local edge `http://localhost:8081/v1` for development).
 3. Send your provider key as **`X-Ohm-Upstream-Key`** on cache misses (BYOK). Authorization stays your Ohm key.
 4. After a week, check `GET /v1/usage` for `cache_hit_ratio`, `fetches`, and `web_context_attach_rate`.
 5. Accept Terms/DPA (`terms_ack` / `dpa_ack`) for web context — see [LEGAL.md](LEGAL.md).

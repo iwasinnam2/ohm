@@ -9,9 +9,10 @@ export default function HomePage() {
         <h1 className="hero__brand">withOhm</h1>
       </div>
       <p className="hero__promise">
-        AI public API model switching, prompt caching and web browsing. All
-        handled in a zero-latency zero-resistance engine that allows user to
-        streamline AI workflow with unprecedented speed and efficiency.
+        AI public API model switching, prompt caching and compliant web
+        browsing — one OpenAI-compatible pipe. Attach it to Cursor over MCP,
+        bring your own provider keys (BYOK), and pay metered rates on a $0
+        Intermediate seat.
       </p>
       <div className="hero__cta cta-row">
         <Link href="/subscriptions" className="btn btn--primary">

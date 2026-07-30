@@ -10,7 +10,7 @@ from dataclasses import dataclass
 from typing import Any, Optional
 
 
-# Public API host — use LOCAL_BASE_URL until AWS cutover (docs/PLATFORM.md).
+# Public API host (live). Use LOCAL_BASE_URL for local development.
 DEFAULT_BASE_URL = "https://api.withohm.dev/v1"
 LOCAL_BASE_URL = "http://127.0.0.1:8081/v1"
 UPSTREAM_KEY_HEADER = "X-Ohm-Upstream-Key"

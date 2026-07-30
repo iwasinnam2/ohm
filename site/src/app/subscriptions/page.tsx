@@ -32,9 +32,9 @@ const TIERS = [
     id: "enterprise",
     name: "Enterprise",
     featured: false,
-    price: "Custom",
+    price: "From $2,500/mo",
     priceNote:
-      "Design-partner rank for large-scale operations. Negotiated transaction usage agreements.",
+      "Fixed monthly bundles for large-scale operations. Negotiated transaction usage agreements.",
     pros: [
       "Everything in Intermediate",
       "Design-partner rank — negotiate fixed monthly bundles for cache hits, cache misses, and web fetches",
@@ -92,7 +92,7 @@ export default function SubscriptionsPage() {
           ))}
         </ul>
         <div className="partner__cta cta-row">
-          <Link href="/design-partners" className="btn btn--primary">
+          <Link href="/design-partners" className="link-quiet">
             Apply as founding design partner
           </Link>
           <Link href="/docs/quickstart" className="link-quiet">

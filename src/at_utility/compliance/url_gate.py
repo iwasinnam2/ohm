@@ -204,6 +204,36 @@ def _ip_is_non_public(addr: str) -> bool:
     )
 
 
+def resolve_public_ip(host: str) -> str | None:
+    """Resolve ``host`` and return one vetted public IP, or None.
+
+    Used to pin the connect address after ``gate_url``: the fetcher connects to
+    this exact IP (with SNI/Host set to the hostname) so a DNS rebind between
+    gate-time and connect-time cannot steer the request to a private target.
+    IPv4 answers are preferred; any non-public answer disqualifies nothing by
+    itself — we simply pick the first public address.
+    """
+    try:
+        ipaddress.ip_address(host)
+        return host if not _ip_is_non_public(host) else None
+    except ValueError:
+        pass
+    try:
+        infos = socket.getaddrinfo(host, None, type=socket.SOCK_STREAM)
+    except OSError:
+        return None
+    # Prefer IPv4 to avoid broken dual-stack destinations
+    ordered = sorted(infos, key=lambda i: 0 if i[0] == socket.AF_INET else 1)
+    for info in ordered:
+        sockaddr = info[4]
+        if not sockaddr:
+            continue
+        addr = sockaddr[0]
+        if not _ip_is_non_public(addr):
+            return addr
+    return None
+
+
 def _dns_resolves_to_public(host: str) -> UrlGateResult:
     """Resolve hostname; deny if any A/AAAA is non-public (DNS rebinding / SSRF)."""
     try:

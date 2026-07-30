@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Analytics } from "@vercel/analytics/next";
 import { IBM_Plex_Mono, Source_Sans_3, Space_Grotesk } from "next/font/google";
 import { SiteHeader } from "@/components/SiteHeader";
 import "./globals.css";
@@ -29,7 +28,7 @@ const plexMono = IBM_Plex_Mono({
 const siteUrl = "https://www.withohm.dev";
 
 const description =
-  "AI public API model switching, prompt caching and web browsing. All handled in a zero-latency zero-resistance engine that allows user to streamline AI workflow with unprecedented speed and efficiency.";
+  "AI public API model switching, prompt caching and compliant web browsing — one OpenAI-compatible pipe. Attach it to Cursor over MCP, bring your own provider keys (BYOK), and pay metered rates on a $0 Intermediate seat.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
@@ -38,9 +37,6 @@ export const metadata: Metadata = {
     template: "%s · withOhm",
   },
   description,
-  icons: {
-    icon: "/ohm.svg",
-  },
   openGraph: {
     type: "website",
     locale: "en_US",
@@ -90,7 +86,6 @@ export default function RootLayout({
             </nav>
           </footer>
         </div>
-        <Analytics />
       </body>
     </html>
   );

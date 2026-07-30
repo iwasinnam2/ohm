@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { OhmMark } from "@/components/OhmMark";
+import { CreditPackTopup } from "@/components/CreditPackTopup";
 import { cursorOhmInstallHref } from "@/lib/cursorMcp";
 
 const KEY_STORAGE = "ohm_api_key";
@@ -110,23 +111,16 @@ export default function BillingSuccessPage() {
         )}
       </details>
 
-      <div className="postpay__share">
-        <p className="postpay__share-label">Viral unit — paste to a teammate</p>
-        <pre className="postpay__share-line">
-          Add withOhm MCP from https://www.withohm.dev/i
-        </pre>
-        <p className="postpay__cta-note">
-          They get their own $0 Intermediate seat, then duplicate this attach.
-          Design partners are optional icing — Intermediate is the growth loop.
-        </p>
-        <p>
-          <Link href="/fetch">Try compliant fetch toy</Link>
-          {" · "}
-          <Link href="/templates">Steal cursor-agent-with-web</Link>
-          {" · "}
-          <Link href="/bounty">Artifact bounty ($29 credit)</Link>
-        </p>
-      </div>
+      <CreditPackTopup apiKey={apiKey} />
+
+      <p className="postpay__cta-note">
+        Next: <Link href="/docs/quickstart">Quickstart</Link>
+        {" · "}
+        <Link href="/docs/pricing">Metered rates</Link>
+        {" · "}
+        Teammates can install from{" "}
+        <Link href="/i">withohm.dev/i</Link> with their own seat.
+      </p>
     </section>
   );
 }
