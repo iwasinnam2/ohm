@@ -30,6 +30,10 @@ from at_utility.compliance import (  # noqa: E402
     redact_personal_data,
 )
 from at_utility.compliance.robots import USER_AGENT, allowed_by_robots  # noqa: E402
+from at_utility.compliance.web_bot_auth import (  # noqa: E402
+    signature_headers,
+    signing_enabled,
+)
 
 log = logging.getLogger("ingest_worker")
 logging.basicConfig(level=logging.INFO)
@@ -63,6 +67,70 @@ BOT_UA = os.getenv(
     "AT_COMPLIANCE_USER_AGENT",
     USER_AGENT,
 )
+
+
+def _bot_headers(url: str) -> dict[str, str]:
+    """Identified-crawler headers: UA + Web Bot Auth signatures when keyed."""
+    return {"User-Agent": BOT_UA, **signature_headers(url)}
+
+
+def _refusal_for_status(
+    url: str,
+    status: int,
+    headers: Any,
+    fmt: str,
+) -> Optional[dict[str, Any]]:
+    """Terminal refusals for licensed-crawl / revoked-access responses.
+
+    HTTP 402 (Pay Per Crawl) and 401/403 are honored as the origin's decision:
+    Ohm does not auto-pay and does not retry around technical blocks
+    (docs/LEGAL.md). The publisher's price signal is surfaced when present.
+    """
+    empty = {"json": {}} if fmt == "json" else {"markdown": ""}
+
+    def _h(name: str) -> Optional[str]:
+        try:
+            value = headers.get(name) if headers is not None else None
+        except Exception:  # noqa: BLE001
+            value = None
+        return value
+
+    if status == 402:
+        price = _h("crawler-price") or _h("crawler-exact-price")
+        return {
+            "url": url,
+            "ok": False,
+            "error": (
+                "Payment required (HTTP 402): origin requests licensed access "
+                "(pay-per-crawl). Ohm does not auto-pay; fetch not performed."
+            ),
+            "compliance": {
+                "code": "payment_required_402",
+                "allowed": False,
+                "http_status": 402,
+                "pay_per_crawl": True,
+                "crawler_price": price,
+                "web_bot_auth": signing_enabled(),
+            },
+            **empty,
+        }
+    if status in (401, 403):
+        return {
+            "url": url,
+            "ok": False,
+            "error": (
+                f"Access denied (HTTP {status}): origin refused OhmBot. "
+                "Access revocation is honored — no retry or block evasion."
+            ),
+            "compliance": {
+                "code": f"access_denied_{status}",
+                "allowed": False,
+                "http_status": status,
+                "web_bot_auth": signing_enabled(),
+            },
+            **empty,
+        }
+    return None
 
 
 class IngestRequest(BaseModel):
@@ -232,7 +300,7 @@ async def meta_search(query: str, max_results: int = 3) -> list[str]:
         log.warning("serp provider %s not implemented; using duckduckgo", SERP_PROVIDER)
     url = f"https://html.duckduckgo.com/html/?q={quote_plus(query)}"
     async with httpx.AsyncClient(timeout=20.0, follow_redirects=True) as client:
-        res = await client.get(url, headers={"User-Agent": BOT_UA})
+        res = await client.get(url, headers=_bot_headers(url))
         res.raise_for_status()
     soup = BeautifulSoup(res.text, "html.parser")
     links: list[str] = []
@@ -285,8 +353,20 @@ async def fetch_url(
 
         async with async_playwright() as p:
             browser = await p.chromium.launch(headless=True)
-            page = await browser.new_page(user_agent=BOT_UA)
-            await page.goto(url, wait_until="domcontentloaded", timeout=TIMEOUT_MS)
+            sig = signature_headers(url)
+            page = await browser.new_page(
+                user_agent=BOT_UA,
+                **({"extra_http_headers": sig} if sig else {}),
+            )
+            response = await page.goto(
+                url, wait_until="domcontentloaded", timeout=TIMEOUT_MS
+            )
+            # Honor licensed-crawl / revoked-access statuses (402 / 401 / 403)
+            if response is not None:
+                refusal = _refusal_for_status(url, response.status, response.headers, fmt)
+                if refusal is not None:
+                    await browser.close()
+                    return refusal
             # Refuse if navigation landed on an obvious login wall URL
             final = page.url
             final_gate = gate_url(final)
@@ -312,42 +392,63 @@ async def fetch_url(
             return {"url": final, "ok": True, **fin}
     except Exception as exc:  # noqa: BLE001
         log.info("playwright unavailable or failed (%s); httpx fallback", exc)
-        try:
-            async with httpx.AsyncClient(
-                timeout=TIMEOUT_MS / 1000.0, follow_redirects=True
-            ) as client:
-                res = await client.get(url, headers={"User-Agent": BOT_UA})
-                res.raise_for_status()
-                final = str(res.url)
-                final_gate = gate_url(final)
-                if not final_gate.allowed:
-                    return {
-                        "url": url,
-                        "ok": False,
-                        "error": f"Redirected to blocked surface: {final_gate.reason}",
-                        "compliance": {
-                            "code": final_gate.code,
-                            "allowed": False,
-                            "final_url": final,
-                        },
-                        **({"json": {}} if fmt == "json" else {"markdown": ""}),
-                    }
-                fin = _finalize_content(
-                    res.text,
-                    final,
-                    fmt=fmt,
-                    redact_pii=redact_pii,
-                    max_chars=max_chars_per_source,
-                    respect_robots=respect_robots,
-                )
-                return {"url": final, "ok": True, **fin}
-        except Exception as exc2:  # noqa: BLE001
-            return {
-                "url": url,
-                "ok": False,
-                "error": str(exc2),
-                **({"json": {}} if fmt == "json" else {"markdown": ""}),
-            }
+        return await _fetch_via_httpx(
+            url,
+            fmt=fmt,
+            redact_pii=redact_pii,
+            max_chars_per_source=max_chars_per_source,
+            respect_robots=respect_robots,
+        )
+
+
+async def _fetch_via_httpx(
+    url: str,
+    *,
+    fmt: str,
+    redact_pii: bool,
+    max_chars_per_source: int,
+    respect_robots: bool,
+) -> dict[str, Any]:
+    """httpx fetch path (also the Playwright fallback), Web Bot Auth signed."""
+    try:
+        async with httpx.AsyncClient(
+            timeout=TIMEOUT_MS / 1000.0, follow_redirects=True
+        ) as client:
+            res = await client.get(url, headers=_bot_headers(url))
+            refusal = _refusal_for_status(url, res.status_code, res.headers, fmt)
+            if refusal is not None:
+                return refusal
+            res.raise_for_status()
+            final = str(res.url)
+            final_gate = gate_url(final)
+            if not final_gate.allowed:
+                return {
+                    "url": url,
+                    "ok": False,
+                    "error": f"Redirected to blocked surface: {final_gate.reason}",
+                    "compliance": {
+                        "code": final_gate.code,
+                        "allowed": False,
+                        "final_url": final,
+                    },
+                    **({"json": {}} if fmt == "json" else {"markdown": ""}),
+                }
+            fin = _finalize_content(
+                res.text,
+                final,
+                fmt=fmt,
+                redact_pii=redact_pii,
+                max_chars=max_chars_per_source,
+                respect_robots=respect_robots,
+            )
+            return {"url": final, "ok": True, **fin}
+    except Exception as exc2:  # noqa: BLE001
+        return {
+            "url": url,
+            "ok": False,
+            "error": str(exc2),
+            **({"json": {}} if fmt == "json" else {"markdown": ""}),
+        }
 
 
 @app.get("/health")
@@ -357,6 +458,8 @@ async def health() -> dict[str, Any]:
         "service": "at-utility-ingest",
         "compliance_enforce": COMPLIANCE_ENFORCE,
         "jurisdiction_profile": JURISDICTION,
+        "web_bot_auth": signing_enabled(),
+        "pay_per_crawl": "surface_402_no_autopay",
     }
 
 

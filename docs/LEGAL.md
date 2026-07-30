@@ -117,8 +117,25 @@ By setting `web_compliance_ack`, `terms_ack`, and `dpa_ack` as required, the cal
 | `AT_COMPLIANCE_TERMS_VERSION` | `tos-2026-07-26` | Bound Terms version at tenant issue |
 | `AT_COMPLIANCE_DPA_VERSION` | `dpa-2026-07-26` | Bound DPA version at tenant issue |
 | `AT_COMPLIANCE_USER_AGENT` | OhmBot/0.1… | Crawl identification |
+| `AT_WEB_BOT_AUTH_ED25519_SEED_B64` | (empty) | Web Bot Auth signing seed (base64 32 bytes); empty disables RFC 9421 signatures |
+| `AT_WEB_BOT_AUTH_SIGNATURE_AGENT` | (empty) | Public key-directory URL sent as `Signature-Agent` |
 
 Disabling enforcement is for local experiments only and does **not** change what the law allows.
+
+## Verified crawling & licensed-crawl era (Web Bot Auth / Pay Per Crawl)
+
+OhmBot participates in the permission-based crawl model:
+
+- **Identity**: every fetch sends the OhmBot User-Agent; when a signing seed is
+  configured, fetches also carry RFC 9421 HTTP Message Signatures
+  (`Signature`, `Signature-Input`, `Signature-Agent`; `tag="web-bot-auth"`) so
+  origins and CDNs can verify OhmBot instead of treating it as anonymous.
+  The public JWKS is served at `/.well-known/http-message-signatures-directory`.
+- **HTTP 402 (pay-per-crawl)**: honored as the origin's licensing decision.
+  Ohm does **not** auto-pay; the refusal (with any `crawler-price` signal) is
+  surfaced to the caller as `payment_required_402`.
+- **HTTP 401/403**: access revocation is honored — no retries, no block
+  evasion (`access_denied_401/403`).
 
 ## AI search posture
 

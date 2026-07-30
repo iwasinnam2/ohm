@@ -19,6 +19,7 @@ from starlette.responses import Response
 
 from at_utility.auth import extract_bearer
 from at_utility.cache import cache_key_for_request
+from at_utility.compliance import web_bot_auth
 from at_utility.compliance.policy import ALLOWED_PURPOSES, BLOCKED_PURPOSES, PURPOSE_RISK
 from at_utility.compliance.terms import assert_cache_training_denied, terms_metadata
 from at_utility.config import Settings, get_settings
@@ -283,6 +284,24 @@ async def health() -> dict[str, Any]:
     }
 
 
+@app.get("/.well-known/http-message-signatures-directory")
+async def http_message_signatures_directory() -> Response:
+    """Web Bot Auth key directory: OhmBot's public Ed25519 JWKS.
+
+    Origins verifying `Signature-Agent` fetch this to check OhmBot's RFC 9421
+    signatures. Public keys only — unauthenticated by design; 404 when the
+    signing seed is not configured.
+    """
+    directory = web_bot_auth.key_directory()
+    if directory is None:
+        raise HTTPException(status_code=404, detail="web bot auth signing not configured")
+    return Response(
+        content=json.dumps(directory),
+        media_type="application/http-message-signatures-directory+json",
+        headers={"Cache-Control": "max-age=3600"},
+    )
+
+
 @app.get("/ready")
 async def ready() -> JSONResponse:
     """Readiness: Redis ping. Prod omits exception strings and internal host hints."""
@@ -545,6 +564,13 @@ async def compliance_policy(
             "eu_gdpr_readiness",
             "consumer_billing_hygiene",
         ],
+        "web_bot_auth": {
+            "enabled": web_bot_auth.signing_enabled(),
+            "protocol": "rfc9421-http-message-signatures",
+            "tag": "web-bot-auth",
+            "key_directory": "/.well-known/http-message-signatures-directory",
+        },
+        "pay_per_crawl": "surface_402_no_autopay",
         "rules": [
             "Public http(s) pages only — no login, credentials, tokens, or private hosts",
             "No lead harvesting, person dossiers, biometrics, or PECR cold outreach lists",
@@ -553,6 +579,8 @@ async def compliance_policy(
             "UK: public identifiable data remains personal data; outputs are minimised",
             "US: CFAA/CCPA — public retrieval ≠ authorization to bypass gates",
             "robots.txt respected by default; cite sources; no private-fact invention",
+            "OhmBot identifies itself (UA + Web Bot Auth signatures when keyed)",
+            "HTTP 402 pay-per-crawl and 401/403 revocations are honored — no auto-pay, no evasion",
         ],
         "docs": "docs/LEGAL.md",
         "tenant_terms_version": getattr(tenant, "terms_version", "") or None,
