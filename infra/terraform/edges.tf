@@ -4,11 +4,6 @@
 provider "aws" {
   alias  = "us_west_2"
   region = "us-west-2"
-  # Teardown aid: skip eager STS/account calls so plan and targeted applies in
-  # other regions proceed even when us-west-2 is unreachable from the operator
-  # network. Safe to remove once the us-west-2 stack is destroyed.
-  skip_credentials_validation = true
-  skip_requesting_account_id  = true
 }
 
 provider "aws" {
