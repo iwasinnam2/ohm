@@ -1,0 +1,21 @@
+name: Golden path (nightly)
+
+on:
+  schedule:
+    - cron: "17 3 * * *"
+  workflow_dispatch:
+
+jobs:
+  golden-path:
+    name: reviewer path smoke
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Walk the reviewer path
+        shell: pwsh
+        env:
+          # Optional: a live test-tenant key enables the keyed steps
+          # (chat MISS/HIT, SSE, web fetch, usage delta). Without it the
+          # public surfaces are still verified.
+          OHM_API_KEY: ${{ secrets.OHM_GOLDEN_PATH_KEY }}
+        run: ./scripts/golden_path.ps1

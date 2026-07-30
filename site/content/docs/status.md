@@ -4,7 +4,7 @@
 
 - **Docs / marketing:** `https://www.withohm.dev` (AWS Amplify + CloudFront)
 - **Status:** `https://status.withohm.dev` → `/status`
-- **`api.withohm.dev`:** live public API (EKS + Global Accelerator)
+- **`api.withohm.dev`:** live public API (EKS, single-region us-east-1)
 - **Fetch toy:** `https://fetch.withohm.dev` — demo HTML strip (not the full compliance pipe)
 - **Local edge (dev):** `http://localhost:8081`
 

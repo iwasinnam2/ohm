@@ -6,7 +6,7 @@
 |---------|-----|--------|
 | Docs / marketing | https://www.withohm.dev | Live (AWS Amplify + CloudFront) |
 | Status page | https://status.withohm.dev → `/status` | Live |
-| Public API | https://api.withohm.dev | Live (EKS + Global Accelerator) |
+| Public API | https://api.withohm.dev | Live (EKS, single-region us-east-1) |
 | Fetch toy | https://fetch.withohm.dev | Live (demo strip) |
 | Local MVP edge | http://localhost:8081 | Supported for local smoke |
 
@@ -37,12 +37,16 @@ See [BRAND.md](BRAND.md) and [infra/runbooks/GO_LIVE.md](../infra/runbooks/GO_LI
 | Mid-stream failover | Unsupported | see [STREAMING.md](STREAMING.md) |
 | Enterprise contractual SLA | Not published (MVP) | SKU `sla` is null |
 
-## Regions (target topology)
+## Regions
 
 | Role | Region |
 |------|--------|
-| Leader | `us-east-1` |
-| Edges | `us-west-2`, `eu-west-2`, `ap-northeast-1` (`enable_edges=true`) |
+| Leader (all traffic) | `us-east-1` |
+
+withOhm runs single-region today. Redis has daily snapshots (7-day retention).
+Edge regions and Anycast were torn down until paid traffic justifies them —
+the Terraform for them is retained (`enable_edges`, `anycast_enabled`) and the
+historical mesh runbooks are archived in `infra/runbooks/`.
 
 Local Docker reports `AT_REGION=local`.
 

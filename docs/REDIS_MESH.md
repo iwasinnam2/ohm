@@ -1,5 +1,10 @@
 # Redis mesh — phases and wiring
 
+> **Current posture (Jul 2026): single-region us-east-1.** Phases 3–5 were live
+> and have been torn down until paid traffic justifies them. The phase table
+> below is retained as the re-enable playbook. See
+> [infra/runbooks/SINGLE_REGION.md](../infra/runbooks/SINGLE_REGION.md).
+
 Source of truth for leader/replica/global distribution. Consistency rules: [CONSISTENCY.md](CONSISTENCY.md). Topology playbook: [infra/README.md](../infra/README.md).
 
 ## Verdict

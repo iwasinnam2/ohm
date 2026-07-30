@@ -17,7 +17,7 @@ const COMPONENTS = [
     name: "Public API",
     host: "api.withohm.dev",
     state: "operational",
-    detail: "EKS edges + Global Accelerator Anycast",
+    detail: "EKS (us-east-1) — Rust edge + Python control plane",
   },
   {
     name: "Fetch toy",

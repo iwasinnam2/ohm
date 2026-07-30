@@ -48,6 +48,12 @@ variable "redis_node_type" {
   description = "Leader Redis node type; Global Datastore requires large+ (not t-family)"
 }
 
+variable "redis_snapshot_retention_days" {
+  type        = number
+  default     = 7
+  description = "Daily Redis snapshot retention — this RG is the only datastore, keep backups on"
+}
+
 variable "ga_nlb_endpoint_arns" {
   type        = map(string)
   default     = {}
@@ -266,6 +272,9 @@ resource "aws_elasticache_replication_group" "leader" {
   apply_immediately          = true
   at_rest_encryption_enabled = true
   transit_encryption_enabled = true
+  # Must not overlap the maintenance window (sun:03:00-sun:04:00).
+  snapshot_retention_limit   = var.redis_snapshot_retention_days
+  snapshot_window            = "05:00-07:00"
   subnet_group_name          = aws_elasticache_subnet_group.leader.name
   security_group_ids         = [aws_security_group.redis.id]
   tags = {
