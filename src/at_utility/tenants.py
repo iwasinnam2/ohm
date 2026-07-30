@@ -32,7 +32,7 @@ class TenantRecord:
     key_hash: str = ""
     stripe_customer_id: str = ""
     stripe_subscription_id: str = ""
-    # True after invoice.paid (or first metered spend unlocks soft fetch caps)
+    # True after invoice.paid — the only thing that lifts the soft fetch cap
     billing_paid: bool = False
     # Unix ts when invoice.payment_failed first fired; 0 = not delinquent
     billing_delinquent_since: int = 0
@@ -202,6 +202,33 @@ class TenantRegistry:
             if not record.billing_delinquent_since:
                 record.billing_delinquent_since = billing_delinquent_since
         return await self._save(record)
+
+    async def sweep_delinquent(self, suspend_days: int) -> int:
+        """Suspend tenants whose dunning window expired, without waiting for
+        them to send a request. Returns the number suspended.
+        """
+        if suspend_days <= 0:
+            return 0
+        now = int(time.time())
+        cutoff_seconds = suspend_days * 86400
+        suspended = 0
+        keys = await self._store.scan_keys("at:*:meta:record")
+        for key in keys:
+            raw = await self._store.get(key)
+            if not raw:
+                continue
+            try:
+                record = TenantRecord.from_json(raw)
+            except (ValueError, TypeError):
+                continue
+            if (
+                record.status == "active"
+                and record.billing_delinquent_since
+                and now - record.billing_delinquent_since >= cutoff_seconds
+            ):
+                await self.set_status(record.tenant_id, "suspended")
+                suspended += 1
+        return suspended
 
     async def public_view(self, record: TenantRecord) -> dict[str, Any]:
         return {

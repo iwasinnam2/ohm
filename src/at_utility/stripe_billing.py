@@ -159,14 +159,102 @@ def create_checkout_session(
     }
 
 
+def create_credit_pack_session(
+    settings: Settings,
+    *,
+    tenant_id: str,
+    success_url: str,
+    cancel_url: str,
+    stripe_customer_id: str = "",
+    customer_email: str = "",
+) -> dict[str, Any]:
+    """One-time $29 credit pack Checkout (mode=payment).
+
+    The webhook applies the paid amount as a negative customer balance so it
+    offsets future metered invoices (prepaid allowance, not a seat).
+    """
+    if not settings.stripe_secret_key:
+        raise RuntimeError("STRIPE_SECRET_KEY is not configured")
+    if not settings.stripe_price_credit_pack:
+        raise RuntimeError(
+            "STRIPE_PRICE_CREDIT_PACK is not configured — create it with "
+            "scripts/stripe_create_test_prices.sh"
+        )
+    try:
+        import stripe
+    except ImportError as exc:  # pragma: no cover
+        raise RuntimeError("Install stripe: pip install 'at-utility[billing]'") from exc
+
+    stripe.api_key = settings.stripe_secret_key
+    success_url, cancel_url = resolve_checkout_urls(settings, success_url, cancel_url)
+    params: dict[str, Any] = {
+        "mode": "payment",
+        "success_url": success_url,
+        "cancel_url": cancel_url,
+        "line_items": [
+            {"price": settings.stripe_price_credit_pack, "quantity": 1}
+        ],
+        "client_reference_id": tenant_id,
+        "metadata": {
+            "tenant_id": tenant_id,
+            "purpose": "credit_pack",
+            "billing_model": BILLING_MODEL,
+        },
+    }
+    if stripe_customer_id:
+        params["customer"] = stripe_customer_id
+    elif customer_email.strip():
+        params["customer_email"] = customer_email.strip()
+    session = stripe.checkout.Session.create(**params)
+    return {
+        "id": session.id,
+        "url": session.url,
+        "tenant_id": tenant_id,
+        "purpose": "credit_pack",
+    }
+
+
+def apply_credit_pack_balance(
+    settings: Settings,
+    *,
+    stripe_customer_id: str,
+    amount_cents: int,
+    currency: str = "usd",
+) -> bool:
+    """Credit a paid pack to the customer balance (offsets future invoices)."""
+    if not settings.stripe_secret_key or not stripe_customer_id or amount_cents <= 0:
+        return False
+    try:
+        import stripe
+    except ImportError:
+        return False
+    try:
+        stripe.api_key = settings.stripe_secret_key
+        stripe.Customer.create_balance_transaction(
+            stripe_customer_id,
+            amount=-abs(int(amount_cents)),
+            currency=currency or "usd",
+            description="withOhm credit pack — prepaid toward metered usage",
+        )
+        return True
+    except Exception as exc:  # noqa: BLE001 — surfaced via logs; webhook still 200s
+        log.warning("credit pack balance apply failed cus=%s err=%s", stripe_customer_id, exc)
+        return False
+
+
 def report_meter_event(
     settings: Settings,
     *,
     event_name: str,
     stripe_customer_id: str,
     value: int | float,
+    identifier: str = "",
 ) -> bool:
-    """Fire a Stripe Billing Meter event. Returns False if skipped/failed."""
+    """Fire a Stripe Billing Meter event. Returns False if skipped/failed.
+
+    ``identifier`` deduplicates: Stripe rejects a repeated identifier within the
+    24h window, so retries of the same logical event never double-bill.
+    """
     if not settings.stripe_secret_key or not stripe_customer_id or not event_name:
         return False
     if value <= 0:
@@ -177,13 +265,17 @@ def report_meter_event(
         return False
     try:
         stripe.api_key = settings.stripe_secret_key
-        stripe.billing.MeterEvent.create(
-            event_name=event_name,
-            payload={
+        params: dict[str, Any] = {
+            "event_name": event_name,
+            "payload": {
                 "stripe_customer_id": stripe_customer_id,
                 "value": str(int(value) if float(value).is_integer() else value),
             },
-        )
+        }
+        if identifier:
+            # Stripe caps identifier length at 100 chars
+            params["identifier"] = identifier[:100]
+        stripe.billing.MeterEvent.create(**params)
         return True
     except Exception as exc:  # noqa: BLE001 — never break chat path on meter sync
         log.warning("stripe meter event failed name=%s err=%s", event_name, exc)

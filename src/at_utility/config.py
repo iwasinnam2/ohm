@@ -56,8 +56,10 @@ class Settings(BaseSettings):
     at_price_per_1k_tokens_hit: float = 0.0005
     at_price_per_fetch: float = 0.001
     at_enterprise_monthly_usd: float = 2500.0
-    # When true, env OPENAI/ANTHROPIC keys may fill in if X-Ohm-Upstream-Key is absent
-    at_byok_allow_env_fallback: bool = True
+    # When true, env OPENAI/ANTHROPIC keys may fill in if X-Ohm-Upstream-Key is
+    # absent. Default OFF: silently burning operator keys for customer traffic
+    # is a COGS leak. Enterprise/dev plans bypass this flag in main.py.
+    at_byok_allow_env_fallback: bool = False
     # local | staging | production — production fails closed if meter Prices missing
     at_env: str = "local"
     # Soft daily web-fetch cap until invoice.paid / usage spend unlocks Intermediate
@@ -67,13 +69,18 @@ class Settings(BaseSettings):
     # Force meter Prices on Intermediate checkout even outside production
     at_require_meter_prices: bool = False
 
+    # Shared secret for the Rust edge → /internal/edge-hit metering gate.
+    # Empty disables edge HIT serving (edge falls back to full proxy).
+    at_edge_shared_secret: str = ""
+
     at_admin_api_keys: str = ""
     stripe_secret_key: str = ""
     stripe_webhook_secret: str = ""
     # Recurring seat Price IDs ($0 Intermediate membership recommended)
     stripe_price_payg: str = ""
     stripe_price_enterprise: str = ""
-    # Optional $29 prepaid meter credit pack (not the growth hero seat)
+    # Optional $29 prepaid credit pack — sold via POST /v1/billing/topup
+    # (one-time Checkout; webhook credits the Stripe customer balance)
     stripe_price_credit_pack: str = ""
     # Metered Prices attached to Billing Meters (required for Intermediate in production)
     stripe_price_meter_web_fetch: str = ""

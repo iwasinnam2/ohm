@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+import json
 import logging
 import math
 import time
+import uuid
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any
@@ -14,6 +16,10 @@ from at_utility.redis_store import CacheStore, tenant_key
 from at_utility import stripe_billing
 
 log = logging.getLogger("at_utility.meter")
+
+# Failed Stripe meter events wait here for replay. Stripe's 24h dedup on the
+# event `identifier` makes replay safe even if the original actually landed.
+STRIPE_METER_DLQ_KEY = "at:global:stripe_meter_dlq"
 
 
 @dataclass
@@ -32,10 +38,13 @@ def _day_stamp() -> str:
 
 
 def billable_1k_units(total_tokens: int) -> int:
-    """Stripe meter quantity aligned to AT_PRICE_PER_1K_* (ceil tokens/1000, min 1)."""
+    """Stripe meter quantity aligned to AT_PRICE_PER_1K_* (ceil tokens/1000).
+
+    Zero or absent usage bills zero units — never a minimum charge.
+    """
     if total_tokens <= 0:
-        return 1
-    return max(1, math.ceil(total_tokens / 1000.0))
+        return 0
+    return math.ceil(total_tokens / 1000.0)
 
 
 class Meter:
@@ -62,12 +71,13 @@ class Meter:
             ttl_seconds=0,
         )
 
-    def _sync_stripe(
+    async def _sync_stripe(
         self,
         *,
         kind: str,
         value: int | float,
         stripe_customer_id: str,
+        identifier: str = "",
     ) -> bool:
         if not stripe_customer_id:
             return False
@@ -79,12 +89,79 @@ class Meter:
         }.get(kind, "")
         if not event_name:
             return False
-        return stripe_billing.report_meter_event(
+        ok = stripe_billing.report_meter_event(
             s,
             event_name=event_name,
             stripe_customer_id=stripe_customer_id,
             value=value,
+            identifier=identifier,
         )
+        if not ok and s.stripe_secret_key:
+            # Stripe is configured but the event failed — dead-letter for replay
+            # so a transient outage never silently underbills.
+            await self._enqueue_dlq(
+                event_name=event_name,
+                stripe_customer_id=stripe_customer_id,
+                value=value,
+                identifier=identifier,
+            )
+        return ok
+
+    async def _enqueue_dlq(
+        self,
+        *,
+        event_name: str,
+        stripe_customer_id: str,
+        value: int | float,
+        identifier: str,
+    ) -> None:
+        try:
+            await self._store.list_push(
+                STRIPE_METER_DLQ_KEY,
+                json.dumps(
+                    {
+                        "event_name": event_name,
+                        "stripe_customer_id": stripe_customer_id,
+                        "value": value,
+                        "identifier": identifier,
+                        "ts": int(time.time()),
+                    }
+                ),
+            )
+        except Exception as exc:  # noqa: BLE001 — never break chat on DLQ write
+            log.error("stripe meter DLQ enqueue failed: %s", exc)
+
+    async def replay_stripe_dlq(self, max_events: int = 100) -> int:
+        """Retry dead-lettered Stripe meter events. Returns replayed count.
+
+        Stops at the first failure and re-queues that event — Stripe is likely
+        still down, so back off until the next tick. Identifier dedup keeps a
+        double-send harmless.
+        """
+        replayed = 0
+        for _ in range(max_events):
+            raw = await self._store.list_pop(STRIPE_METER_DLQ_KEY)
+            if raw is None:
+                break
+            try:
+                item = json.loads(raw)
+            except ValueError:
+                log.error("dropping malformed stripe DLQ entry: %.200s", raw)
+                continue
+            ok = stripe_billing.report_meter_event(
+                self._settings,
+                event_name=str(item.get("event_name") or ""),
+                stripe_customer_id=str(item.get("stripe_customer_id") or ""),
+                value=item.get("value") or 0,
+                identifier=str(item.get("identifier") or ""),
+            )
+            if not ok:
+                await self._store.list_push(STRIPE_METER_DLQ_KEY, raw)
+                break
+            replayed += 1
+        if replayed:
+            log.info("replayed %d stripe meter events from DLQ", replayed)
+        return replayed
 
     async def record_chat(
         self,
@@ -93,6 +170,7 @@ class Meter:
         cache_hit: bool,
         total_tokens: int,
         stripe_customer_id: str = "",
+        event_id: str = "",
     ) -> UsageEvent:
         if cache_hit:
             price = self._settings.at_price_per_1k_tokens_hit
@@ -100,19 +178,23 @@ class Meter:
         else:
             price = self._settings.at_price_per_1k_tokens_miss
             kind = "cache_miss"
-        billed = (total_tokens / 1000.0) * price
+        # Billable units match AT_PRICE_PER_1K_* meter Prices (ceil tokens/1000).
+        # Ledger USD uses the same math so /v1/usage matches the Stripe invoice.
+        units = billable_1k_units(total_tokens)
+        billed = units * price
         await self._bump(tenant, f"{kind}_tokens", float(total_tokens))
         await self._bump(tenant, f"{kind}_usd", billed)
         await self._bump(tenant, "requests", 1.0)
-        # Billable units match AT_PRICE_PER_1K_* meter Prices (ceil tokens/1000)
-        units = billable_1k_units(total_tokens)
-        synced = self._sync_stripe(
-            kind=kind,
-            value=units,
-            stripe_customer_id=stripe_customer_id,
-        )
-        if stripe_customer_id:
-            await self._mark_stripe_sync(tenant, synced)
+        synced = False
+        if units > 0:
+            synced = await self._sync_stripe(
+                kind=kind,
+                value=units,
+                stripe_customer_id=stripe_customer_id,
+                identifier=f"{tenant}:{kind}:{event_id or uuid.uuid4().hex}",
+            )
+            if stripe_customer_id:
+                await self._mark_stripe_sync(tenant, synced)
         return UsageEvent(
             tenant=tenant,
             kind=kind,
@@ -127,14 +209,16 @@ class Meter:
         tenant: str,
         count: int = 1,
         stripe_customer_id: str = "",
+        event_id: str = "",
     ) -> UsageEvent:
         billed = count * self._settings.at_price_per_fetch
         await self._bump(tenant, "fetches", float(count))
         await self._bump(tenant, "fetch_usd", billed)
-        synced = self._sync_stripe(
+        synced = await self._sync_stripe(
             kind="fetch",
             value=count,
             stripe_customer_id=stripe_customer_id,
+            identifier=f"{tenant}:fetch:{event_id or uuid.uuid4().hex}",
         )
         if stripe_customer_id:
             await self._mark_stripe_sync(tenant, synced)

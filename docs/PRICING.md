@@ -17,7 +17,7 @@ Ingest (`fetch_web_context`) is always withOhm-owned and metered — the browse 
 | Event | Role | Default list (USD) |
 |-------|------|--------------------|
 | **Seat (Intermediate membership)** | Card on file; suspend→403 | `$0/mo` (`STRIPE_PRICE_PAYG`) |
-| **Credit pack (optional)** | Prepaid meter allowance | `$29` (`STRIPE_PRICE_CREDIT_PACK`) |
+| **Credit pack (optional)** | Prepaid meter allowance — `POST /v1/billing/topup` | `$29` (`STRIPE_PRICE_CREDIT_PACK`) |
 | **Seat (Enterprise)** | Dedicated / managed-capacity SKU | `$2500/mo` (`STRIPE_PRICE_ENTERPRISE`) |
 | **Cache hit** | Cheap Redis replay rent | `AT_PRICE_PER_1K_TOKENS_HIT` → meter `ohm_cache_hit` (qty = ceil(tokens/1000)) |
 | **Cache miss** | Small proxy fee (not token wholesale) | `AT_PRICE_PER_1K_TOKENS_MISS` → meter `ohm_cache_miss` |
@@ -37,8 +37,8 @@ Complimentary `design_partner` plan (admin issue): time-boxed + soft USD quota. 
 
 - **Self-serve:** `POST /v1/billing/checkout` (site `/billing/intermediate`) — issues withOhm key once + Checkout URL ($0 membership + meters)
 - **Ops:** `POST /v1/admin/tenants/{id}/checkout`
-- Cancel / payment failed → tenant `suspended` → API keys return **403**
-- Soft daily fetch cap until `invoice.paid` / metered spend — see [STRIPE.md](STRIPE.md)
+- Payment failed → delinquent: web fetch returns **402** while Stripe Smart Retries run (1–14 days); after `AT_DELINQUENT_SUSPEND_DAYS` or cancel → tenant `suspended` → **403** ([STRIPE_DUNNING.md](STRIPE_DUNNING.md))
+- Soft daily fetch cap until `invoice.paid` — metered spend alone never unlocks; see [STRIPE.md](STRIPE.md)
 - Success / cancel pages: `https://www.withohm.dev/billing/success` / `cancel`
 - Setup: [STRIPE.md](STRIPE.md)
 - Intermediate UI label ↔ API/Stripe plan id `payg`
