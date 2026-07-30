@@ -34,11 +34,17 @@ data "aws_iam_policy_document" "github_trust" {
       variable = "token.actions.githubusercontent.com:aud"
       values   = ["sts.amazonaws.com"]
     }
-    # master only — PRs and forks cannot assume the role.
+    # master only — PRs and forks cannot assume the role. This GitHub account
+    # issues the immutable-ID subject format (owner@id/repo@id), so both the
+    # classic and ID-pinned forms are trusted; the IDs are immutable and
+    # survive renames.
     condition {
       test     = "StringLike"
       variable = "token.actions.githubusercontent.com:sub"
-      values   = ["repo:${var.github_repo}:ref:refs/heads/master"]
+      values = [
+        "repo:${var.github_repo}:ref:refs/heads/master",
+        "repo:iwasinnam2@178908359/ohm@1315705805:ref:refs/heads/master",
+      ]
     }
   }
 }
