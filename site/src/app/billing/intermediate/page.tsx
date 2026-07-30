@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 const INTERMEDIATE_PROS = [
   "Cursor integration — one-click MCP attach",
   "URL search and web context on the pipe",
-  "Proxy-managed keys for streamlined upstream access",
+  "Bring your own provider keys (BYOK)",
   "Real-time model switching with zero local resource drag",
   "Centralised prompt cache and compliant search",
 ];

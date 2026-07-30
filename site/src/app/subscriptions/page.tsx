@@ -5,27 +5,10 @@ import { PAYG_RATES, formatUsd } from "@/lib/meterRates";
 export const metadata: Metadata = {
   title: "Subscriptions",
   description:
-    "withOhm — usage-led Intermediate (card on file), free trial, and Enterprise design-partner rank.",
+    "withOhm — Intermediate ($0 membership + meters, BYOK) and Enterprise design-partner rank.",
 };
 
 const TIERS = [
-  {
-    id: "trial",
-    name: "Free trial",
-    featured: false,
-    price: "$0 for 30 days",
-    priceNote:
-      "Card on file required. A $0.01 verification charge confirms legitimacy. Then usage-led Intermediate meters apply.",
-    pros: [
-      "Full access to withOhm architecture and built-in features for 30 days",
-      "Dynamic model switching, web browse, and URL scrape on the pipe",
-      "Converts to Intermediate (meters + $0 membership) when the trial ends",
-    ],
-    cta: {
-      href: "/billing/intermediate",
-      label: "Start free trial",
-    },
-  },
   {
     id: "intermediate",
     name: "Intermediate",
@@ -35,7 +18,7 @@ const TIERS = [
     pros: [
       "Cursor integration — one-click MCP attach",
       "URL search and web context on the pipe",
-      "Proxy-managed keys for streamlined upstream access",
+      "Bring your own provider keys (BYOK)",
       "Real-time model switching with zero local resource drag",
       "Centralised prompt cache and compliant search",
       "Pay for pipe rent you use — not a deadweight seat",
@@ -156,6 +139,10 @@ export default function SubscriptionsPage() {
             </tr>
           </tbody>
         </table>
+        <p className="status-foot">
+          Billing plan id for Intermediate is <code>payg</code> in the API and
+          Stripe metadata — UI label stays Intermediate.
+        </p>
       </div>
     </>
   );

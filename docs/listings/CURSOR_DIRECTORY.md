@@ -21,7 +21,7 @@ withOhm attaches to Cursor as an MCP server with three tools:
 - ohm_fetch_web — public URL → markdown/JSON for agents
 - ohm_usage — hits, fetches, pipe-rent estimate
 
-Keep your OpenAI/Anthropic keys. Founding design partners: free 90 days → https://withohm.dev/design-partners
+Keep your OpenAI/Anthropic keys. Founding design partners: free 90 days → https://www.withohm.dev/design-partners
 ```
 
 ## Links

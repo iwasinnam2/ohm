@@ -1,0 +1,11 @@
+withOhm / Ohm
+Copyright (c) 2026 Ohm / withOhm
+
+This repository (gateway, Cursor plugin, MCP client, SDKs, docs, and site source)
+is licensed under the MIT License. See LICENSE.
+
+The hosted withOhm service (api.withohm.dev and related managed infrastructure)
+is a commercial offering: usage is metered and subject to the Terms of Service
+and Privacy Policy at https://www.withohm.dev/docs/terms and
+https://www.withohm.dev/docs/privacy. Using this open-source code does not
+grant free access to the hosted pipe.

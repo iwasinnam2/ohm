@@ -21,7 +21,7 @@ export default function DesignPartnersPage() {
         </p>
         <p>
           No warm intro required — apply below, or start the{" "}
-          <Link href="/billing/intermediate">Intermediate trial</Link> today and
+          <Link href="/billing/intermediate">Intermediate</Link> today and
           attach via <strong>Add withOhm to Cursor</strong> after Checkout.
         </p>
       </header>

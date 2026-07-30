@@ -8,7 +8,7 @@ version = "0.1.0"
 description = "Drop-in OpenAI base_url helpers for Ohm (api.withohm.dev)"
 readme = "README.md"
 requires-python = ">=3.10"
-license = { text = "Proprietary" }
+license = { text = "MIT" }
 keywords = ["ohm", "openai", "llm", "cache"]
 dependencies = []
 

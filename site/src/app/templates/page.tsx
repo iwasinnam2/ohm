@@ -20,7 +20,7 @@ export default function TemplatesPage() {
       <div className="partner">
         <pre className="steal__share">{`git clone https://github.com/iwasinnam2/ohm.git
 cd ohm/templates/cursor-agent-with-web
-# then: Add withOhm MCP from https://withohm.dev/i`}</pre>
+# then: Add withOhm MCP from https://www.withohm.dev/i`}</pre>
         <p>
           Includes MCP example + skill for <strong>compliant fetch for agents</strong>{" "}
           and an <code>AGENTS.md</code> that points teammates at{" "}

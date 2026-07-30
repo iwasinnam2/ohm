@@ -10,7 +10,7 @@ Agents stall without page text. Hand-browsing does not scale. This packer turns 
 
 ## Setup
 
-1. Attach withOhm: https://withohm.dev/i  
+1. Attach withOhm: https://www.withohm.dev/i  
 2. Copy `skills/docs-context-packer/SKILL.md` into your project `.cursor/skills/` (or use from this folder).
 3. Or run the CLI (calls Ohm HTTP):
 

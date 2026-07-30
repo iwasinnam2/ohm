@@ -15,6 +15,6 @@ gh repo create ohm --public --source=. --remote=origin --push
 Use that URL as Cursor marketplace **global repo link**.
 Logotype URLs after site deploy:
 
-- `https://withohm.dev/ohm-icon.svg`
-- `https://withohm.dev/ohm-icon-360.png`
+- `https://www.withohm.dev/ohm-icon.svg`
+- `https://www.withohm.dev/ohm-icon-360.png`
 - or relative `assets/logo.svg` in the repo

@@ -239,17 +239,16 @@ async fn authorize(app: &App, token: &str) -> bool {
                 Ok(Some(_)) => return true,
                 Ok(None) => return false,
                 Err(e) => {
-                    // Broken Redis (e.g. TLS-only ElastiCache with plain RESP):
-                    // drop the client and let Python authorize.
-                    warn!("redis GET apikey failed: {e}; defer auth to Python");
+                    // Fail-closed: do not proxy with a forged identity when Redis is broken.
+                    warn!("redis GET apikey failed: {e}; denying at edge");
                     *guard = None;
-                    return true;
+                    return false;
                 }
             }
         }
     }
-    // Redis unreachable — defer auth to Python upstream.
-    true
+    // Redis unreachable — fail closed at the edge (Python still authoritative when reachable).
+    false
 }
 
 async fn resolve_tenant(app: &App, token: &str) -> String {

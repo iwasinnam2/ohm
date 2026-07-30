@@ -68,14 +68,14 @@ export function middleware(request: NextRequest) {
         service: "ohm",
         error: {
           message:
-            "Public API edge is not cut over on this host yet. Use http://localhost:8081/v1 (or your operator deploy). Documentation: https://withohm.dev",
+            "Public API edge is not cut over on this host yet. Use http://localhost:8081/v1 (or your operator deploy). Documentation: https://www.withohm.dev",
           type: "api_unavailable",
           code: "edge_pending",
         },
-        docs: "https://withohm.dev",
+        docs: "https://www.withohm.dev",
         local_edge: "http://localhost:8081/v1",
         acm: "issued",
-        cutover: "https://withohm.dev/docs/status",
+        cutover: "https://www.withohm.dev/docs/status",
       },
       {
         status: 503,

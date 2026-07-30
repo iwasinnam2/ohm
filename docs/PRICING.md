@@ -39,8 +39,9 @@ Complimentary `design_partner` plan (admin issue): time-boxed + soft USD quota. 
 - **Ops:** `POST /v1/admin/tenants/{id}/checkout`
 - Cancel / payment failed → tenant `suspended` → API keys return **403**
 - Soft daily fetch cap until `invoice.paid` / metered spend — see [STRIPE.md](STRIPE.md)
-- Success / cancel pages: `https://withohm.dev/billing/success` / `cancel`
+- Success / cancel pages: `https://www.withohm.dev/billing/success` / `cancel`
 - Setup: [STRIPE.md](STRIPE.md)
+- Intermediate UI label ↔ API/Stripe plan id `payg`
 
 ## Savings (estimates)
 

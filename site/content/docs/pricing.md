@@ -4,7 +4,7 @@
 
 ## Plans
 
-See [/subscriptions](/subscriptions): Free trial (card + verify), **Intermediate (usage-led)**, and Enterprise (design-partner rank).
+See [/subscriptions](/subscriptions): **Intermediate (usage-led, $0 membership + meters, BYOK)** and Enterprise (design-partner rank). API/Stripe plan id for Intermediate is `payg`.
 
 ## Intermediate list rates (USD)
 

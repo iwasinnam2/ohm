@@ -42,7 +42,7 @@ Determined by Customer. May include identifiers, message content, and URLs. with
 | OpenAI / Anthropic (as configured) | Model inference |
 | AWS (or operator host) | Compute, Redis, networking |
 | Stripe | Customer billing |
-| Vercel (marketing/docs host) | Public documentation site |
+| AWS Amplify (marketing/docs host) | Public documentation site |
 
 ## International transfers
 

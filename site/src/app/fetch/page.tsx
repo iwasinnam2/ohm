@@ -5,7 +5,7 @@ import { FetchToyClient } from "@/components/FetchToyClient";
 export const metadata: Metadata = {
   title: "Fetch",
   description:
-    "Public compliant fetch for agents — paste a URL, get markdown via withOhm.",
+    "Public URL → markdown demo (HTML strip). Full compliant Cursor pipe via withOhm MCP.",
 };
 
 export default function FetchPage() {

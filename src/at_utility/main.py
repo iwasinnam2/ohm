@@ -204,7 +204,7 @@ async def auth_tenant(
         raise HTTPException(
             status_code=403,
             detail=(
-                "Tenant suspended — update billing at withohm.dev/billing/intermediate "
+                "Tenant suspended — update billing at https://www.withohm.dev/billing/intermediate "
                 "or contact partners@withohm.dev"
             ),
         )
@@ -218,6 +218,22 @@ async def auth_tenant(
                     f"Soft usage quota reached ({record.soft_quota_usd} USD estimate). "
                     "Contact partners@withohm.dev or upgrade."
                 ),
+            )
+    if record.request_cap and record.request_cap > 0:
+        snap = await state.meter.snapshot(record.tenant_id)
+        used = int(float(snap.get("requests") or 0))
+        if used >= record.request_cap:
+            raise HTTPException(
+                status_code=403,
+                detail={
+                    "code": "request_cap",
+                    "message": (
+                        f"Request cap reached ({record.request_cap}). "
+                        "Contact partners@withohm.dev to raise the cap."
+                    ),
+                    "used": used,
+                    "cap": record.request_cap,
+                },
             )
     return key, record
 
@@ -262,7 +278,7 @@ async def health() -> dict[str, Any]:
 
 @app.get("/ready")
 async def ready() -> JSONResponse:
-    """Readiness: Redis ping + provider configuration flags (not upstream probes)."""
+    """Readiness: Redis ping. Prod omits exception strings and internal host hints."""
     redis_ok = False
     redis_error: str | None = None
     try:
@@ -270,25 +286,29 @@ async def ready() -> JSONResponse:
         redis_ok = bool(pong)
     except Exception as exc:  # noqa: BLE001 — surface readiness, don't crash
         redis_error = str(exc)
-    body = {
+    region = (state.settings.at_region or "").lower()
+    is_prod = region not in ("local", "dev", "test", "")
+    body: dict[str, Any] = {
         "ok": redis_ok,
         "service": "ohm",
         "plane": "python",
         "region": state.settings.at_region,
-        "redis": {"ok": redis_ok, "error": redis_error},
-        "providers": {
+        "redis": {"ok": redis_ok},
+    }
+    if not is_prod:
+        body["redis"]["error"] = redis_error
+        body["providers"] = {
             "mock": True,
             "openai": bool(state.openai and state.openai._api_key),
             "anthropic": bool(state.anthropic and state.anthropic._api_key),
             "byok_header": "X-Ohm-Upstream-Key",
-        },
-        "mvp": {
+        }
+        body["mvp"] = {
             "public_api_host": "api.withohm.dev",
             "local_edge": "http://localhost:8081/v1",
             "key_prefix": "sk-at",
             "mid_stream_failover": False,
-        },
-    }
+        }
     return JSONResponse(status_code=200 if redis_ok else 503, content=body)
 
 
@@ -533,11 +553,34 @@ class PublicCheckoutBody(BaseModel):
 
 
 @app.post("/v1/billing/checkout")
-async def public_create_checkout(body: PublicCheckoutBody) -> dict[str, Any]:
+async def public_create_checkout(
+    body: PublicCheckoutBody,
+    request: Request,
+) -> dict[str, Any]:
     """
     Self-serve: issue Ohm tenant key once + Stripe Checkout URL.
     Admin checkout remains an ops escape hatch.
     """
+    # Soft abuse control on unauthenticated key mint (IP token bucket).
+    client_ip = (
+        (request.headers.get("x-forwarded-for") or "").split(",")[0].strip()
+        or (request.client.host if request.client else "")
+        or "unknown"
+    )
+    mint_ok = await state.store.eval_token_bucket(
+        f"at:global:rl:checkout:{client_ip}",
+        0.1,  # ~6/min sustained
+        3.0,  # burst of 3
+        time.time(),
+    )
+    if not mint_ok:
+        raise HTTPException(
+            status_code=429,
+            detail={
+                "code": "checkout_rate_limit",
+                "message": "Too many checkout attempts from this network. Try again shortly.",
+            },
+        )
     s = state.settings
     if body.plan not in ("payg", "enterprise"):
         raise HTTPException(status_code=400, detail="plan must be payg or enterprise")
@@ -840,14 +883,25 @@ async def chat_completions(
                         "cap": cap,
                     },
                 )
+        # Tenant Checkout/admin mint stores terms_version + dpa_version.
+        # Per-request acks still win; otherwise honor bound tenant versions.
+        s = state.settings
+        tenant_terms_ok = bool(
+            (tenant_rec.terms_version or "") == s.at_compliance_terms_version
+            and (tenant_rec.dpa_version or "") == s.at_compliance_dpa_version
+        )
+        terms_ack = bool(body.terms_ack) or tenant_terms_ok
+        dpa_ack = bool(body.dpa_ack) or tenant_terms_ok
+        # Binding ToS at seat mint covers public-only compliance for allowed purposes.
+        compliance_ack = bool(body.web_compliance_ack) or tenant_terms_ok
         ctx = await fetch_web_context(
             state.settings,
             query=body.web_query,
             urls=body.web_urls or None,
             purpose=body.web_purpose,
-            compliance_ack=body.web_compliance_ack,
-            terms_ack=body.terms_ack,
-            dpa_ack=body.dpa_ack,
+            compliance_ack=compliance_ack,
+            terms_ack=terms_ack,
+            dpa_ack=dpa_ack,
             format=body.web_format or "markdown",
         )
         if ctx.get("ok") is False and ctx.get("error"):
