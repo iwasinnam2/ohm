@@ -12,18 +12,25 @@ try:
     from mcp.server import MCPServer
 except ImportError as exc:  # pragma: no cover
     raise SystemExit(
-        "Install MCP extra: pip install 'at-utility[mcp]' (or pip install mcp>=2)"
+        "Install MCP extra: pip install 'at-utility[mcp]' "
+        "(or: pip install \"at-utility[mcp] @ git+https://github.com/iwasinnam2/ohm.git\")"
     ) from exc
 
 mcp = MCPServer("ohm")
 
-DEFAULT_BASE = "http://127.0.0.1:8081/v1"
+DEFAULT_BASE = "https://api.withohm.dev/v1"
 UPSTREAM_HEADER = "X-Ohm-Upstream-Key"
 
 
 def _cfg() -> tuple[str, str, str]:
-    base = os.environ.get("OHM_BASE_URL", DEFAULT_BASE).rstrip("/")
-    key = os.environ.get("OHM_API_KEY", "sk-at-dev")
+    base = (os.environ.get("OHM_BASE_URL") or DEFAULT_BASE).rstrip("/")
+    key = (os.environ.get("OHM_API_KEY") or "").strip()
+    if not key:
+        raise RuntimeError(
+            "OHM_API_KEY is required. Create a seat at "
+            "https://www.withohm.dev/billing/intermediate and set the issued key "
+            "in Cursor MCP env (do not use local bootstrap sk-at-dev in production)."
+        )
     upstream = os.environ.get("OHM_UPSTREAM_KEY", "")
     return base, key, upstream
 
@@ -50,6 +57,9 @@ async def ohm_fetch_web(
     """
     Compliant public-web fetch via Ohm ingest (metered ohm_web_fetch).
 
+    Terms/DPA must already be bound on the tenant at Checkout (or admin mint).
+    This tool does not forge per-request legal acks.
+
     Args:
       urls: Public http(s) pages to fetch.
       purpose: One of public_web_retrieval, business_catalog,
@@ -71,9 +81,6 @@ async def ohm_fetch_web(
         "web_purpose": purpose,
         "web_urls": urls,
         "web_format": fmt,
-        "web_compliance_ack": True,
-        "terms_ack": True,
-        "dpa_ack": True,
         "cache_control": "no_store",
     }
     if query:
@@ -94,7 +101,7 @@ async def ohm_fetch_web(
 
 @mcp.tool()
 async def ohm_usage() -> str:
-    """Return Ohm usage snapshot: cache hit ratio, fetches, web attach rate (GET /v1/usage)."""
+    """Return Ohm usage snapshot: cache hit ratio, fetches, estimated pipe rent (GET /v1/usage)."""
     base, _, _ = _cfg()
     async with httpx.AsyncClient(timeout=30.0) as client:
         res = await client.get(f"{base}/usage", headers=_headers())
@@ -111,6 +118,9 @@ async def ohm_chat(
 ) -> str:
     """
     Chat through Ohm (OpenAI-compatible). Identical prompts hit Redis cache.
+
+    When fetch_urls is set, Terms/DPA must already be bound on the tenant
+    (Checkout). This tool does not forge per-request legal acks.
 
     Args:
       prompt: User message.
@@ -130,9 +140,6 @@ async def ohm_chat(
                 "fetch_web_context": True,
                 "web_purpose": purpose,
                 "web_urls": fetch_urls,
-                "web_compliance_ack": True,
-                "terms_ack": True,
-                "dpa_ack": True,
             }
         )
     async with httpx.AsyncClient(timeout=120.0) as client:

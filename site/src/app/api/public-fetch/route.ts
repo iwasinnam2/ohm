@@ -3,8 +3,10 @@ import { NextRequest, NextResponse } from "next/server";
 const WINDOW_MS = 60_000;
 const MAX_PER_WINDOW = 8;
 const MAX_BYTES = 400_000;
-const WATERMARK =
-  "\n\n---\nvia withOhm — compliant fetch for agents · https://withohm.dev/i\n";
+const WATERMARK_OHM =
+  "\n\n---\nvia withOhm — compliant fetch for agents · https://www.withohm.dev/i\n";
+const WATERMARK_TOY =
+  "\n\n---\nvia withOhm public fetch toy (demo HTML strip — not the compliance pipe) · https://www.withohm.dev/i\n";
 
 const hits = new Map<string, { n: number; reset: number }>();
 
@@ -26,6 +28,24 @@ function rateLimit(ip: string): boolean {
   if (row.n >= MAX_PER_WINDOW) return false;
   row.n += 1;
   return true;
+}
+
+function isBlockedHost(hostname: string): boolean {
+  const h = hostname.toLowerCase();
+  if (
+    ["localhost", "127.0.0.1", "0.0.0.0", "::1", "169.254.169.254"].includes(h) ||
+    h.endsWith(".local") ||
+    h.endsWith(".internal") ||
+    h === "metadata.google.internal"
+  ) {
+    return true;
+  }
+  // RFC1918 / link-local literals
+  if (/^10\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(h)) return true;
+  if (/^192\.168\.\d{1,3}\.\d{1,3}$/.test(h)) return true;
+  if (/^172\.(1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3}$/.test(h)) return true;
+  if (/^169\.254\.\d{1,3}\.\d{1,3}$/.test(h)) return true;
+  return false;
 }
 
 function htmlToText(html: string): string {
@@ -68,11 +88,7 @@ export async function GET(req: NextRequest) {
       { status: 400 },
     );
   }
-  if (
-    ["localhost", "127.0.0.1", "0.0.0.0", "::1"].includes(parsed.hostname) ||
-    parsed.hostname.endsWith(".local") ||
-    parsed.hostname.endsWith(".internal")
-  ) {
+  if (isBlockedHost(parsed.hostname)) {
     return NextResponse.json(
       { error: "Public hosts only" },
       { status: 400 },
@@ -84,7 +100,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json(
       {
         error: "Soft rate limit — try again shortly, or get a seat at /i",
-        install: "https://withohm.dev/i",
+        install: "https://www.withohm.dev/i",
       },
       { status: 429 },
     );
@@ -118,9 +134,6 @@ export async function GET(req: NextRequest) {
           web_purpose: "public_web_retrieval",
           web_urls: [url],
           web_format: "markdown",
-          web_compliance_ack: true,
-          terms_ack: true,
-          dpa_ack: true,
           cache_control: "no_store",
         }),
         signal: AbortSignal.timeout(45_000),
@@ -135,10 +148,10 @@ export async function GET(req: NextRequest) {
           JSON.stringify(data, null, 2);
         return NextResponse.json({
           url,
-          markdown: content + WATERMARK,
+          markdown: content + WATERMARK_OHM,
           via: "ohm",
           phrase: "compliant fetch for agents",
-          install: "https://withohm.dev/i",
+          install: "https://www.withohm.dev/i",
         });
       }
     } catch {
@@ -150,7 +163,8 @@ export async function GET(req: NextRequest) {
     const res = await fetch(url, {
       redirect: "follow",
       headers: {
-        "User-Agent": "withOhm-public-fetch-toy/0.1 (+https://withohm.dev/fetch)",
+        "User-Agent":
+          "withOhm-public-fetch-toy/0.1 (+https://www.withohm.dev/fetch)",
         Accept: "text/html,application/xhtml+xml,text/plain;q=0.9,*/*;q=0.8",
       },
       signal: AbortSignal.timeout(15_000),
@@ -159,6 +173,13 @@ export async function GET(req: NextRequest) {
       return NextResponse.json(
         { error: `Upstream HTTP ${res.status}`, url },
         { status: 502 },
+      );
+    }
+    const finalHost = new URL(res.url).hostname;
+    if (isBlockedHost(finalHost)) {
+      return NextResponse.json(
+        { error: "Redirect landed on a non-public host" },
+        { status: 400 },
       );
     }
     const buf = await res.arrayBuffer();
@@ -175,17 +196,17 @@ export async function GET(req: NextRequest) {
     ).trim();
     return NextResponse.json({
       url,
-      markdown: markdown + WATERMARK,
+      markdown: markdown + WATERMARK_TOY,
       via: "toy",
-      phrase: "compliant fetch for agents",
-      install: "https://withohm.dev/i",
-      note: "Public toy preview. Full Cursor pipe: https://withohm.dev/i",
+      phrase: "public fetch toy (demo)",
+      install: "https://www.withohm.dev/i",
+      note: "Demo HTML strip only — not robots/purpose-gated. Full Cursor pipe: https://www.withohm.dev/i",
     });
   } catch (err) {
     return NextResponse.json(
       {
         error: err instanceof Error ? err.message : "Fetch failed",
-        install: "https://withohm.dev/i",
+        install: "https://www.withohm.dev/i",
       },
       { status: 502 },
     );

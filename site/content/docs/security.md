@@ -20,7 +20,7 @@ Identical chat completion requests (per tenant) may store the model response in 
 
 ## Subprocessors
 
-Model providers you enable, Amazon Web Services (or host), Stripe (billing), Vercel (docs site).
+Model providers you enable, Amazon Web Services (or host), Stripe (billing), AWS Amplify (docs/marketing site).
 
 ## Headers (legacy `AT` family)
 

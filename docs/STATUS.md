@@ -4,10 +4,11 @@
 
 | Surface | URL | State |
 |---------|-----|--------|
-| Docs / marketing | https://withohm.dev | Live (Vercel) |
-| Status page | https://status.withohm.dev → `/status` | Attach Vercel domain |
-| Public API | https://api.withohm.dev | ACM issued; cutover [API_CUTOVER.md](../infra/runbooks/API_CUTOVER.md) |
-| Local MVP edge | http://localhost:8081 | Supported |
+| Docs / marketing | https://www.withohm.dev | Live (AWS Amplify + CloudFront) |
+| Status page | https://status.withohm.dev → `/status` | Live |
+| Public API | https://api.withohm.dev | Live (EKS + Global Accelerator) |
+| Fetch toy | https://fetch.withohm.dev | Live (demo strip) |
+| Local MVP edge | http://localhost:8081 | Supported for local smoke |
 
 ```powershell
 .\scripts\release_smoke.ps1
@@ -18,11 +19,13 @@
 
 | Host | Role |
 |------|------|
-| `withohm.dev` | Marketing + docs |
-| `api.withohm.dev` | Public API (NLB → GA) |
-| `status.withohm.dev` | Status page (Vercel rewrite to `/status`) |
+| `www.withohm.dev` | Marketing + docs (prefer until apex 301) |
+| `withohm.dev` | Apex — forward to www per [APEX_CUTOVER.md](../infra/runbooks/APEX_CUTOVER.md) |
+| `api.withohm.dev` | Public API |
+| `fetch.withohm.dev` | Public fetch demo |
+| `status.withohm.dev` | Status page |
 
-Root is registered. See [BRAND.md](BRAND.md) and [infra/runbooks/GO_LIVE.md](../infra/runbooks/GO_LIVE.md).
+See [BRAND.md](BRAND.md) and [infra/runbooks/GO_LIVE.md](../infra/runbooks/GO_LIVE.md).
 
 ## Current limits (defaults)
 
@@ -58,5 +61,6 @@ Prompt + response payloads for identical requests (tenant-scoped cache keys). Se
 | Excerpt caps | 4000/source, 12000 total |
 | Cache training export | Hard-denied |
 | `cache_control: no_store` | Skips Redis write |
-| robots.txt | Respected |
+| robots.txt | Respected (fail-closed on fetch errors) |
 | PII redaction in fetched markdown | On |
+| DNS rebind / private IP after resolve | Denied |

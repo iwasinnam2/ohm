@@ -35,7 +35,7 @@ Doctrine checklist when changing UI: one focal point (squint), three type levels
 | `/bounty` | $29 artifact bounty |
 | `/docs` | Doc index |
 | `/docs/[slug]` | Curated markdown from `content/docs/` |
-| `/subscriptions` | Free trial · Intermediate · Enterprise |
+| `/subscriptions` | Intermediate · Enterprise |
 | `/design-partners` | Founding design-partner apply (optional icing) |
 | `/billing` | Redirects to `/subscriptions` |
 | `/billing/intermediate` | Intermediate checkout |

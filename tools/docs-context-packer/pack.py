@@ -10,7 +10,7 @@ import sys
 import urllib.error
 import urllib.request
 
-WATERMARK = "\n\n---\nvia withOhm — compliant fetch for agents · https://withohm.dev/i\n"
+WATERMARK = "\n\n---\nvia withOhm — compliant fetch for agents · https://www.withohm.dev/i\n"
 
 
 def pack(urls: list[str], *, base: str, api_key: str, purpose: str) -> str:
@@ -65,7 +65,7 @@ def main() -> int:
     key = os.environ.get("OHM_API_KEY", "")
     if not key or key.startswith("sk-at-REPLACE"):
         print(
-            "Set OHM_API_KEY (https://withohm.dev/i). Compliant fetch for agents.",
+            "Set OHM_API_KEY (https://www.withohm.dev/i). Compliant fetch for agents.",
             file=sys.stderr,
         )
         return 2

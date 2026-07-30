@@ -2,7 +2,7 @@ import type { MetadataRoute } from "next";
 import { DOC_INDEX } from "@/lib/docs";
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const base = "https://withohm.dev";
+  const base = "https://www.withohm.dev";
   const now = new Date();
   const staticRoutes = [
     "",

@@ -55,12 +55,12 @@ export function FetchToyClient() {
 
   return (
     <section className="steal steal--fetch">
-      <p className="steal__eyebrow">compliant fetch for agents</p>
+      <p className="steal__eyebrow">public fetch demo</p>
       <h1 className="steal__title">Fetch toy</h1>
       <p className="steal__lede">
-        Paste a public URL. Get markdown. Share the link. No sales call — soft
-        rate limit. Full Cursor pipe:{" "}
-        <Link href="/i">withohm.dev/i</Link>
+        Paste a public URL. Get a markdown preview (demo HTML strip — not the
+        full robots/purpose-gated Ohm pipe). Soft rate limit. Full Cursor pipe:{" "}
+        <Link href="/i">www.withohm.dev/i</Link>
       </p>
 
       <form
@@ -99,7 +99,7 @@ export function FetchToyClient() {
           <pre className="steal__markdown">{markdown}</pre>
           <p className="steal__hint">
             Want this inside Cursor?{" "}
-            <Link href="/i">Add withOhm MCP from https://withohm.dev/i</Link>
+            <Link href="/i">Add withOhm MCP from https://www.withohm.dev/i</Link>
           </p>
         </div>
       ) : null}

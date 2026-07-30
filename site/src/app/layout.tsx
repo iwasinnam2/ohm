@@ -26,7 +26,7 @@ const plexMono = IBM_Plex_Mono({
   display: "swap",
 });
 
-const siteUrl = "https://withohm.dev";
+const siteUrl = "https://www.withohm.dev";
 
 const description =
   "Change one base URL. Keep your prompts, tools, and SDKs. Gain cache, failover, web context, and a bill you can explain.";

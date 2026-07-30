@@ -49,7 +49,7 @@ class Settings(BaseSettings):
     at_compliance_terms_version: str = "tos-2026-07-26"
     at_compliance_dpa_version: str = "dpa-2026-07-26"
     at_compliance_user_agent: str = (
-        "OhmBot/0.1 (+https://withohm.dev/legal; public-retrieval; respect-robots)"
+        "OhmBot/0.1 (+https://www.withohm.dev/docs/legal; public-retrieval; respect-robots)"
     )
 
     at_price_per_1k_tokens_miss: float = 0.002
@@ -83,9 +83,9 @@ class Settings(BaseSettings):
     stripe_meter_event_cache_hit: str = "ohm_cache_hit"
     stripe_meter_event_cache_miss: str = "ohm_cache_miss"
     stripe_checkout_success_url: str = (
-        "https://withohm.dev/billing/success?session_id={CHECKOUT_SESSION_ID}"
+        "https://www.withohm.dev/billing/success?session_id={CHECKOUT_SESSION_ID}"
     )
-    stripe_checkout_cancel_url: str = "https://withohm.dev/billing/cancel"
+    stripe_checkout_cancel_url: str = "https://www.withohm.dev/billing/cancel"
     # Design-partner defaults when plan=design_partner
     at_design_partner_days: int = 90
     at_design_partner_soft_quota_usd: float = 50.0

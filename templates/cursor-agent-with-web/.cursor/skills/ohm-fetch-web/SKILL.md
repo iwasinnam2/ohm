@@ -17,4 +17,4 @@ ohm_fetch_web(
 )
 ```
 
-Requires Ohm MCP (`OHM_API_KEY`). Install: https://withohm.dev/i
+Requires Ohm MCP (`OHM_API_KEY`). Install: https://www.withohm.dev/i

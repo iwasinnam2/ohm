@@ -41,6 +41,14 @@ def test_url_gate_blocks_credentials_and_login():
     assert not gate_url("http://127.0.0.1/secret").allowed
     assert not gate_url("https://192.168.1.10/x").allowed
     assert not gate_url("file:///etc/passwd").allowed
+    assert not gate_url("http://169.254.169.254/latest/meta-data/").allowed
+
+
+def test_url_gate_dns_literal_skip_ok():
+    # example.com resolves publicly in normal networks; literal private already covered
+    r = gate_url("https://192.168.0.1/", resolve_dns=False)
+    assert not r.allowed
+    assert r.code == "private_network"
 
 
 def test_url_gate_blocks_snap_account_host():

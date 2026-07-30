@@ -1,7 +1,9 @@
 ---
 name: ohm-chat
-description: Chat through Ohm via MCP ohm_chat; optional compliant fetch_urls.
-disable-model-invocation: true
+description: >
+  Chat through withOhm via MCP ohm_chat (OpenAI-compatible ingress + Redis prompt
+  replay). Use when the user wants prompt cache, BYOK model calls through Ohm,
+  or chat with optional compliant fetch_urls — withOhm, ohm, prompt-cache, BYOK.
 ---
 
 # Ohm chat
@@ -21,5 +23,7 @@ ohm_chat(
 ```
 
 For gpt/claude models, set `OHM_UPSTREAM_KEY` or pass `upstream_api_key`.
+
+Terms/DPA must be bound at Checkout (tenant seat). MCP does not forge legal acks.
 
 For scrape-only (no chat), prefer `/ohm-fetch-web`. See `docs/CURSOR.md`.

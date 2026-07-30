@@ -4,7 +4,7 @@ After Checkout, success is one job: **Add Ohm to Cursor** — a deeplink into Cu
 
 ## One-click
 
-1. Pay on [withohm.dev/billing](https://withohm.dev/billing) (or local `/billing`)
+1. Pay on [withohm.dev/billing](https://www.withohm.dev/billing) (or local `/billing`)
 2. Optional: paste provider key on the success screen (BYOK)
 3. Click **Add Ohm to Cursor** → confirm in Cursor
 
@@ -22,7 +22,7 @@ cursor://anysphere.cursor-deeplink/mcp/install?name=ohm&config=<base64>
       "args": ["-m", "ohm_mcp"],
       "env": {
         "OHM_BASE_URL": "https://api.withohm.dev/v1",
-        "OHM_API_KEY": "sk-at-dev",
+        "OHM_API_KEY": "sk-at-YOUR_ISSUED_KEY",
         "OHM_UPSTREAM_KEY": ""
       }
     }
@@ -30,7 +30,14 @@ cursor://anysphere.cursor-deeplink/mcp/install?name=ohm&config=<base64>
 }
 ```
 
-`pip install -e ".[mcp]"` once from the repo. See also [`.cursor/mcp.json.example`](../.cursor/mcp.json.example).
+Install once:
+
+```powershell
+pip install -e ".[mcp]"
+# or: pip install "at-utility[mcp] @ git+https://github.com/iwasinnam2/ohm.git"
+```
+
+`OHM_API_KEY` is required (Checkout at https://www.withohm.dev/billing/intermediate). Terms/DPA are bound at seat mint — MCP does not forge per-request legal acks. See [`.cursor/mcp.json.example`](../.cursor/mcp.json.example) for local-only smoke.
 
 ## Usable commands (MCP tools)
 

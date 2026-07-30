@@ -75,7 +75,7 @@ export function DesignPartnerApplicationForm() {
         </p>
         <p>
           Want to start immediately?{" "}
-          <Link href="/billing/intermediate">Start the Intermediate trial</Link>{" "}
+          <Link href="/billing/intermediate">Start Intermediate</Link>{" "}
           ($0 membership + card on file), then use{" "}
           <strong>Add withOhm to Cursor</strong> on the success screen.
         </p>

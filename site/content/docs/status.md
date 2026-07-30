@@ -2,19 +2,22 @@
 
 ## Service status
 
-- **Docs / marketing:** `https://withohm.dev`
-- **Status:** `https://status.withohm.dev` (Vercel → `/status`)
-- **`api.withohm.dev`:** edge-pending until public API cutover; ACM issued
-- **Supported edge:** local `http://localhost:8081` — control plane `GET /ready`
+- **Docs / marketing:** `https://www.withohm.dev` (AWS Amplify + CloudFront)
+- **Status:** `https://status.withohm.dev` → `/status`
+- **`api.withohm.dev`:** live public API (EKS + Global Accelerator)
+- **Fetch toy:** `https://fetch.withohm.dev` — demo HTML strip (not the full compliance pipe)
+- **Local edge (dev):** `http://localhost:8081`
 
 ## Hosts
 
 | Host | Role |
 |------|------|
-| `withohm.dev` | Marketing + docs |
-| `api.withohm.dev` | Public API (target); ACM certificate issued |
+| `www.withohm.dev` | Marketing + docs (prefer until apex 301 is live) |
+| `withohm.dev` | Apex — forward to www when DNS cutover complete |
+| `api.withohm.dev` | Public API |
+| `fetch.withohm.dev` | Public fetch demo |
 | `status.withohm.dev` | Status page |
-| Local `:8081` | Supported client entry (Rust edge) until public cutover |
+| Local `:8081` | Dev client entry (Rust edge) |
 
 ## Defaults
 
@@ -31,7 +34,7 @@
 | Gate | Default |
 |------|---------|
 | Terms / DPA ack | Required for web context + tenant issue |
-| Public-only web fetch | Enforced |
+| Public-only web fetch | Enforced on the Ohm API pipe |
 | Cache → training | Forbidden |
 
 See [Legal](./legal), [Terms](./terms), [DPA](./dpa), [Privacy](./privacy).
