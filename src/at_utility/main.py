@@ -1902,6 +1902,28 @@ async def stripe_webhook(request: Request) -> dict[str, Any]:
             event_type,
             subscription_status,
         )
+
+    # Best-effort audit mirror of every event to the durable store (never blocks
+    # the loop or fails the webhook if the DB is down / disabled).
+    from at_utility.db import mirror
+
+    if mirror.mirror_enabled(state.settings):
+        try:
+            await asyncio.to_thread(
+                mirror.write_billing_event,
+                state.settings,
+                {
+                    "tenant_id": tenant_id,
+                    "event_type": event_type,
+                    "stripe_customer_id": str(customer_id or ""),
+                    "stripe_subscription_id": str(subscription_id or ""),
+                    "status": subscription_status or new_status or "",
+                    "raw": {"id": obj.get("id"), "type": event_type},
+                },
+            )
+        except Exception as exc:  # noqa: BLE001 — audit mirror must not break webhooks
+            log.warning("billing_event mirror failed event=%s err=%s", event_type, exc)
+
     return {"received": True, "type": event_type}
 
 
