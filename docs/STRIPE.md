@@ -6,10 +6,11 @@
 |-------|----------|
 | **Membership seat** | Monthly subscription via Checkout (`mode=subscription`, qty 1). Intermediate default is **$0** (card on file). |
 | **Meters** | Stripe Billing Meters: `ohm_web_fetch`, `ohm_cache_hit`, `ohm_cache_miss` — events synced from Redis metering |
-| **Credit pack (optional)** | `$29` prepaid allowance (`STRIPE_PRICE_CREDIT_PACK`) — not the growth hero price |
+| **Credit pack (optional)** | `$29` prepaid allowance (`STRIPE_PRICE_CREDIT_PACK`) — one-time top-up via `POST /v1/billing/topup`; webhook credits the customer balance |
 | **Dunning (1–14d)** | First `invoice.payment_failed` → delinquent (fetch **402**); Stripe Smart Retries + emails; day ≥`AT_DELINQUENT_SUSPEND_DAYS` → **403**. See [STRIPE_DUNNING.md](STRIPE_DUNNING.md) |
 | **Suspend** | `customer.subscription.deleted` / `invoice.marked_uncollectible` / sub `canceled`\|`unpaid` → tenant `suspended` → **403** |
-| **Fetch soft-cap** | `AT_FREE_TIER_FETCH_CAP_DAY` (default 100) until `invoice.paid` / metered spend unlocks Intermediate |
+| **Fetch soft-cap** | `AT_FREE_TIER_FETCH_CAP_DAY` (default 100) until `invoice.paid` unlocks Intermediate — metered spend alone never unlocks |
+| **Meter DLQ** | Failed meter events queue in Redis (`at:global:stripe_meter_dlq`) and replay every 60s; identifier dedup keeps replays single-billed |
 
 Checkout line items: seat Price + **all three** metered Prices (required when `AT_ENV=production` or `AT_REQUIRE_METER_PRICES=true`).
 
@@ -17,8 +18,8 @@ Checkout line items: seat Price + **all three** metered Prices (required when `A
 
 | Event | Stripe quantity | List USD (`AT_PRICE_*`) |
 |-------|-----------------|-------------------------|
-| `ohm_cache_hit` | `ceil(tokens/1000)` (min 1) | `$0.0005` / 1k tokens |
-| `ohm_cache_miss` | `ceil(tokens/1000)` (min 1) | `$0.002` / 1k tokens |
+| `ohm_cache_hit` | `ceil(tokens/1000)` — zero tokens bill zero units | `$0.0005` / 1k tokens |
+| `ohm_cache_miss` | `ceil(tokens/1000)` — zero tokens bill zero units | `$0.002` / 1k tokens |
 | `ohm_web_fetch` | URL count | `$0.001` / URL |
 
 ## Create test catalog
@@ -49,7 +50,7 @@ AT_REQUIRE_METER_PRICES=true
 STRIPE_SECRET_KEY=sk_test_...
 STRIPE_WEBHOOK_SECRET=whsec_...
 STRIPE_PRICE_PAYG=price_...          # prefer $0 membership
-STRIPE_PRICE_CREDIT_PACK=price_...   # optional $29
+STRIPE_PRICE_CREDIT_PACK=price_...   # optional $29 top-up (/v1/billing/topup)
 STRIPE_PRICE_ENTERPRISE=price_...
 STRIPE_PRICE_METER_WEB_FETCH=price_...
 STRIPE_PRICE_METER_CACHE_HIT=price_...

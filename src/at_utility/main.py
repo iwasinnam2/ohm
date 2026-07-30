@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 import time
@@ -78,6 +79,35 @@ class AppState:
 state = AppState()
 
 
+BILLING_MAINTENANCE_INTERVAL_SECONDS = 60
+# Delinquency sweep scans the tenant keyspace — run every Nth tick, not every minute.
+DELINQUENCY_SWEEP_EVERY_TICKS = 10
+
+
+async def _billing_maintenance_loop() -> None:
+    """Replay dead-lettered Stripe meter events and enforce dunning deadlines.
+
+    Without this loop, failed meter events are lost (underbilling) and
+    delinquent tenants only suspend when they happen to send a request.
+    """
+    tick = 0
+    while True:
+        try:
+            await state.meter.replay_stripe_dlq()
+            if tick % DELINQUENCY_SWEEP_EVERY_TICKS == 0:
+                suspended = await state.tenants.sweep_delinquent(
+                    state.settings.at_delinquent_suspend_days
+                )
+                if suspended:
+                    log.info("delinquency sweep suspended %d tenants", suspended)
+        except asyncio.CancelledError:
+            raise
+        except Exception:  # noqa: BLE001 — keep the loop alive
+            log.exception("billing maintenance tick failed")
+        tick += 1
+        await asyncio.sleep(BILLING_MAINTENANCE_INTERVAL_SECONDS)
+
+
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
     settings = get_settings()
@@ -92,8 +122,14 @@ async def lifespan(_app: FastAPI):
         settings.openai_api_key or "", settings.openai_base_url
     )
     state.anthropic = AnthropicProvider(settings.anthropic_api_key or "")
+    maintenance = asyncio.create_task(_billing_maintenance_loop())
     log.info("ohm gateway ready region=%s", settings.at_region)
     yield
+    maintenance.cancel()
+    try:
+        await maintenance
+    except asyncio.CancelledError:
+        pass
     await store.close()
 
 
@@ -344,11 +380,11 @@ async def usage(
     snap["billing_model"] = stripe_billing.BILLING_MODEL
     snap["byok"] = True
     snap["billing_paid"] = bool(tenant.billing_paid)
-    # Unlock soft fetch cap when paid invoice or any metered spend recorded
+    # Soft fetch cap lifts only on a paid invoice (or privileged plan) —
+    # metered-but-uninvoiced spend never unlocks.
     snap["usage_unlocked"] = bool(
         tenant.billing_paid
         or tenant.plan in ("enterprise", "dev", "design_partner")
-        or float(snap.get("revenue_usd") or 0) > 0
     )
     return snap
 
@@ -626,6 +662,44 @@ async def public_create_checkout(
     }
 
 
+class TopupBody(BaseModel):
+    success_url: str = ""
+    cancel_url: str = ""
+
+
+@app.post("/v1/billing/topup")
+async def credit_pack_topup(
+    body: TopupBody,
+    auth: tuple[str, TenantRecord] = Depends(auth_tenant),
+) -> dict[str, Any]:
+    """Authenticated $29 credit pack top-up: one-time Checkout (mode=payment).
+
+    Paid amount lands as a customer balance credit against future metered
+    invoices via the checkout.session.completed webhook.
+    """
+    api_key, tenant_rec = auth
+    await rate_limit(api_key, tenant_rec.tenant_id)
+    if not stripe_billing.stripe_configured(state.settings):
+        raise HTTPException(
+            status_code=503,
+            detail="Stripe not configured (set STRIPE_SECRET_KEY and price IDs)",
+        )
+    try:
+        session = stripe_billing.create_credit_pack_session(
+            state.settings,
+            tenant_id=tenant_rec.tenant_id,
+            success_url=body.success_url,
+            cancel_url=body.cancel_url,
+            stripe_customer_id=tenant_rec.stripe_customer_id or "",
+        )
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    return {
+        "checkout": session,
+        "note": "Complete Checkout — the amount credits your balance against future metered invoices.",
+    }
+
+
 @app.post("/v1/admin/tenants")
 async def admin_issue_tenant(
     body: IssueTenantBody,
@@ -738,6 +812,9 @@ async def stripe_webhook(request: Request) -> dict[str, Any]:
             "customer",
             "subscription",
             "id",
+            "mode",
+            "amount_total",
+            "currency",
         ):
             try:
                 val = obj[key] if hasattr(obj, "__getitem__") else getattr(obj, key, None)
@@ -762,6 +839,36 @@ async def stripe_webhook(request: Request) -> dict[str, Any]:
             tenant_id = found.tenant_id
             if not plan:
                 plan = found.plan
+
+    # $29 credit pack (mode=payment): apply as customer balance credit so it
+    # offsets future metered invoices, then attach the customer and stop —
+    # a one-time payment is not a subscription status signal.
+    if (
+        event_type == "checkout.session.completed"
+        and meta.get("purpose") == "credit_pack"
+    ):
+        credited = stripe_billing.apply_credit_pack_balance(
+            state.settings,
+            stripe_customer_id=str(customer_id or ""),
+            amount_cents=int(obj.get("amount_total") or 0),
+            currency=str(obj.get("currency") or "usd"),
+        )
+        if tenant_id and customer_id:
+            await state.tenants.attach_stripe(
+                tenant_id,
+                customer_id=str(customer_id),
+                subscription_id="",
+                plan=None,
+                status=None,
+                billing_paid=None,
+            )
+        log.info(
+            "credit pack webhook tenant=%s customer=%s credited=%s",
+            tenant_id,
+            customer_id,
+            credited,
+        )
+        return {"received": True, "type": event_type, "credit_pack": credited}
 
     new_status = stripe_billing.apply_webhook_to_status(
         event_type, subscription_status=subscription_status
@@ -816,6 +923,49 @@ async def stripe_webhook(request: Request) -> dict[str, Any]:
     return {"received": True, "type": event_type}
 
 
+class EdgeHitBody(BaseModel):
+    total_tokens: int = 0
+
+
+@app.post("/internal/edge-hit")
+async def edge_hit_meter(
+    body: EdgeHitBody,
+    auth: tuple[str, TenantRecord] = Depends(auth_tenant),
+    x_ohm_edge_secret: Optional[str] = Header(
+        default=None, alias="X-Ohm-Edge-Secret"
+    ),
+) -> dict[str, Any]:
+    """Meter + enforce a Rust-edge cache HIT.
+
+    The edge calls this before serving a cached completion so HITs are billed
+    and suspended/capped tenants are denied even on the cached path. The
+    ``auth_tenant`` dependency raises 401/402/403 for the edge to relay; a 200
+    means "serve the cached body". Requires the shared edge secret — when it is
+    unset the endpoint is disabled (503) and the edge must full-proxy instead.
+    """
+    s = state.settings
+    if not s.at_edge_shared_secret:
+        raise HTTPException(
+            status_code=503,
+            detail="Edge HIT metering disabled (AT_EDGE_SHARED_SECRET unset)",
+        )
+    if x_ohm_edge_secret != s.at_edge_shared_secret:
+        raise HTTPException(status_code=403, detail="Invalid edge secret")
+    api_key, tenant_rec = auth
+    await rate_limit(api_key, tenant_rec.tenant_id)
+    event = await state.meter.record_chat(
+        tenant_rec.tenant_id,
+        cache_hit=True,
+        total_tokens=max(0, int(body.total_tokens)),
+        stripe_customer_id=tenant_rec.stripe_customer_id or "",
+    )
+    return {
+        "ok": True,
+        "billed_usd": event.billed_usd,
+        "stripe_synced": event.stripe_synced,
+    }
+
+
 @app.post("/v1/chat/completions")
 async def chat_completions(
     body: ChatCompletionRequest,
@@ -856,14 +1006,12 @@ async def chat_completions(
                 },
             )
         cap = int(state.settings.at_free_tier_fetch_cap_day or 0)
+        # Unlock requires a *paid* invoice (or a privileged plan). Metered spend
+        # alone must never lift the cap — un-invoiced usage is not payment.
         unlocked = (
             tenant_rec.billing_paid
             or tenant_rec.plan in ("enterprise", "dev", "design_partner")
         )
-        if not unlocked and float(
-            (await state.meter.snapshot(tenant)).get("revenue_usd") or 0
-        ) > 0:
-            unlocked = True
         if cap > 0 and not unlocked:
             today = await state.meter.today_fetches(tenant)
             # estimate upcoming URLs (best-effort before ingest)
@@ -875,9 +1023,8 @@ async def chat_completions(
                         "code": "fetch_cap_day",
                         "message": (
                             f"Daily web-fetch soft cap ({cap}) reached before "
-                            "usage unlock. Complete Checkout so the first paid "
-                            "invoice (or metered spend) lifts this cap. "
-                            "See /docs/pricing."
+                            "usage unlock. Complete Checkout — the first paid "
+                            "invoice lifts this cap. See /docs/pricing."
                         ),
                         "today_fetches": today,
                         "cap": cap,

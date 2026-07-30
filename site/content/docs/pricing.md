@@ -14,7 +14,7 @@ See [/subscriptions](/subscriptions): **Intermediate (usage-led, $0 membership +
 | Cache miss | per 1k tokens | `$0.002` |
 | Web fetch | per URL | `$0.001` |
 
-Optional **$29 meter credit pack** prepaid toward usage — not a required seat. Soft daily fetch cap applies until the first paid invoice / metered spend unlocks the account (`AT_FREE_TIER_FETCH_CAP_DAY`).
+Optional **$29 meter credit pack** prepaid toward usage — not a required seat. A soft daily fetch cap applies until the first paid invoice unlocks the account (`AT_FREE_TIER_FETCH_CAP_DAY`).
 
 ## Invoice basis
 
@@ -22,7 +22,7 @@ Stripe invoices a **membership subscription** (typically `$0`) plus **Billing Me
 
 | Event | Role |
 |-------|------|
-| **Membership** | Card on file; suspend→403 if unpaid / cancelled |
+| **Membership** | Card on file; failed payment pauses web fetch (402) during Stripe retries, then suspends (403) after the dunning window or cancel |
 | **Cache hit** | Redis replay rent (billable units = ceil(tokens/1000)) |
 | **Cache miss** | Proxy fee (your provider still bills tokens) |
 | **Web fetch** | Primary variable line — compliant URL ingest |
