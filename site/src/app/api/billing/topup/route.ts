@@ -3,12 +3,13 @@ import { NextRequest, NextResponse } from "next/server";
 /**
  * Proxies the authenticated $29 credit pack top-up to the Ohm control plane.
  * Requires Authorization: Bearer sk-at-… (the tenant's withOhm key).
+ * OHM_API_URL overrides; defaults to production.
  */
 export async function POST(req: NextRequest) {
   const apiRoot = (
     process.env.OHM_API_URL ||
     process.env.AT_UTILITY_API_URL ||
-    "http://127.0.0.1:8080"
+    "https://api.withohm.dev"
   ).replace(/\/$/, "");
 
   const authorization = req.headers.get("authorization") || "";

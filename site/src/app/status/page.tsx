@@ -25,12 +25,6 @@ const COMPONENTS = [
     state: "operational",
     detail: "Public demo strip — not the full compliance pipe",
   },
-  {
-    name: "Local edge (dev)",
-    host: "localhost:8081",
-    state: "supported",
-    detail: "Rust gateway for local smoke — optional for production attach",
-  },
 ] as const;
 
 export default function StatusPage() {

@@ -2,13 +2,14 @@ import { NextRequest, NextResponse } from "next/server";
 
 /**
  * Proxies self-serve checkout to the Ohm control plane.
- * Set OHM_API_URL (e.g. http://127.0.0.1:8080) — no trailing /v1.
+ * OHM_API_URL overrides (no trailing /v1); defaults to production so a
+ * missing env var can never point the live site at a dead loopback.
  */
 export async function POST(req: NextRequest) {
   const apiRoot = (
     process.env.OHM_API_URL ||
     process.env.AT_UTILITY_API_URL ||
-    "http://127.0.0.1:8080"
+    "https://api.withohm.dev"
   ).replace(/\/$/, "");
 
   let body: Record<string, unknown>;
@@ -54,7 +55,7 @@ export async function POST(req: NextRequest) {
       {
         error: "Cannot reach withOhm API",
         detail: err instanceof Error ? err.message : String(err),
-        hint: "Set OHM_API_URL on the site (control plane, e.g. http://127.0.0.1:8080)",
+        hint: "Check OHM_API_URL on the site (defaults to https://api.withohm.dev)",
       },
       { status: 503 }
     );
