@@ -1,12 +1,14 @@
 # Screenshot capture log
 
-Operator captures go here as PNG/GIF. Until then, this file documents the intended evidence set for Cursor Marketplace + cursor.directory.
+| File | Status | Notes |
+|------|--------|-------|
+| `ohm-icon-360.png` | Captured | Live logo from www (marketplace logo URL) |
+| `install-i.png` | Captured | `/i` install + share line + key wire CTA |
+| `mcp-tools.png` | Operator | Cursor MCP panel with ohm tools |
+| `fetch-web.png` | Operator | `ohm_fetch_web` result in Cursor |
+| `usage.png` | Operator | `ohm_usage` snapshot in Cursor |
+| `add-to-cursor.png` | Operator | Billing success deeplink (after Checkout) |
 
-| File | What to show |
-|------|----------------|
-| mcp-tools.png | Cursor Customize / MCP with `ohm` tools listed |
-| fetch-web.png | Agent or tool result from `ohm_fetch_web` on a public docs URL |
-| usage.png | `ohm_usage` JSON / formatted hit ratio + fetches |
-| add-to-cursor.png | Billing success page “Add withOhm to Cursor” CTA |
+Web evidence is enough to refresh Marketplace copy + logo; Cursor-app screenshots still need a live seat key in the IDE.
 
-Capture after Amplify deploy of www + a live Intermediate seat key.
+See [OPS3_SUBMIT_PACKET.md](OPS3_SUBMIT_PACKET.md) and [FOLLOWUP.md](../FOLLOWUP.md).
