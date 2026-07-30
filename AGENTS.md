@@ -13,7 +13,7 @@ notes below are the non-obvious things for running it in this cloud environment.
 |---------|-----|-------------|------|-------|
 | Python gateway (control plane) | repo root | `uvicorn at_utility.main:app --reload --port 8080` | 8080 | FastAPI, OpenAI-compatible. Docs at `/docs`. |
 | Rust edge (public entry) | `gateway-rs/` | `./target/debug/at-gateway-rs` (see env below) | 8081 | Public client entry `:8081/v1`; proxies to Python on cache miss. |
-| Ingest worker | repo root | `python -m workers.ingest_worker` | 8090 | Playwright chromium (falls back to httpx). |
+| Ingest worker | repo root | `python -m workers.ingest_worker` | 8090 | Playwright chromium (falls back to httpx). POST `/v1/ingest` needs `purpose` (e.g. `public_web_retrieval`) + `compliance_ack`. |
 | Redis | — | `redis-server --port 6379` | 6379 | Cache + rate-limit + metering + tenant store. |
 | Site (Next.js) | `site/` | `npm run dev` | 3000 | Marketing/docs/billing. `/billing` → `/subscriptions`. |
 
@@ -27,6 +27,13 @@ Docker Compose (`docker compose --profile rust up`) is the documented path, but 
 - **`.env` (gitignored) is required.** Copy from `.env.example`. The example ships Docker
   Compose service hostnames; for native dev, `REDIS_URL`/`REDIS_WRITE_URL`/`REDIS_RL_URL` must
   point to `redis://127.0.0.1:6379/0` and `INGEST_WORKER_URL` to `http://127.0.0.1:8090`.
+- **Bash-sourcing `.env`:** `AT_COMPLIANCE_USER_AGENT` contains parentheses. Quote its value
+  (e.g. `AT_COMPLIANCE_USER_AGENT="OhmBot/0.1 (...)"`) before `set -a; source .env`, or load
+  via Python/`uvicorn` dotenv instead. Unquoted values break shell startup with
+  `syntax error near unexpected token '('`.
+- **Optional secrets (Stripe, Neon `DATABASE_URL`, upstream BYOK):** not required for local
+  smoke. Without them, billing checkout returns 503 / meters stay `stripe_synced: false`,
+  Postgres mirror stays off, and `model: mock` still proves cache + usage end-to-end.
 - **Redis must be running** for the full stack. Without it the gateway silently falls back to
   an in-process `MemoryStore` (cache/metering won't be shared across processes or the Rust edge).
 - **Rust edge env** (native run): `AT_RS_LISTEN=0.0.0.0:8081 AT_RS_REDIS=127.0.0.1:6379
