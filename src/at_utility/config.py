@@ -26,6 +26,11 @@ class Settings(BaseSettings):
     redis_rl_url: str = ""
     upstash_redis_rest_url: str = ""
     upstash_redis_rest_token: str = ""
+    # Optional durable system-of-record mirror (Postgres/Neon). Redis stays the hot
+    # path + real-time source of truth; the DB holds queryable account/usage history.
+    # Inert unless both are set. Install extra: pip install -e ".[db]"
+    database_url: str = ""
+    ohm_db_enabled: bool = False
     openai_api_key: str = ""
     openai_base_url: str = "https://api.openai.com/v1"
     anthropic_api_key: str = ""
