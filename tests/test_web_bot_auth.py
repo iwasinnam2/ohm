@@ -77,7 +77,9 @@ def test_signature_headers_verify(monkeypatch):
 
 
 def test_refusal_for_status_402_and_403():
-    from workers.ingest_worker import _refusal_for_status
+    # Worker needs the [workers] extra (bs4 etc.); skip on minimal installs
+    iw = pytest.importorskip("workers.ingest_worker")
+    _refusal_for_status = iw._refusal_for_status
 
     doc = _refusal_for_status(
         "https://paid.example/x", 402, {"crawler-price": "0.01"}, "markdown"
@@ -98,7 +100,7 @@ def test_refusal_for_status_402_and_403():
 
 
 async def test_httpx_fetch_surfaces_402(monkeypatch):
-    import workers.ingest_worker as iw
+    iw = pytest.importorskip("workers.ingest_worker")
 
     class FakeResponse:
         status_code = 402
@@ -128,7 +130,7 @@ async def test_httpx_fetch_surfaces_402(monkeypatch):
 
 
 async def test_pinned_fetch_sends_signature_headers(monkeypatch):
-    import workers.ingest_worker as iw
+    iw = pytest.importorskip("workers.ingest_worker")
 
     monkeypatch.setenv(wba.ENV_SEED, SEED_B64)
     seen: dict = {}

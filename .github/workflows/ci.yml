@@ -16,7 +16,7 @@ jobs:
           python-version: "3.11"
           cache: pip
       - name: Install
-        run: pip install -e ".[dev,billing]"
+        run: pip install -e ".[dev,billing,workers,mcp]"
       - name: Test
         run: pytest -q
 
