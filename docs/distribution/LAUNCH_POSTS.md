@@ -374,3 +374,160 @@ non-semantic noise (whitespace, line endings) but never guesses at meaning.
 Venue-specific mechanics: r/AI_Agents — move the three links into a comment,
 keep the body link-free. HN — repo URL in the URL field, the body becomes the
 first comment (posted within 60 seconds, Disclosure line dropped).
+
+---
+
+## 6. Floodgate copy (final — verified 17/17 production pre-flight, 2026-07-31)
+
+Four fully distinct posts, fired simultaneously. Answer every substantive
+comment; concede real flaws plainly.
+
+### r/mcp
+
+**Title:** withOhm: MCP server for compliant web fetch + prompt cache replay (launched, MIT)
+
+```text
+Disclosure: my project. Launched this week and live now.
+
+withOhm gives agents one pipe with two disciplines built into it:
+
+ohm_fetch_web — URL ingest with the compliance work done in the pipe, not
+left to the agent: robots.txt consulted at fetch time, PII redacted before
+content ever reaches a model, SSRF blocked at connect time with IP pinning.
+The tool returns a compliance verdict alongside the content — what was
+redacted, what the robots policy said — so the agent can reason about what
+it received, not just consume it.
+
+ohm_chat — an OpenAI-compatible passthrough with exact-replay caching.
+Requests are canonicalized and hashed; identical ones are answered from
+Redis instead of the provider, streamed or not. A streamed response is
+assembled as it passes through and replays later as SSE from the same cache
+entry a JSON request would use. Hits are metered as first-class billable
+events, which forced the cache to be billing-grade rather than best-effort.
+
+Also ships ohm_models / ohm_savings / ohm_usage / ohm_policy for
+introspection, plus skills so the agent knows when to reach for each tool
+without prompting.
+
+Install: pip install withohm-mcp (three env vars, docs in repo).
+Repo (MIT): https://github.com/iwasinnam2/ohm
+Site: https://www.withohm.dev — $0 to connect, priced per use.
+
+The design question I'd genuinely value this sub's take on: is the
+compliance verdict useful surface for your agents, or noise? It's the part
+of the tool contract I've iterated on most and I'd rather shape it around
+real agent architectures than my own guesses.
+```
+
+### r/cursor
+
+**Title:** Built a plugin that gives the Cursor agent compliant web fetch and replays repeated calls from cache
+
+```text
+Disclosure: my project. The plugin is in marketplace review, but it works
+today without the marketplace — pip install withohm-mcp plus an mcp.json
+entry, about two minutes: https://www.withohm.dev/i
+
+The itch it scratches: Cursor agents doing research re-fetch the same pages
+over and over, raw fetches ignore robots.txt entirely, and whatever PII is
+on the page goes straight into context. Meanwhile the same retries and
+research loops re-issue byte-identical model calls, each one billed at full
+price.
+
+withOhm sits between the agent and the web/provider and fixes both in the
+pipe. Fetches come back robots-respecting, PII-redacted, and SSRF-safe,
+with a verdict attached saying what was cleaned and why. Identical chat
+calls — streamed or not — replay from Redis instead of being re-billed.
+There's an ohm_savings tool so you can watch what the cache is earning you
+in real time, which turns out to be weirdly compelling to check.
+
+The part I most want feedback on is the skills: they teach the agent when
+to reach for the pipe on its own (public URL context → ohm_fetch_web), so
+you never have to prompt for it. If your agent grabs the wrong tool, say so
+— that's a skill-wording bug and cheap to fix.
+
+Repo is MIT if you want to read what the pipe actually does:
+https://github.com/iwasinnam2/ohm
+```
+
+### r/LLMDevs
+
+**Title:** Metering-first gateway design: Rust edge answers cache hits, exact-match over semantic on purpose
+
+```text
+Sharing the architecture of a system I shipped this week (disclosure: mine),
+because the interesting problems were all billing-adjacent rather than
+model-adjacent.
+
+The system is a caching proxy for LLM calls. One constraint shaped every
+decision: a cache hit is a billable event — you charge for the replay — so
+the cache cannot be a best-effort layer. It has to emit usage records with
+the same reliability as the origin path.
+
+What that constraint forced:
+
+- A small Rust edge serves exact-match hits straight from Redis and emits
+  the meter event itself, idempotency-keyed, so a hit never depends on the
+  Python control plane being up.
+- Exact-match keys over canonicalized requests, not semantic similarity.
+  Semantic caching reads great in a README and is a refund generator in
+  production — "almost the same prompt" is not the same prompt. The
+  canonicalization strips genuine transport noise (CRLF vs LF, outer
+  whitespace) and never touches interior whitespace, because code blocks
+  are semantics.
+- The cache key is computed independently in Python and Rust, so the two
+  implementations are pinned to the same digest by parity tests on both
+  sides — if either drifts, the tests fail before edge hits silently vanish.
+- Streamed responses are assembled as they pass through and stored under
+  the same key as the JSON path; an identical request later replays as
+  synthesized SSE. Only streams that finished cleanly (finish_reason seen)
+  become cache entries — partial streams are never cached.
+- Stripe billing meters are the sink, idempotency keys derived from the
+  request hash, so retries can't double-bill.
+
+Repo (MIT) if you want to read the edge code and the parity tests:
+https://github.com/iwasinnam2/ohm
+
+Happy to go as deep as anyone wants on the cache-key canonicalization or
+the idempotent metering — those two are where the correctness lives.
+```
+
+### r/AI_Agents (links go in a first comment, body stays link-free)
+
+**Title:** Agents re-buy the same tokens constantly — so I built the boring fix
+
+```text
+Watching agent traces, a pattern keeps showing up: research loops, retries,
+and self-consistency passes re-issue byte-identical model calls, and every
+single one is billed at full token price. Web context is the same story —
+the same docs page fetched dozens of times a session, robots.txt never
+consulted, PII pasted straight into context.
+
+Agents are mechanical in a way human users never are, and that mechanical
+repetition is exactly what makes the boring fix work: put a pipe in front
+of the provider, canonicalize and hash every request, replay exact matches
+from Redis (streamed responses included — the pipe assembles them on the
+way through and replays them as SSE), and run every fetch through a
+robots/PII/SSRF pipeline before the content reaches the model.
+
+The deliberately unfashionable choice was exact-match over semantic
+caching. "Almost the same prompt" is not the same prompt, and serving a
+near-miss from cache is how a savings feature becomes a refunds feature.
+Canonicalization strips transport noise — line endings, outer whitespace —
+and refuses to guess at meaning.
+
+Question for the sub: has anyone made semantic caching work in production
+without correctness incidents? I ruled it out on purpose and I'd genuinely
+like to see a counterexample that survives real traffic.
+
+(Repo and site in the first comment — it's MIT.)
+```
+
+**r/AI_Agents first comment:**
+
+```text
+Repo (MIT): https://github.com/iwasinnam2/ohm
+Live: https://www.withohm.dev — $0 to connect, priced per use
+MCP install for Cursor/Claude agents: pip install withohm-mcp
+(https://www.withohm.dev/i)
+```
