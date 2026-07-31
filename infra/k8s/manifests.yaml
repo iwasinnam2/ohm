@@ -18,6 +18,23 @@ data:
   AT_ENV: "production"
   INGEST_WORKER_URL: "http://ingest-worker:8090"
   OPENAI_BASE_URL: "https://api.openai.com/v1"
+  # Stripe live catalog — rate card v2 (created 2026-07-31 by
+  # scripts/stripe_create_prices_v2.sh; governance: docs/PRICING.md).
+  # Price IDs are not secrets; STRIPE_SECRET_KEY / STRIPE_WEBHOOK_SECRET live
+  # in at-utility-secrets.
+  STRIPE_PRICE_PAYG: "price_1TzABhGcgCWHk3PJY1qOxTWK"
+  STRIPE_PRICE_ENTERPRISE: "price_1TzABoGcgCWHk3PJnjaMEOgv"
+  STRIPE_PRICE_METER_CACHE_HIT: "price_1TzABbGcgCWHk3PJns7vI8Ym"
+  STRIPE_PRICE_METER_CACHE_MISS: "price_1TzABdGcgCWHk3PJNivDORf1"
+  STRIPE_PRICE_METER_WEB_FETCH: "price_1TzABfGcgCWHk3PJdHC0iFzJ"
+  STRIPE_PRICE_COMMIT_C29: "price_1TzABjGcgCWHk3PJGy2YbM3M"
+  STRIPE_PRICE_COMMIT_C99: "price_1TzABlGcgCWHk3PJYRalEaww"
+  STRIPE_PRICE_COMMIT_C499: "price_1TzABmGcgCWHk3PJQmGWXoPU"
+  STRIPE_METER_EVENT_CACHE_HIT: "ohm_cache_hit"
+  STRIPE_METER_EVENT_CACHE_MISS: "ohm_cache_miss"
+  STRIPE_METER_EVENT_WEB_FETCH: "ohm_web_fetch"
+  # Stripe Tax is registered (origin: 11a Hughenden Road, BS8 2TT)
+  STRIPE_AUTOMATIC_TAX: "true"
   # Single-region posture: REDIS_URL=reader, REDIS_WRITE_URL=primary, REDIS_RL_URL=primary.
   # Secrets must also include AT_RS_REDIS (GET), AT_RS_REDIS_WRITE (SET), and
   # AT_EDGE_SHARED_SECRET / AT_RS_EDGE_SECRET (same value — metered edge HITs).

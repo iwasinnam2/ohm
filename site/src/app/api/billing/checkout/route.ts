@@ -20,8 +20,14 @@ export async function POST(req: NextRequest) {
   }
 
   const origin = req.nextUrl.origin;
+  const commit =
+    typeof body.commit === "string" &&
+    ["c29", "c99", "c499"].includes(body.commit)
+      ? body.commit
+      : "";
   const payload = {
     plan: body.plan === "enterprise" ? "enterprise" : "payg",
+    commit,
     label: typeof body.label === "string" ? body.label : "",
     email: typeof body.email === "string" ? body.email : "",
     terms_ack: Boolean(body.terms_ack),
