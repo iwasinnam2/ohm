@@ -99,13 +99,41 @@ async def ohm_fetch_web(
         return content or json.dumps(data)
 
 
+async def _get(path: str) -> str:
+    base, _, _ = _cfg()
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        res = await client.get(f"{base}{path}", headers=_headers())
+        return res.text
+
+
 @mcp.tool()
 async def ohm_usage() -> str:
     """Return Ohm usage snapshot: cache hit ratio, fetches, estimated pipe rent (GET /v1/usage)."""
-    base, _, _ = _cfg()
-    async with httpx.AsyncClient(timeout=30.0) as client:
-        res = await client.get(f"{base}/usage", headers=_headers())
-        return res.text
+    return await _get("/usage")
+
+
+@mcp.tool()
+async def ohm_models() -> str:
+    """List the model ids the Ohm pipe routes to, including BYOK upstreams (GET /v1/models)."""
+    return await _get("/models")
+
+
+@mcp.tool()
+async def ohm_savings() -> str:
+    """Return the cache savings snapshot: replayed prompts and estimated spend avoided (GET /v1/savings)."""
+    return await _get("/savings")
+
+
+@mcp.tool()
+async def ohm_providers() -> str:
+    """Return upstream provider and failover status for the Ohm pipe (GET /v1/providers)."""
+    return await _get("/providers")
+
+
+@mcp.tool()
+async def ohm_policy() -> str:
+    """Return the compliance policy: which web-fetch purposes are allowed and their limits (GET /v1/compliance/policy)."""
+    return await _get("/compliance/policy")
 
 
 @mcp.tool()

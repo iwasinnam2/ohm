@@ -21,6 +21,7 @@ export function SiteHeader() {
   const pathname = usePathname() || "/";
 
   const links = [
+    { href: "/connections", label: "Connections" },
     { href: "/docs", label: "Docs" },
     { href: "/subscriptions", label: "Billing" },
     { href: "/", label: "Home" },
