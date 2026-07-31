@@ -369,7 +369,11 @@ async fn handle(app: Arc<App>, req: Request<Incoming>) -> Result<Response<ProxyB
     let is_stripe_webhook =
         path_q.starts_with("/v1/billing/webhook") && method == Method::POST;
     let is_ready = path_only == "/ready" && method == Method::GET;
-    let token = if is_stripe_webhook || is_ready {
+    // Self-serve checkout mints the tenant key, so callers cannot have one yet.
+    // Python applies its own per-IP token bucket on this route.
+    let is_public_checkout = path_only == "/v1/billing/checkout" && method == Method::POST;
+    let is_passthrough = is_stripe_webhook || is_ready || is_public_checkout;
+    let token = if is_passthrough {
         None
     } else {
         let Some(token) = extract_bearer(&req) else {
@@ -393,8 +397,14 @@ async fn handle(app: Arc<App>, req: Request<Incoming>) -> Result<Response<ProxyB
         }
     };
 
-    if is_stripe_webhook || is_ready {
-        let label = if is_ready { "ready" } else { "stripe webhook" };
+    if is_passthrough {
+        let label = if is_ready {
+            "ready"
+        } else if is_public_checkout {
+            "public checkout"
+        } else {
+            "stripe webhook"
+        };
         let proxied = match proxy_once(
             &app,
             &cfg.primary_upstream,
