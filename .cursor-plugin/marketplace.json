@@ -1,0 +1,19 @@
+{
+  "name": "withohm",
+  "owner": {
+    "name": "Ohm",
+    "email": "partners@withohm.dev"
+  },
+  "metadata": {
+    "description": "withOhm — compliant fetch for agents: prompt cache replay, ohm_fetch_web, BYOK OpenAI-compatible ingress."
+  },
+  "plugins": [
+    {
+      "name": "ohm",
+      "source": ".",
+      "category": "Infrastructure",
+      "tags": ["caching", "web-fetch", "gateway", "metering", "byok"],
+      "description": "Compliant fetch for agents: prompt cache replay, ohm_fetch_web, BYOK OpenAI-compatible ingress. Use when agents need public URL context or pipe rent instead of token wholesale."
+    }
+  ]
+}
