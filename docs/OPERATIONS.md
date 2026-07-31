@@ -77,4 +77,6 @@ design, not by accident:
    Stripe Tax + origin address then set `STRIPE_AUTOMATIC_TAX=true`, and add
    the `STRIPE_PULSE_KEY` repo secret (restricted read-only key) for the
    weekly pricing pulse.
-5. **PyPI publishes** of the `ohm-mcp` package (`scripts/sync_ohm_mcp.ps1`).
+5. **PyPI publishes** of the `withohm-mcp` package (`scripts/sync_ohm_mcp.ps1`).
+   Note: `ohm-mcp` on PyPI is an unrelated third-party project — the console
+   script is still `ohm-mcp`, only the distribution name differs.

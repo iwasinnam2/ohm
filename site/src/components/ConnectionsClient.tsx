@@ -152,7 +152,7 @@ export function ConnectionsClient() {
         <p className="connect__step">
           <strong>1.</strong> Install the server:
         </p>
-        <CopyBlock text="pip install ohm-mcp" label="install command" compact />
+        <CopyBlock text="pip install withohm-mcp" label="install command" compact />
         <p className="connect__step">
           <strong>2.</strong> Paste your key to personalize the configs below
           (or grab a{" "}

@@ -7,7 +7,7 @@ The interactive version of this page, with configs pre-filled from your key, is 
 ## Before any host
 
 1. Get a key: the [$0 Intermediate seat](/billing/intermediate) issues an `sk-at-…` key at checkout.
-2. Install the server once: `pip install ohm-mcp`.
+2. Install the server once: `pip install withohm-mcp`.
 
 Every config below is the same idea: run `ohm-mcp`, hand it `OHM_API_KEY`. Optional extras: `OHM_UPSTREAM_KEY` (your own provider key — BYOK, "bring your own keys" — used on cache misses) and `OHM_BASE_URL` (defaults to `https://api.withohm.dev/v1`).
 
@@ -96,7 +96,7 @@ ohm_fetch_web(urls=["https://example.com"], purpose="public_web_retrieval")
 
 | Symptom | Likely cause | Fix |
 |---------|--------------|-----|
-| Host can't start the server | `ohm-mcp` not on PATH | `pip install ohm-mcp` in the Python the host uses, or use `"command": "python", "args": ["-m", "ohm_mcp"]` |
+| Host can't start the server | `ohm-mcp` not on PATH | `pip install withohm-mcp` in the Python the host uses, or use `"command": "python", "args": ["-m", "ohm_mcp"]` |
 | `OHM_API_KEY is required` | Key missing from env block | Paste your `sk-at-…` key into the config |
 | 401 / 403 responses | Wrong or revoked key | Re-issue from [/billing/intermediate](/billing/intermediate) |
 | Real models error, `mock` works | No BYOK key on cache misses | Set `OHM_UPSTREAM_KEY`, or pass `upstream_api_key` to `ohm_chat` |

@@ -12,7 +12,7 @@ try:
     from mcp.server import MCPServer
 except ImportError as exc:  # pragma: no cover
     raise SystemExit(
-        "MCP support missing: pip install ohm-mcp "
+        "MCP support missing: pip install withohm-mcp "
         "(or, in the monorepo: pip install 'at-utility[mcp]')"
     ) from exc
 

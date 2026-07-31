@@ -50,7 +50,7 @@ Release smoke asserts health, mock miss/hit, OpenAI miss/hit (when a key is pres
 Local **stdio** MCP (remote URL MCP is not shipped). Public base: `https://api.withohm.dev/v1`. Partners: [docs/LAUNCH_GTM.md](docs/LAUNCH_GTM.md) · https://www.withohm.dev/design-partners
 
 ```powershell
-pip install ohm-mcp
+pip install withohm-mcp
 # monorepo dev alternative: pip install -e ".[mcp]"
 # Set OHM_API_KEY (required). Optional: OHM_UPSTREAM_KEY, OHM_BASE_URL
 # Plugin: .cursor-plugin/ + mcp.json — see docs/CURSOR.md
