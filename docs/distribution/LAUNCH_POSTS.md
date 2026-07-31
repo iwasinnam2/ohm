@@ -221,7 +221,7 @@ I built withOhm — agents pay rent on a pipe instead of re-buying the same toke
 **Body:**
 
 ```text
-Solo build. withOhm is a metered pipe for AI agents: identical LLM calls get
+withOhm is a metered pipe for AI agents: identical LLM calls get
 replayed from cache instead of re-billed by the provider, and web fetches go
 through a compliance pipeline (robots.txt, PII redaction, SSRF guards) before
 the content reaches the model.
@@ -326,11 +326,10 @@ Site: https://www.withohm.dev
 Repo (MIT): https://github.com/iwasinnam2/ohm
 Two-minute install: https://www.withohm.dev/i
 
-For context on who's behind it: I'm 21, and I built this solo from my bedroom
-around bar shifts — no team, no funding. Rust edge gateway, Redis, Python
-control plane; all of it is in the repo if you want to check my work.
+Under the hood: Rust edge gateway, Redis, Python control plane. All of it is
+in the repo — read the implementation rather than taking the README's word.
 
-Rough edges I know about: single region (us-east-1) for now, exact-match
+Rough edges, stated plainly: single region (us-east-1) for now, exact-match
 caching misses paraphrases, and streamed responses pass through rather than
 replay.
 
@@ -343,7 +342,7 @@ replay.
 |---|---|
 | r/mcp | `withOhm: MCP server for compliant web fetch + prompt cache replay (launched, MIT)` |
 | r/cursor | `Built a plugin that gives the Cursor agent compliant web fetch and replays repeated calls from cache` |
-| r/SideProject | `I'm 21, built an AI infrastructure pipe solo from my bedroom — it went live this week` |
+| r/SideProject | `withOhm — agents pay rent on a pipe instead of re-buying the same tokens (went live this week)` |
 | r/LLMDevs | `Metering-first gateway: Rust edge answers cache hits, exact-match over semantic on purpose` |
 | r/AI_Agents | `Agents re-buy the same tokens constantly — I measured it, then built the boring fix` |
 | Show HN (first comment) | Title: `Show HN: withOhm – replay cache and compliant web fetch for LLM agents`; use the body as your first comment, drop the Disclosure line |
