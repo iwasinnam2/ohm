@@ -52,9 +52,12 @@ for web fetch — robots.txt respected at fetch time, PII redacted before the
 content reaches the model, SSRF-safe with connect-time IP pinning. There's an
 MCP server (pip install withohm-mcp) so Cursor/Claude agents get it as tools.
 
-The architecture choice I'd defend: the edge is a small Rust proxy that
-answers cache hits without touching the Python control plane, and hits are
-metered as billable events at the edge. Caching is exact-match on a
+The architecture choice I'd defend: a cache hit is a billable event, so the
+hit path is built to billing-grade reliability — served from Redis with an
+idempotency-keyed meter event emitted before the response leaves. There's a
+Rust edge designed to serve hits without the Python control plane; in
+production it currently full-proxies while its Redis client grows TLS
+support (stated in the ops docs, not hidden). Caching is exact-match on a
 canonicalized request — I deliberately did not do semantic caching, because
 serving an almost-right answer from cache is worse than paying for the call.
 Streamed responses replay too: the pipe assembles the stream on the way
@@ -143,7 +146,7 @@ wrong tool, tell me — that's a skill-wording bug and cheap to fix.
 **Title:**
 
 ```text
-Metering-first gateway design: Rust edge answers cache hits, Python owns billing truth
+Metering-first gateway design: cache hits are billable events, Python owns billing truth
 ```
 
 **Body:**
@@ -159,9 +162,10 @@ the same reliability as the origin path.
 
 What that forced:
 
-- The edge is a small Rust proxy that serves exact-match hits straight from
-  Redis and emits the meter event itself, idempotency-keyed, so a hit never
-  depends on the Python control plane being up.
+- Hits are served from Redis with an idempotency-keyed meter event emitted
+  before the response leaves; a small Rust edge is built to serve hits
+  without the control plane, and full-proxies in production until its
+  Redis client grows TLS support (documented in the ops notes).
 - Exact-match keys over canonicalized requests, not semantic similarity.
   Semantic caching reads great in a README and is a refund generator in
   production — "almost the same prompt" is not the same prompt.
@@ -260,9 +264,9 @@ you turn a savings feature into a refunds feature.
 redacted before content reaches the model, SSRF blocked at connect time.
 The agent asks for a URL; what returns is safe to put in context.
 
-5/ Architecture: Rust edge answers cache hits straight from Redis and meters
-them at the edge — a hit is a billable event, so the cache path is built to
-billing-grade reliability, not best-effort.
+5/ Architecture: a cache hit is a billable event, so the hit path is built
+to billing-grade reliability — served from Redis, metered idempotently
+before the response leaves. Never best-effort.
 
 6/ It's an MCP server, so @cursor_ai and Claude agents get it as native tools:
 pip install withohm-mcp. Plugin is in marketplace review; works today
@@ -318,8 +322,8 @@ endpoint and everything flowing through it gets smarter:
   instead of the provider, streamed or not, at ~$2/M tokens instead of full
   input+output price. Exact-match by design: "almost the same prompt" is not
   the same prompt, and near-miss answers are how a savings feature becomes a
-  refunds feature. The replay path is billing-grade — a Rust edge answers
-  hits and meters them as first-class events, so the cache is never
+  refunds feature. The replay path is billing-grade — hits are metered as
+  first-class events with idempotency keys, so the cache is never
   best-effort.
 - Compliant fetch — hand it a URL and what comes back is actually safe to
   put in context: robots.txt consulted at fetch time, PII redacted before
@@ -356,7 +360,7 @@ non-semantic noise (whitespace, line endings) but never guesses at meaning.
 | r/mcp | withOhm: MCP server for compliant web fetch + prompt cache replay (launched, MIT) |
 | r/cursor | Built a plugin that gives the Cursor agent compliant web fetch and replays repeated calls from cache |
 | r/SideProject | withOhm — agents pay rent on a pipe instead of re-buying the same tokens (went live this week) |
-| r/LLMDevs | Metering-first gateway: Rust edge answers cache hits, exact-match over semantic on purpose |
+| r/LLMDevs | Metering-first gateway: a cache hit is a billable event, exact-match over semantic on purpose |
 | r/AI_Agents | Agents re-buy the same tokens constantly — so I built the boring fix |
 | Show HN | Show HN: withOhm – replay cache and compliant web fetch for LLM agents |
 
@@ -452,7 +456,7 @@ https://github.com/iwasinnam2/ohm
 
 ### r/LLMDevs
 
-**Title:** Metering-first gateway design: Rust edge answers cache hits, exact-match over semantic on purpose
+**Title:** Metering-first gateway design: a cache hit is a billable event, exact-match over semantic on purpose
 
 ```text
 Sharing the architecture of a system I shipped this week (disclosure: mine),
@@ -466,9 +470,12 @@ the same reliability as the origin path.
 
 What that constraint forced:
 
-- A small Rust edge serves exact-match hits straight from Redis and emits
-  the meter event itself, idempotency-keyed, so a hit never depends on the
-  Python control plane being up.
+- Hits are served from Redis with the meter event emitted, idempotency-
+  keyed, before the response leaves. There's also a small Rust edge built
+  to serve hits without touching the Python control plane at all; in
+  production today it full-proxies while its Redis client grows TLS
+  support — a degraded state the repo's operations doc states outright,
+  because a cache tier you can't audit is a cache tier you can't bill on.
 - Exact-match keys over canonicalized requests, not semantic similarity.
   Semantic caching reads great in a README and is a refund generator in
   production — "almost the same prompt" is not the same prompt. The
