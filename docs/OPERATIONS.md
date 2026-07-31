@@ -84,6 +84,24 @@ design, not by accident:
    Note: `ohm-mcp` on PyPI is an unrelated third-party project — the console
    script is still `ohm-mcp`, only the distribution name differs.
 
+## Edge cache tier (known degraded state)
+
+`AT_RS_REDIS` / `AT_RS_REDIS_WRITE` in the cluster secret are deliberately
+black-holed (`127.0.0.1:9`): the Rust edge's RESP client is plain TCP and the
+ElastiCache leader requires TLS (`rediss://`), so the edge cannot reach Redis
+in production. Consequences and posture:
+
+- Edge auth treats unreachable Redis as **Unverified** and full-proxies to
+  Python, which authenticates every request itself. (Fail-closed edge auth
+  here once turned the cache tier outage into a total API outage for issued
+  keys — never reintroduce that.)
+- Edge-served cache HITs are therefore inactive in production; Python serves
+  all HITs from its own TLS Redis clients. Correctness and billing are
+  unaffected; only the edge-latency optimization is dormant.
+- To activate edge HITs: add TLS (rustls) to `gateway-rs/src/resp.rs`, point
+  `AT_RS_REDIS` at the replica endpoint, and verify the metered edge-HIT
+  golden step against production.
+
 ## Region posture (pre-committed, like the pricing rules)
 
 Production is deliberately single-region (us-east-1). Multi-region carries a

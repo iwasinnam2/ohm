@@ -274,31 +274,42 @@ async fn ensure_client(slot: &Mutex<Option<RespClient>>, addr: &str) -> bool {
     true
 }
 
-async fn authorize(app: &App, token: &str) -> bool {
+#[derive(PartialEq)]
+enum EdgeAuth {
+    /// Bootstrap key or Redis-confirmed tenant key: edge may serve cache HITs.
+    Allowed,
+    /// Redis reachable and the key is definitively absent: reject at the edge.
+    Denied,
+    /// Redis unreachable/unconfigured: proxy to Python, which authenticates
+    /// every request itself. The edge must NEVER deny on its own outage —
+    /// that turns a degraded cache tier into a total API outage for every
+    /// issued key (bootstrap keys skip Redis and mask it in CI).
+    Unverified,
+}
+
+async fn authorize(app: &App, token: &str) -> EdgeAuth {
     if token.is_empty() {
-        return false;
+        return EdgeAuth::Denied;
     }
     if app.cfg.api_keys.iter().any(|k| k == token) {
-        return true;
+        return EdgeAuth::Allowed;
     }
     let idx = format!("at:global:apikey:{}", sha256_hex(token.as_bytes()));
     if ensure_client(&app.redis_read, &app.cfg.redis_addr).await {
         let mut guard = app.redis_read.lock().await;
         if let Some(client) = guard.as_mut() {
             match client.get(&idx).await {
-                Ok(Some(_)) => return true,
-                Ok(None) => return false,
+                Ok(Some(_)) => return EdgeAuth::Allowed,
+                Ok(None) => return EdgeAuth::Denied,
                 Err(e) => {
-                    // Fail-closed: do not proxy with a forged identity when Redis is broken.
-                    warn!("redis GET apikey failed: {e}; denying at edge");
+                    warn!("redis GET apikey failed: {e}; passing through to Python auth");
                     *guard = None;
-                    return false;
+                    return EdgeAuth::Unverified;
                 }
             }
         }
     }
-    // Redis unreachable — fail closed at the edge (Python still authoritative when reachable).
-    false
+    EdgeAuth::Unverified
 }
 
 async fn resolve_tenant(app: &App, token: &str) -> String {
@@ -410,14 +421,18 @@ async fn handle(app: Arc<App>, req: Request<Incoming>) -> Result<Response<ProxyB
     // Python applies its own per-IP token bucket on these routes.
     let is_public_read = path_only.starts_with("/v1/public/") && method == Method::GET;
     let is_passthrough = is_stripe_webhook || is_ready || is_public_checkout || is_public_read;
+    let mut edge_verified = false;
     let token = if is_passthrough {
         None
     } else {
         let Some(token) = extract_bearer(&req) else {
             return Ok(unauthorized());
         };
-        if !authorize(&app, &token).await {
-            return Ok(unauthorized());
+        match authorize(&app, &token).await {
+            EdgeAuth::Denied => return Ok(unauthorized()),
+            EdgeAuth::Allowed => edge_verified = true,
+            // Unverified: full-proxy; Python re-authenticates every request.
+            EdgeAuth::Unverified => {}
         }
         Some(token)
     };
@@ -502,7 +517,9 @@ async fn handle(app: Arc<App>, req: Request<Incoming>) -> Result<Response<ProxyB
         .and_then(|v| v.get("fetch_web_context").and_then(|s| s.as_bool()))
         .unwrap_or(false);
 
-    if is_chat && !wants_stream && !wants_web {
+    // Edge cache serving requires verified identity (Redis-confirmed key);
+    // unverified requests full-proxy so Python owns both auth and caching.
+    if edge_verified && is_chat && !wants_stream && !wants_web {
         let key = match body_json.as_ref() {
             Some(v) => cache_key_structured(&tenant, v),
             None => {
