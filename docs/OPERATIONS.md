@@ -83,3 +83,23 @@ design, not by accident:
 5. **PyPI publishes** of the `withohm-mcp` package (`scripts/sync_ohm_mcp.ps1`).
    Note: `ohm-mcp` on PyPI is an unrelated third-party project — the console
    script is still `ohm-mcp`, only the distribution name differs.
+
+## Region posture (pre-committed, like the pricing rules)
+
+Production is deliberately single-region (us-east-1). Multi-region carries a
+~$150+/mo infrastructure floor and was torn down (Global Accelerator gone,
+mesh paused not deleted — `infra/runbooks/` has the revival runbooks and the
+Redis Global Datastore design). The decision to expand is pre-committed so it
+never becomes a mood:
+
+- **Trigger (either):** sustained MRR >= $500 for two consecutive months, or
+  a paying tenant whose workload demonstrably suffers cross-Atlantic p95 and
+  says so.
+- **Action:** revive the eu-west edge per the runbooks — Rust edge + Redis
+  replica first (read path only), full control-plane replication only behind
+  further revenue.
+- **Until then:** latency for far-away callers is what it is; do not spend
+  ahead of demand. If a cheap win is wanted, CloudFront in front of the NLB
+  (~$0 idle) is the only pre-approved experiment, and only after verifying
+  SSE passthrough on a staging distribution — never risk the live checkout
+  path for a latency shim.

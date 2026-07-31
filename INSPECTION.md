@@ -18,6 +18,8 @@ round.**
 | Edge HIT path enforces tenant status (suspension / caps) | `test_money_path.py::test_edge_hit_denies_suspended_tenant`, `::test_edge_hit_enforces_request_cap` |
 | Edge HIT path fails safe without the shared secret | `test_money_path.py::test_edge_hit_disabled_without_secret`, `::test_edge_hit_rejects_wrong_secret` |
 | SSE streaming end-to-end (progressive, not buffered) | `test_gateway.py::test_stream_meters_usage_chunk`, `test_anthropic_sse.py` (5 tests); golden step "SSE streaming pass-through" |
+| Streamed responses replay from cache (miss populates, hit replays as SSE, shared entry with JSON path) | `test_stream_replay.py` (6 tests: stream→stream, stream→JSON, JSON→stream, hit metering, truncated-stream guard, round-trip) |
+| Cache key v2: transport noise normalized (CRLF, outer whitespace), Python/Rust byte parity | `test_units.py::test_cache_key_v2_normalizes_transport_noise`, `::test_cache_key_v2_parity`; gateway-rs `cache_key_v2_parity_with_python` |
 | Mid-stream failover | **Not claimed** — docs/STREAMING.md says unsupported |
 | Compliant web browsing (purpose gates, robots fail-closed, PII redaction) | `test_compliance.py` (18 tests); golden step "compliant web fetch" |
 | SSRF: DNS re-check, private-IP deny, connect-time IP pin | `test_compliance.py::test_url_gate_dns_literal_skip_ok`, `::test_url_gate_blocks_credentials_and_login`; pin: `workers/ingest_worker.py::_pinned_get` |

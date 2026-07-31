@@ -32,13 +32,18 @@ Lag drill (us-west-2 in-cluster): **PASS (~0–1000ms budget)**. Edge NLBs + all
 
 ## Cache key (Python = Rust)
 
-Digest = SHA-256 of canonical JSON:
+Key = `at:{tenant}:cache:v2:{digest}`. Digest = SHA-256 of canonical JSON:
 
 ```json
 {"extras":{...},"messages":[...],"model":"..."}
 ```
 
 `sort_keys=true`, separators `,` `:`. Extras keys match Python chat path (`fetch_web_context`, `web_*`, `temperature`, `max_tokens`, `cache_control`).
+
+Key v2: message `content` strings are normalized before hashing — CRLF/CR to
+LF, outer whitespace stripped; interior whitespace untouched. Both sides must
+apply identical normalization (parity pinned by `tests/test_units.py::test_cache_key_v2_parity`
+and gateway-rs `cache_key_v2_parity_with_python`).
 
 Tenant prefix:
 
