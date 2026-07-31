@@ -372,7 +372,10 @@ async fn handle(app: Arc<App>, req: Request<Incoming>) -> Result<Response<ProxyB
     // Self-serve checkout mints the tenant key, so callers cannot have one yet.
     // Python applies its own per-IP token bucket on this route.
     let is_public_checkout = path_only == "/v1/billing/checkout" && method == Method::POST;
-    let is_passthrough = is_stripe_webhook || is_ready || is_public_checkout;
+    // Savings receipts / aggregate stats are unauthenticated by design —
+    // Python applies its own per-IP token bucket on these routes.
+    let is_public_read = path_only.starts_with("/v1/public/") && method == Method::GET;
+    let is_passthrough = is_stripe_webhook || is_ready || is_public_checkout || is_public_read;
     let token = if is_passthrough {
         None
     } else {
@@ -402,6 +405,8 @@ async fn handle(app: Arc<App>, req: Request<Incoming>) -> Result<Response<ProxyB
             "ready"
         } else if is_public_checkout {
             "public checkout"
+        } else if is_public_read {
+            "public read"
         } else {
             "stripe webhook"
         };
