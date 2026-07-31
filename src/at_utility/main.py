@@ -36,7 +36,12 @@ from at_utility.providers import (
     resolve_provider,
 )
 from at_utility.redis_store import CacheStore, build_store, tenant_key
-from at_utility.stream_usage import approx_tokens_from_sse_lines, usage_from_sse_line
+from at_utility.stream_usage import (
+    approx_tokens_from_sse_lines,
+    assemble_completion_from_sse_lines,
+    sse_lines_from_completion,
+    usage_from_sse_line,
+)
 from at_utility import stripe_billing
 from at_utility.tenants import TenantRecord, TenantRegistry
 
@@ -1272,7 +1277,7 @@ async def chat_completions(
         "X-Ohm-Byok": "1" if upstream_key else "0",
     }
 
-    if not body.stream and not no_store:
+    if not no_store:
         cached = await state.store.get(ckey)
         if cached:
             payload = json.loads(cached)
@@ -1284,14 +1289,25 @@ async def chat_completions(
                 total_tokens=total,
                 stripe_customer_id=stripe_customer,
             )
-            return JSONResponse(
-                payload,
-                headers={
-                    **cache_headers,
-                    "X-AT-Cache": "HIT",
-                    "X-AT-Billed-USD": f"{event.billed_usd:.6f}",
-                },
-            )
+            hit_headers = {
+                **cache_headers,
+                "X-AT-Cache": "HIT",
+                "X-AT-Billed-USD": f"{event.billed_usd:.6f}",
+            }
+            if body.stream:
+                # Streamed replay: same cache entry, delivered as SSE.
+                replay_lines = sse_lines_from_completion(payload)
+
+                async def replay_stream() -> AsyncIterator[bytes]:
+                    for line in replay_lines:
+                        yield line.encode("utf-8")
+
+                return StreamingResponse(
+                    replay_stream(),
+                    media_type="text/event-stream",
+                    headers={**hit_headers, "Cache-Control": "no-cache"},
+                )
+            return JSONResponse(payload, headers=hit_headers)
 
     if model_needs_upstream(body.model) and not provider_key_available(
         body.model,
@@ -1371,6 +1387,18 @@ async def chat_completions(
                     total_tokens=total_tokens,
                     stripe_customer_id=stripe_customer,
                 )
+                if not no_store:
+                    # Streamed MISS populates the same cache entry the JSON
+                    # path uses; assembly returns None unless the stream
+                    # finished cleanly (finish_reason seen), so truncated
+                    # streams are never cached.
+                    assembled = assemble_completion_from_sse_lines(collected)
+                    if assembled is not None:
+                        await state.store.set(
+                            ckey,
+                            json.dumps(assembled),
+                            ttl_seconds=state.settings.at_cache_ttl_seconds,
+                        )
 
             return StreamingResponse(
                 event_stream(),

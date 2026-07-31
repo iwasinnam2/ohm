@@ -46,22 +46,21 @@ what PII came back.
 
 withOhm is an OpenAI-compatible pipe you point an agent at. Two things happen
 in the pipe: (1) exact-replay caching — identical requests are served from
-Redis instead of the provider, so a hit costs ~$2/M tokens instead of the
-provider's full input+output price; (2) a compliance pipeline for web fetch —
-robots.txt respected at fetch time, PII redacted before the content reaches
-the model, SSRF-safe with connect-time IP pinning. There's an MCP server
-(pip install withohm-mcp) so Cursor/Claude agents get it as tools.
+Redis instead of the provider, streamed or not, so a hit costs ~$2/M tokens
+instead of the provider's full input+output price; (2) a compliance pipeline
+for web fetch — robots.txt respected at fetch time, PII redacted before the
+content reaches the model, SSRF-safe with connect-time IP pinning. There's an
+MCP server (pip install withohm-mcp) so Cursor/Claude agents get it as tools.
 
 The architecture choice I'd defend: the edge is a small Rust proxy that
 answers cache hits without touching the Python control plane, and hits are
 metered as billable events at the edge. Caching is exact-match on a
 canonicalized request — I deliberately did not do semantic caching, because
 serving an almost-right answer from cache is worse than paying for the call.
+Streamed responses replay too: the pipe assembles the stream on the way
+through, and an identical request later gets the same completion back as SSE.
 
-Honest limitations: exact-match means paraphrased prompts miss; streamed
-responses pass through unmetered-by-cache (SSE is proxied, not replayed); and
-it currently runs single-region (us-east-1), so far-away latency is what it
-is. BYOK — your provider key, or bring none and just use fetch.
+BYOK — your provider key rides in a header, or bring none and just use fetch.
 
 Repo is MIT. I'd particularly like scrutiny on the cache-key canonicalization
 and the robots/PII pipeline — if there's a hole in either, I want to know
@@ -166,13 +165,12 @@ What that forced:
 - Exact-match keys over canonicalized requests, not semantic similarity.
   Semantic caching reads great in a README and is a refund generator in
   production — "almost the same prompt" is not the same prompt.
-- SSE streams pass through untouched. Caching partial streams is a
-  correctness minefield I chose to stay out of.
+- Streamed responses are assembled as they pass through and stored under the
+  same key as the non-stream path — a later identical request gets the
+  completion replayed as SSE. Partial streams are never cached; only a
+  stream that finished cleanly becomes a cache entry.
 - Stripe billing meters as the sink, with idempotency keys derived from the
   request hash, so retries can't double-bill.
-
-Single region today; the multi-region Redis story is designed but
-deliberately not built (cost floor vs. zero revenue is a losing trade).
 
 Repo (MIT) if you want to read the edge code: https://github.com/iwasinnam2/ohm
 Happy to go deep on any of it.
@@ -227,9 +225,9 @@ through a compliance pipeline (robots.txt, PII redaction, SSRF guards) before
 the content reaches the model.
 
 Live at https://www.withohm.dev — $0 to connect, usage-priced, MIT repo.
-Works with Cursor/Claude via MCP (pip install withohm-mcp).
+Works with Cursor/Claude via MCP (pip install withohm-mcp), and streamed
+responses replay from cache the same as regular ones.
 
-Rough edges I know about: single region (us-east-1), exact-match caching only.
 Would love feedback on the pricing page specifically — is the meter pricing
 legible to someone seeing it cold?
 ```
@@ -304,23 +302,37 @@ sentence's word order between subs so filters see distinct text.
 ```text
 Disclosure: my project.
 
-The observation this is built on: agents are mechanical. Retries and research
-loops issue byte-identical LLM calls at rates human users never do — and each
-one is billed at full price. Same story with web context: the same page
-fetched dozens of times a session, robots.txt never consulted, PII pasted
-straight into the model's context.
+The observation this is built on: agents are mechanical. Retries, research
+loops, and repeated tool calls issue byte-identical LLM requests at rates
+human users never do — and every single one is billed at full token price.
+Web context is the same story told twice: the same docs page fetched dozens
+of times a session, robots.txt never consulted, PII pasted straight into the
+model's context. Agents are quietly re-buying work they already paid for, and
+nobody is watching the pipe.
 
-withOhm is a metered pipe that fixes both:
+withOhm is that pipe, watched. Point an agent at one OpenAI-compatible
+endpoint and everything flowing through it gets smarter:
 
-- Cache replay — identical requests are answered from Redis instead of the
-  provider (~$2/M tokens instead of full input+output price). Exact-match on
-  purpose: "almost the same prompt" is not the same prompt, and near-miss
-  answers from cache are how a savings feature becomes a refunds feature.
-- Compliant fetch — every URL passes robots.txt checks, PII redaction, and
-  SSRF guards before the content reaches the model.
+- Cache replay — every request is canonicalized and hashed; when an
+  identical one comes back, the answer is replayed straight from Redis
+  instead of the provider, streamed or not, at ~$2/M tokens instead of full
+  input+output price. Exact-match by design: "almost the same prompt" is not
+  the same prompt, and near-miss answers are how a savings feature becomes a
+  refunds feature. The replay path is billing-grade — a Rust edge answers
+  hits and meters them as first-class events, so the cache is never
+  best-effort.
+- Compliant fetch — hand it a URL and what comes back is actually safe to
+  put in context: robots.txt consulted at fetch time, PII redacted before
+  the model ever sees the content, SSRF blocked at connect time with IP
+  pinning. The compliance verdict rides along with the content, so the agent
+  knows what was redacted and why.
 
-OpenAI-compatible, BYOK. Works with Cursor/Claude agents via MCP:
-pip install withohm-mcp.
+Using it takes about two minutes: pip install withohm-mcp, add the MCP
+config, and Cursor/Claude agents pick up the tools natively — ohm_chat for
+the cached pipe, ohm_fetch_web for clean URL context, ohm_savings to watch
+what the cache is earning you in real time. BYOK: your provider key rides in
+a header, and cache hits never need one. Connecting costs $0; you pay for
+what moves through the pipe.
 
 Site: https://www.withohm.dev
 Repo (MIT): https://github.com/iwasinnam2/ohm
@@ -329,12 +341,13 @@ Two-minute install: https://www.withohm.dev/i
 Under the hood: Rust edge gateway, Redis, Python control plane. All of it is
 in the repo — read the implementation rather than taking the README's word.
 
-Rough edges, stated plainly: single region (us-east-1) for now, exact-match
-caching misses paraphrases, and streamed responses pass through rather than
-replay.
-
 [ASK]
 ```
+
+Thread-answer note (not for the post): if a commenter asks about regions,
+answer honestly — served from us-east-1 today, expansion is demand-gated. If
+asked about paraphrases: exact-match is deliberate; canonicalization strips
+non-semantic noise (whitespace, line endings) but never guesses at meaning.
 
 **Title slot per venue:**
 

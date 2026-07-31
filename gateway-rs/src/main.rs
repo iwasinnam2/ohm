@@ -161,13 +161,47 @@ fn canonical_json(value: &serde_json::Value) -> String {
     }
 }
 
-/// Match Python `cache_key_for_request` (docs/REDIS_MESH.md).
+/// Key-v2 content normalization matching Python `cache.normalize_content`:
+/// CRLF/CR -> LF, then trim outer whitespace. Interior whitespace untouched.
+fn normalize_content(text: &str) -> String {
+    text.replace("\r\n", "\n").replace('\r', "\n").trim().to_string()
+}
+
+fn normalized_messages(messages: serde_json::Value) -> serde_json::Value {
+    match messages {
+        serde_json::Value::Array(items) => serde_json::Value::Array(
+            items
+                .into_iter()
+                .map(|mut msg| {
+                    if let Some(obj) = msg.as_object_mut() {
+                        if let Some(serde_json::Value::String(content)) = obj.get("content") {
+                            let normalized = normalize_content(content);
+                            if normalized != *content {
+                                obj.insert(
+                                    "content".into(),
+                                    serde_json::Value::String(normalized),
+                                );
+                            }
+                        }
+                    }
+                    msg
+                })
+                .collect(),
+        ),
+        other => other,
+    }
+}
+
+/// Match Python `cache_key_for_request` (docs/REDIS_MESH.md) — key namespace
+/// v2 with normalized message content. Must stay byte-identical to Python or
+/// edge HITs silently vanish (parity: tests/test_units.py, tests below).
 fn cache_key_structured(tenant: &str, body: &serde_json::Value) -> String {
     let model = body.get("model").cloned().unwrap_or(serde_json::Value::Null);
-    let messages = body
-        .get("messages")
-        .cloned()
-        .unwrap_or_else(|| serde_json::json!([]));
+    let messages = normalized_messages(
+        body.get("messages")
+            .cloned()
+            .unwrap_or_else(|| serde_json::json!([])),
+    );
     let mut extras = serde_json::Map::new();
     extras.insert(
         "fetch_web_context".into(),
@@ -223,7 +257,7 @@ fn cache_key_structured(tenant: &str, body: &serde_json::Value) -> String {
         "extras": serde_json::Value::Object(extras),
     });
     let digest = sha256_hex(canonical_json(&payload).as_bytes());
-    format!("at:{tenant}:cache:{digest}")
+    format!("at:{tenant}:cache:v2:{digest}")
 }
 
 async fn ensure_client(slot: &Mutex<Option<RespClient>>, addr: &str) -> bool {
@@ -473,7 +507,7 @@ async fn handle(app: Arc<App>, req: Request<Incoming>) -> Result<Response<ProxyB
             Some(v) => cache_key_structured(&tenant, v),
             None => {
                 let digest = sha256_hex(&body);
-                format!("at:{tenant}:cache:{digest}")
+                format!("at:{tenant}:cache:v2:{digest}")
             }
         };
         let cached: Option<String> = if ensure_client(&app.redis_read, &cfg.redis_addr).await {
@@ -708,8 +742,33 @@ mod tests {
         });
         // sk-at-dev last 8 → k-at-dev (matches Python tenant_bootstrap_{key[-8:]})
         let key = cache_key_structured("tenant_bootstrap_k-at-dev", &body);
-        assert!(key.starts_with("at:tenant_bootstrap_k-at-dev:cache:"));
-        assert_eq!(key.len(), "at:tenant_bootstrap_k-at-dev:cache:".len() + 64);
+        assert!(key.starts_with("at:tenant_bootstrap_k-at-dev:cache:v2:"));
+        assert_eq!(
+            key.len(),
+            "at:tenant_bootstrap_k-at-dev:cache:v2:".len() + 64
+        );
+    }
+
+    #[test]
+    fn cache_key_v2_parity_with_python() {
+        // Pinned against Python cache_key_for_request for the same fixture
+        // (tests/test_units.py::test_cache_key_v2_parity). If this drifts,
+        // edge HITs silently vanish.
+        let body = serde_json::json!({
+            "model": "mock",
+            "messages": [{"role": "user", "content": "  hello\r\nworld  "}],
+        });
+        assert_eq!(
+            cache_key_structured("parity", &body),
+            "at:parity:cache:v2:ea9e2e59350222baec8ed5fc7f85078ea788c48526f389bb6264ef251052db4d"
+        );
+    }
+
+    #[test]
+    fn normalize_content_strips_outer_noise_only() {
+        assert_eq!(normalize_content("  a\r\nb  "), "a\nb");
+        // Interior whitespace (code indentation) is significant and kept.
+        assert_eq!(normalize_content("def f():\n    pass"), "def f():\n    pass");
     }
 
     #[test]

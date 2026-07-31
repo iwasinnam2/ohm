@@ -17,6 +17,7 @@ Failover for non-streaming is **before** a committed successful response body. I
 - **OpenAI**: pass-through SSE. The gateway sets `stream_options.include_usage=true` so the final chunk carries `usage` for metering.
 - **Anthropic**: Python translates `content_block_delta` / lifecycle events into OpenAI `chat.completion.chunk` frames on the fly (no full-buffer fake stream). Input tokens come from `message_start`; output tokens from `message_delta`; a final usage chunk is emitted before `data: [DONE]`.
 - **Metering**: prefer parsed `usage.total_tokens` from the stream; fall back to a char/`4` estimate only if no usage frame arrived.
+- **Cache replay (v2)**: streamed responses populate the same Redis entry as the JSON path. On a streamed MISS, Python assembles the completed stream (only if a `finish_reason` arrived — truncated streams are never cached) and stores it under the shared cache key. On a HIT with `stream=true`, the cached completion is replayed as synthesized SSE chunks (`X-AT-Cache: HIT`), metered exactly like a JSON hit. See `tests/test_stream_replay.py`.
 - If the upstream drops mid-stream, the client may see a truncated stream. **Mid-stream handoff to a second provider without client reconnect is not implemented.** Prefer non-streaming for critical paths until that work ships.
 
 ## Operator rule
