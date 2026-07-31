@@ -340,24 +340,24 @@ replay.
 
 | Venue | Title |
 |---|---|
-| r/mcp | `withOhm: MCP server for compliant web fetch + prompt cache replay (launched, MIT)` |
-| r/cursor | `Built a plugin that gives the Cursor agent compliant web fetch and replays repeated calls from cache` |
-| r/SideProject | `withOhm — agents pay rent on a pipe instead of re-buying the same tokens (went live this week)` |
-| r/LLMDevs | `Metering-first gateway: Rust edge answers cache hits, exact-match over semantic on purpose` |
-| r/AI_Agents | `Agents re-buy the same tokens constantly — I measured it, then built the boring fix` |
-| Show HN (first comment) | Title: `Show HN: withOhm – replay cache and compliant web fetch for LLM agents`; use the body as your first comment, drop the Disclosure line |
+| r/mcp | withOhm: MCP server for compliant web fetch + prompt cache replay (launched, MIT) |
+| r/cursor | Built a plugin that gives the Cursor agent compliant web fetch and replays repeated calls from cache |
+| r/SideProject | withOhm — agents pay rent on a pipe instead of re-buying the same tokens (went live this week) |
+| r/LLMDevs | Metering-first gateway: Rust edge answers cache hits, exact-match over semantic on purpose |
+| r/AI_Agents | Agents re-buy the same tokens constantly — so I built the boring fix |
+| Show HN | Show HN: withOhm – replay cache and compliant web fetch for LLM agents |
 
 **Ask slot per venue:**
 
 | Venue | Closing ask |
 |---|---|
-| r/mcp | `The fetch tool returns a compliance verdict alongside content (what was redacted, what robots said). Useful surface for your agents, or noise?` |
-| r/cursor | `The skills teach the agent when to reach for the pipe. If it grabs the wrong tool, tell me — that's a skill-wording bug and cheap to fix.` |
-| r/SideProject | `Feedback I'd value most: is the pricing page legible to someone seeing it cold? https://www.withohm.dev/subscriptions` |
-| r/LLMDevs | `Happy to go deep on the cache-key canonicalization or the idempotent metering — ask away.` |
-| r/AI_Agents | `Curious what exact-match hit rates others see in agent workloads, and whether anyone has made semantic caching work without correctness incidents.` |
-| Show HN | `I'd particularly like scrutiny on the cache-key canonicalization and the robots/PII pipeline — if there's a hole, I want to know before customers find it.` |
+| r/mcp | The fetch tool returns a compliance verdict alongside the content (what was redacted, what robots.txt said). Useful surface for your agents, or noise? |
+| r/cursor | The plugin ships skills that teach the agent when to reach for the pipe on its own. If it grabs the wrong tool, say so — that's a skill-wording bug and cheap to fix. |
+| r/SideProject | Feedback valued most: is the pricing page legible to someone seeing it cold? https://www.withohm.dev/subscriptions |
+| r/LLMDevs | Happy to go deep on the cache-key canonicalization or the idempotent metering — ask away. |
+| r/AI_Agents | Has anyone made semantic caching work in production without correctness incidents? It was ruled out here on purpose, but I'd be interested in a counterexample. |
+| Show HN | Scrutiny most wanted on the cache-key canonicalization and the robots/PII pipeline — if there's a hole in either, better to hear it here first. |
 
 Venue-specific mechanics: r/AI_Agents — move the three links into a comment,
-keep the body link-free. HN — repo URL in the URL field, body becomes your
-first comment posted within 60 seconds. Everywhere else — post as-is.
+keep the body link-free. HN — repo URL in the URL field, the body becomes the
+first comment (posted within 60 seconds, Disclosure line dropped).
