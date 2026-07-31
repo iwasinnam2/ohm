@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { BillingCheckoutForm } from "@/components/BillingCheckoutForm";
-import { PAYG_RATES, formatUsd } from "@/lib/meterRates";
+import { PAYG_RATES, COMMIT_TIERS, formatUsd, formatUsdMoney } from "@/lib/meterRates";
 
 export const metadata: Metadata = {
   title: "Intermediate at withOhm",
   description:
-    "Intermediate at withOhm — usage-led pipe rent with $0 membership and metered cache + web fetch.",
+    "Intermediate at withOhm — usage-led pipe rent with $0 membership and metered cache + web fetch, or a monthly commit tier with included usage.",
 };
 
 const INTERMEDIATE_PROS = [
@@ -17,7 +17,15 @@ const INTERMEDIATE_PROS = [
   "Centralised prompt cache and compliant search",
 ];
 
-export default function IntermediateBillingPage() {
+export default async function IntermediateBillingPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ commit?: string }>;
+}) {
+  const params = await searchParams;
+  const commit =
+    COMMIT_TIERS.find((t) => t.id === (params.commit || "").toLowerCase()) ??
+    null;
   return (
     <>
       <header className="page-head">
@@ -28,16 +36,32 @@ export default function IntermediateBillingPage() {
             <li key={pro}>{pro}</li>
           ))}
         </ul>
-        <p>
-          <strong>$0 membership</strong> with card on file. You are billed for
-          pipe rent: cache hit {formatUsd(PAYG_RATES.cache_hit)}/1k tokens, cache
-          miss {formatUsd(PAYG_RATES.cache_miss)}/1k tokens, web fetch{" "}
-          {formatUsd(PAYG_RATES.web_fetch)}/URL. Optional $29 credit pack prepaid
-          toward meters. Model tokens stay on your provider keys (BYOK). Checkout
-          issues your withOhm API key once.
-        </p>
+        {commit ? (
+          <p>
+            <strong>
+              {formatUsdMoney(commit.usd_month)}/mo commit —{" "}
+              {formatUsdMoney(commit.included_usd)} metered usage included each
+              cycle.
+            </strong>{" "}
+            Overage bills at list rates: cache hit{" "}
+            {formatUsd(PAYG_RATES.cache_hit)}/1k tokens, cache miss{" "}
+            {formatUsd(PAYG_RATES.cache_miss)}/1k tokens, web fetch{" "}
+            {formatUsd(PAYG_RATES.web_fetch)}/URL. Model tokens stay on your
+            provider keys (BYOK). Checkout issues your withOhm API key once.
+          </p>
+        ) : (
+          <p>
+            <strong>$0 membership</strong> with card on file. You are billed for
+            pipe rent: cache hit {formatUsd(PAYG_RATES.cache_hit)}/1k tokens,
+            cache miss {formatUsd(PAYG_RATES.cache_miss)}/1k tokens, web fetch{" "}
+            {formatUsd(PAYG_RATES.web_fetch)}/URL. Prefer a fixed monthly line?{" "}
+            <Link href="/subscriptions">Pick a commit tier</Link>. Model tokens
+            stay on your provider keys (BYOK). Checkout issues your withOhm API
+            key once.
+          </p>
+        )}
       </header>
-      <BillingCheckoutForm />
+      <BillingCheckoutForm commit={commit?.id ?? ""} />
       <p className="billing-form__alt">
         Need fixed usage agreements?{" "}
         <Link href="/billing/enterprise">Enterprise at withOhm</Link>

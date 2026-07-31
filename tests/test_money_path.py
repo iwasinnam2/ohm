@@ -465,6 +465,123 @@ async def test_delinquency_sweep_spares_recent_delinquents():
         assert await main_mod.state.tenants.sweep_delinquent(14) == 0
 
 
+# ---------------------------------------------------------------------------
+# rate card v2: commit tiers + retired credit pack
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_topup_is_retired_with_commit_guidance():
+    async with _client() as client:
+        res = await client.post(
+            "/v1/billing/topup",
+            headers={"Authorization": "Bearer sk-at-dev"},
+            json={},
+        )
+        assert res.status_code == 410
+        err = res.json()["error"]
+        assert err["code"] == "credit_pack_retired"
+        assert err["details"]["commit_tiers"] == ["c29", "c99", "c499"]
+
+
+@pytest.mark.asyncio
+async def test_checkout_rejects_unknown_commit_tier():
+    async with _client() as client:
+        res = await client.post(
+            "/v1/billing/checkout",
+            json={"plan": "payg", "commit": "c9000", "email": "x@test.dev"},
+        )
+        assert res.status_code == 400
+        assert "commit" in res.json()["error"]["message"]
+
+
+@pytest.mark.asyncio
+async def test_checkout_passes_commit_to_session(monkeypatch):
+    from at_utility import stripe_billing as sb
+
+    captured: dict = {}
+    main_mod.state.settings.stripe_secret_key = "sk_test_x"
+    main_mod.state.settings.stripe_price_payg = "price_seat"
+    monkeypatch.setattr(sb, "stripe_configured", lambda s: True)
+
+    def fake_session(settings, *, tenant_id, plan, success_url, cancel_url,
+                     customer_email="", commit=""):
+        captured.update({"plan": plan, "commit": commit})
+        return {"id": "cs_x", "url": "https://checkout.test", "plan": plan}
+
+    monkeypatch.setattr(sb, "create_checkout_session", fake_session)
+    async with _client() as client:
+        res = await client.post(
+            "/v1/billing/checkout",
+            json={
+                "plan": "payg",
+                "commit": "c99",
+                "email": "commit@test.dev",
+                "terms_ack": True,
+                "dpa_ack": True,
+            },
+        )
+        assert res.status_code == 200
+        assert captured == {"plan": "payg", "commit": "c99"}
+
+
+def test_commit_tier_detected_from_invoice_lines():
+    from at_utility import stripe_billing as sb
+    from at_utility.config import get_settings
+
+    settings = get_settings()
+    settings.stripe_price_commit_c29 = "price_c29"
+    settings.stripe_price_commit_c99 = "price_c99"
+    invoice = {
+        "id": "in_test",
+        "lines": {
+            "data": [
+                {"price": {"id": "price_meter_hit"}},
+                {"price": {"id": "price_c99"}},
+            ]
+        },
+    }
+    assert sb.commit_tier_for_invoice(settings, invoice) == "c99"
+    # Newer API shape: pricing.price_details.price instead of price.id
+    invoice_new = {
+        "id": "in_test2",
+        "lines": {
+            "data": [{"pricing": {"price_details": {"price": "price_c29"}}}]
+        },
+    }
+    assert sb.commit_tier_for_invoice(settings, invoice_new) == "c29"
+    assert sb.commit_tier_for_invoice(settings, {"id": "in_x", "lines": {"data": []}}) == ""
+
+
+def test_commit_included_usd_matches_rate_card():
+    import json
+    from pathlib import Path
+
+    from at_utility import stripe_billing as sb
+    from at_utility.config import get_settings
+
+    card = json.loads(
+        (Path(__file__).resolve().parents[1] / "pricing" / "rate_card.v2.json")
+        .read_text(encoding="utf-8")
+    )
+    settings = get_settings()
+    for tier in card["commit_tiers"]:
+        assert sb.commit_included_usd(settings, tier["id"]) == tier["included_usd"]
+    assert sb.commit_included_usd(settings, "nope") == 0.0
+
+
+def test_commit_grant_skips_without_stripe_config():
+    from at_utility import stripe_billing as sb
+    from at_utility.config import get_settings
+
+    settings = get_settings()
+    settings.stripe_secret_key = ""
+    granted = sb.grant_commit_included_credit(
+        settings, stripe_customer_id="cus_x", tier="c29", invoice_id="in_x"
+    )
+    assert granted == 0.0
+
+
 @pytest.mark.asyncio
 async def test_checkout_rate_limited_after_burst():
     async with _client() as client:

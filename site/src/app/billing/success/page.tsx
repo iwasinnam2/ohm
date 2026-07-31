@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { OhmMark } from "@/components/OhmMark";
-import { CreditPackTopup } from "@/components/CreditPackTopup";
 import { cursorOhmInstallHref } from "@/lib/cursorMcp";
 
 const KEY_STORAGE = "ohm_api_key";
@@ -111,10 +110,16 @@ export default function BillingSuccessPage() {
         )}
       </details>
 
-      <CreditPackTopup apiKey={apiKey} />
+      <p className="postpay__cta-note">
+        Want a fixed monthly line with included usage?{" "}
+        <Link href="/subscriptions">Pick a commit tier</Link> — $29, $99, or
+        $499/mo, each including more metered usage than it costs.
+      </p>
 
       <p className="postpay__cta-note">
         Next: <Link href="/docs/quickstart">Quickstart</Link>
+        {" · "}
+        <Link href="/connections">Connect other tools</Link>
         {" · "}
         <Link href="/docs/pricing">Metered rates</Link>
         {" · "}

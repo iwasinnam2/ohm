@@ -1,0 +1,30 @@
+{
+  "version": 2,
+  "issued": "2026-07-31",
+  "currency": "usd",
+  "note": "Canonical rate card. Site imports this file directly; Python defaults in src/at_utility/config.py are asserted equal by tests/test_rate_card.py. Rates are versioned hypotheses governed by docs/PRICING.md - never edit in place, issue v3.",
+  "meters": {
+    "cache_hit": {
+      "unit": "per_1k_tokens",
+      "usd": 0.002,
+      "anchor": "Provider cache reads are ~10% of input (USD 0.30-0.50/M, Anthropic/OpenAI 2026) but still charge full output (USD 15-30/M). A withOhm hit replaces the entire call; USD 2/M captures ~10-20% of avoided spend."
+    },
+    "cache_miss": {
+      "unit": "per_1k_tokens",
+      "usd": 0.001,
+      "anchor": "OpenRouter BYOK take is ~5% of inference cost (~USD 0.25/M blended). The miss meter is the visible tax on every uncached call - the true price-resistance point - so it is priced low."
+    },
+    "web_fetch": {
+      "unit": "per_url",
+      "usd": 0.003,
+      "anchor": "Tavily PAYG USD 0.008/credit; Firecrawl Hobby USD 0.0032/page with no PAYG option. USD 3/1k undercuts Tavily by 62% and matches Firecrawl entry with the compliance pipe included."
+    }
+  },
+  "commit_tiers": [
+    { "id": "c29", "usd_month": 29, "included_usd": 35 },
+    { "id": "c99", "usd_month": 99, "included_usd": 125 },
+    { "id": "c499", "usd_month": 499, "included_usd": 700 }
+  ],
+  "membership_usd_month": 0,
+  "enterprise_from_usd_month": 2500
+}

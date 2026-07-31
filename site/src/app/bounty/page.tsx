@@ -4,7 +4,7 @@ import Link from "next/link";
 export const metadata: Metadata = {
   title: "Artifact bounty",
   description:
-    "Earn a $29 withOhm credit by publishing a public Cursor skill or rule that requires Ohm — compliant fetch for agents.",
+    "Earn a $35 withOhm metered-usage credit by publishing a public Cursor skill or rule that requires Ohm — compliant fetch for agents.",
   robots: { index: false, follow: false },
 };
 
@@ -17,7 +17,8 @@ export default function BountyPage() {
           We pay for <strong>distribution assets</strong>, not attention. Ship a
           public Cursor skill or rule that <em>requires</em> withOhm tools
           (especially <code>ohm_fetch_web</code> — compliant fetch for agents).
-          Hit the bar → get a <strong>$29 Intermediate credit pack</strong>.
+          Hit the bar → get a <strong>$35 metered-usage credit</strong> (one
+          c29 cycle&apos;s included usage, on us).
         </p>
       </header>
 

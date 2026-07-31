@@ -580,6 +580,9 @@ class CheckoutBody(BaseModel):
 
 class PublicCheckoutBody(BaseModel):
     plan: str = "payg"
+    # Optional commit tier (rate card v2): c29 | c99 | c499. Swaps the $0
+    # membership seat for a monthly commit with included metered usage.
+    commit: str = ""
     label: str = ""
     email: str = ""
     terms_ack: bool = False
@@ -620,6 +623,11 @@ async def public_create_checkout(
     s = state.settings
     if body.plan not in ("payg", "enterprise"):
         raise HTTPException(status_code=400, detail="plan must be payg or enterprise")
+    commit = body.commit.strip().lower()
+    if commit and commit not in ("c29", "c99", "c499"):
+        raise HTTPException(
+            status_code=400, detail="commit must be c29, c99, or c499"
+        )
     if s.at_compliance_enforce and s.at_compliance_require_terms_ack:
         if not body.terms_ack or not body.dpa_ack:
             raise HTTPException(
@@ -649,6 +657,7 @@ async def public_create_checkout(
             success_url=body.success_url,
             cancel_url=body.cancel_url,
             customer_email=body.email,
+            commit=commit,
         )
     except RuntimeError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
@@ -672,32 +681,24 @@ async def credit_pack_topup(
     body: TopupBody,
     auth: tuple[str, TenantRecord] = Depends(auth_tenant),
 ) -> dict[str, Any]:
-    """Authenticated $29 credit pack top-up: one-time Checkout (mode=payment).
-
-    Paid amount lands as a customer balance credit against future metered
-    invoices via the checkout.session.completed webhook.
-    """
+    """RETIRED (rate card v2): the $29 credit pack is superseded by commit
+    tiers, which include metered usage every cycle instead of a one-off
+    voucher. Returns 410 with upgrade guidance."""
     api_key, tenant_rec = auth
     await rate_limit(api_key, tenant_rec.tenant_id)
-    if not stripe_billing.stripe_configured(state.settings):
-        raise HTTPException(
-            status_code=503,
-            detail="Stripe not configured (set STRIPE_SECRET_KEY and price IDs)",
-        )
-    try:
-        session = stripe_billing.create_credit_pack_session(
-            state.settings,
-            tenant_id=tenant_rec.tenant_id,
-            success_url=body.success_url,
-            cancel_url=body.cancel_url,
-            stripe_customer_id=tenant_rec.stripe_customer_id or "",
-        )
-    except RuntimeError as exc:
-        raise HTTPException(status_code=503, detail=str(exc)) from exc
-    return {
-        "checkout": session,
-        "note": "Complete Checkout — the amount credits your balance against future metered invoices.",
-    }
+    raise HTTPException(
+        status_code=410,
+        detail={
+            "code": "credit_pack_retired",
+            "message": (
+                "The one-time credit pack is retired. Commit tiers include "
+                "metered usage every month (c29: $29/mo with $35 included; "
+                "c99: $99/mo with $125; c499: $499/mo with $700). "
+                "See https://www.withohm.dev/subscriptions"
+            ),
+            "commit_tiers": ["c29", "c99", "c499"],
+        },
+    )
 
 
 @app.post("/v1/admin/tenants")
@@ -880,6 +881,28 @@ async def stripe_webhook(request: Request) -> dict[str, Any]:
     if event_type == "invoice.paid":
         billing_paid = True
         clear_delinquent = True
+        # Commit tier (rate card v2): each paid cycle grants the included
+        # metered usage as a billing credit scoped to metered prices.
+        # Idempotent per invoice — webhook redelivery cannot double-grant.
+        commit_tier = stripe_billing.commit_tier_for_invoice(
+            state.settings, data_obj
+        )
+        if commit_tier and customer_id:
+            invoice_id = str(obj.get("id") or "")
+            granted = stripe_billing.grant_commit_included_credit(
+                state.settings,
+                stripe_customer_id=str(customer_id),
+                tier=commit_tier,
+                invoice_id=invoice_id,
+            )
+            log.info(
+                "commit credit tenant=%s customer=%s tier=%s invoice=%s granted_usd=%s",
+                tenant_id,
+                customer_id,
+                commit_tier,
+                invoice_id,
+                granted,
+            )
     elif event_type == "invoice.payment_failed":
         # Stay active for Smart Retries + reminder emails; lock meters/fetch via flag
         billing_paid = False

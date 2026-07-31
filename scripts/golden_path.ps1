@@ -56,12 +56,14 @@ Step "homepage 200 + grounded hero copy" {
   }
 }
 
-Step "subscriptions 200 + published pricing" {
+Step "subscriptions 200 + published pricing (rate card v2)" {
   $r = Get-Page "$SiteUrl/subscriptions"
   if ($r.StatusCode -ne 200) { throw "status $($r.StatusCode)" }
-  foreach ($phrase in @("2,500", "29", "`$0")) {
+  # $0 membership, the commit ladder, and the Enterprise floor must all be live
+  foreach ($phrase in @("2,500", "`$0", "Commit tiers", "`$29.00/mo", "`$99.00/mo", "`$499.00/mo")) {
     if ($r.Content -notmatch [regex]::Escape($phrase)) { throw "missing pricing '$phrase'" }
   }
+  if ($r.Content -match "credit pack") { throw "retired credit pack still advertised" }
 }
 
 Step "status page 200 (single-region truth)" {
