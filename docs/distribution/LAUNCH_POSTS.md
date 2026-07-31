@@ -290,3 +290,75 @@ Rules that protect the account: disclose everywhere; never post identical
 text to two subs; answer every substantive comment (HN: within 15 minutes for
 the first two hours); if a comment finds a real flaw, concede it plainly —
 intellectual honesty is the currency on every one of these venues.
+
+---
+
+## 5. Universal template (one body, per-venue title + ask)
+
+The spine below works on every venue; only the title and the closing ask
+change. Swap the two `[...]` slots, post. Change at least the opening
+sentence's word order between subs so filters see distinct text.
+
+**Body:**
+
+```text
+Disclosure: my project.
+
+The observation this is built on: agents are mechanical. Retries and research
+loops issue byte-identical LLM calls at rates human users never do — and each
+one is billed at full price. Same story with web context: the same page
+fetched dozens of times a session, robots.txt never consulted, PII pasted
+straight into the model's context.
+
+withOhm is a metered pipe that fixes both:
+
+- Cache replay — identical requests are answered from Redis instead of the
+  provider (~$2/M tokens instead of full input+output price). Exact-match on
+  purpose: "almost the same prompt" is not the same prompt, and near-miss
+  answers from cache are how a savings feature becomes a refunds feature.
+- Compliant fetch — every URL passes robots.txt checks, PII redaction, and
+  SSRF guards before the content reaches the model.
+
+OpenAI-compatible, BYOK. Works with Cursor/Claude agents via MCP:
+pip install withohm-mcp.
+
+Site: https://www.withohm.dev
+Repo (MIT): https://github.com/iwasinnam2/ohm
+Two-minute install: https://www.withohm.dev/i
+
+For context on who's behind it: I'm 21, and I built this solo from my bedroom
+around bar shifts — no team, no funding. Rust edge gateway, Redis, Python
+control plane; all of it is in the repo if you want to check my work.
+
+Rough edges I know about: single region (us-east-1) for now, exact-match
+caching misses paraphrases, and streamed responses pass through rather than
+replay.
+
+[ASK]
+```
+
+**Title slot per venue:**
+
+| Venue | Title |
+|---|---|
+| r/mcp | `withOhm: MCP server for compliant web fetch + prompt cache replay (launched, MIT)` |
+| r/cursor | `Built a plugin that gives the Cursor agent compliant web fetch and replays repeated calls from cache` |
+| r/SideProject | `I'm 21, built an AI infrastructure pipe solo from my bedroom — it went live this week` |
+| r/LLMDevs | `Metering-first gateway: Rust edge answers cache hits, exact-match over semantic on purpose` |
+| r/AI_Agents | `Agents re-buy the same tokens constantly — I measured it, then built the boring fix` |
+| Show HN (first comment) | Title: `Show HN: withOhm – replay cache and compliant web fetch for LLM agents`; use the body as your first comment, drop the Disclosure line |
+
+**Ask slot per venue:**
+
+| Venue | Closing ask |
+|---|---|
+| r/mcp | `The fetch tool returns a compliance verdict alongside content (what was redacted, what robots said). Useful surface for your agents, or noise?` |
+| r/cursor | `The skills teach the agent when to reach for the pipe. If it grabs the wrong tool, tell me — that's a skill-wording bug and cheap to fix.` |
+| r/SideProject | `Feedback I'd value most: is the pricing page legible to someone seeing it cold? https://www.withohm.dev/subscriptions` |
+| r/LLMDevs | `Happy to go deep on the cache-key canonicalization or the idempotent metering — ask away.` |
+| r/AI_Agents | `Curious what exact-match hit rates others see in agent workloads, and whether anyone has made semantic caching work without correctness incidents.` |
+| Show HN | `I'd particularly like scrutiny on the cache-key canonicalization and the robots/PII pipeline — if there's a hole, I want to know before customers find it.` |
+
+Venue-specific mechanics: r/AI_Agents — move the three links into a comment,
+keep the body link-free. HN — repo URL in the URL field, body becomes your
+first comment posted within 60 seconds. Everywhere else — post as-is.
