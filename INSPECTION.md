@@ -38,7 +38,11 @@ round.**
 | Delinquent tenants suspend after grace | `test_money_path.py::test_delinquency_sweep_suspends_expired_tenants`, `::test_delinquency_sweep_spares_recent_delinquents` |
 | Request caps enforced on chat + fetch | `test_money_path.py::test_request_cap_enforced_on_chat`, `::test_fetch_cap_429_despite_metered_spend` |
 | Checkout mint is rate-limited | `test_money_path.py::test_checkout_rate_limited_after_burst` |
-| Published pricing ($0 Intermediate seat, $29 credit pack, Enterprise from $2,500/mo) | golden step "subscriptions 200 + published pricing" |
+| Published pricing ($0 Intermediate seat, commit tiers $29/$99/$499 with included usage, Enterprise from $2,500/mo) | golden step "subscriptions 200 + published pricing (rate card v2)" |
+| Site, API config, and docs all quote the same rates (single canonical source) | `test_rate_card.py` (site imports `pricing/rate_card.v2.json` directly; config defaults asserted equal) |
+| Commit tiers: checkout accepts tier, invoice.paid grants included usage scoped to meters | `test_money_path.py::test_checkout_passes_commit_to_session`, `::test_commit_tier_detected_from_invoice_lines`, `::test_commit_included_usd_matches_rate_card` |
+| $29 one-off credit pack is retired (410 + guidance) | `test_money_path.py::test_topup_is_retired_with_commit_guidance` |
+| Pricing changes follow pre-committed rules, not moods | `docs/PRICING.md` rules + weekly `.github/workflows/pricing-pulse.yml` telemetry |
 
 ## Infra claims
 

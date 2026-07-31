@@ -1,9 +1,13 @@
 #!/usr/bin/env bash
-# Create Stripe Billing Meters + metered Prices aligned to AT_PRICE_* units.
+# LEGACY (rate card v1) — the Meters it creates are still canonical, but the
+# Prices are superseded. Create meters here, then Prices at v2 rates with
+# scripts/stripe_create_prices_v2.sh (governance: docs/PRICING.md).
+# NOTE: unit_amount_decimal is denominated in CENTS — the v1 values below
+# undercharged 100x; v2 uses correct cent values.
+#
 # Quantity model (see src/at_utility/metering.py):
 #   ohm_cache_hit / ohm_cache_miss → ceil(tokens/1000) billable units
 #   ohm_web_fetch → URL count
-# Unit amounts (USD): hit 0.0005, miss 0.002, fetch 0.001
 #
 # Usage (requires Stripe CLI logged into test or live mode):
 #   bash scripts/stripe_create_meters.sh

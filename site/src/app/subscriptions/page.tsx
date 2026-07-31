@@ -1,11 +1,16 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { PAYG_RATES, formatUsd } from "@/lib/meterRates";
+import {
+  PAYG_RATES,
+  COMMIT_TIERS,
+  formatUsd,
+  formatUsdMoney,
+} from "@/lib/meterRates";
 
 export const metadata: Metadata = {
   title: "Subscriptions",
   description:
-    "withOhm — Intermediate ($0 membership + meters, BYOK) and Enterprise design-partner rank.",
+    "withOhm — Intermediate ($0 membership + meters, BYOK), monthly commit tiers with included usage, and Enterprise design-partner rank.",
 };
 
 const TIERS = [
@@ -14,7 +19,7 @@ const TIERS = [
     name: "Intermediate",
     featured: true,
     price: "Usage-based",
-    priceNote: `$0 membership (card on file). Meters: hit ${formatUsd(PAYG_RATES.cache_hit)}/1k · miss ${formatUsd(PAYG_RATES.cache_miss)}/1k · fetch ${formatUsd(PAYG_RATES.web_fetch)}/URL. Optional $29 credit pack.`,
+    priceNote: `$0 membership (card on file). Meters: hit ${formatUsd(PAYG_RATES.cache_hit)}/1k · miss ${formatUsd(PAYG_RATES.cache_miss)}/1k · fetch ${formatUsd(PAYG_RATES.web_fetch)}/URL.`,
     pros: [
       "Cursor integration — one-click MCP attach",
       "URL search and web context on the pipe",
@@ -59,10 +64,10 @@ export default function SubscriptionsPage() {
           withOhm is usage-led pipe rent for AI software developers: attach once,
           keep your provider keys (BYOK), and pay for cache replay and compliant
           web fetch as you go. Intermediate membership is <strong>$0</strong> with
-          a card on file; meters invoice monthly. An optional{" "}
-          <strong>$29 credit pack</strong> prepays allowance toward usage — it is
-          not a required seat. Enterprise negotiates fixed transactional bundles
-          for high-volume scraping.
+          a card on file; meters invoice monthly. Teams that want a fixed line on
+          the invoice pick a <strong>commit tier</strong> — a flat monthly charge
+          with more metered usage included than it costs. Enterprise negotiates
+          fixed transactional bundles for high-volume scraping.
         </p>
       </header>
 
@@ -91,6 +96,33 @@ export default function SubscriptionsPage() {
             </li>
           ))}
         </ul>
+
+        <section className="commit-strip" aria-label="Monthly commit tiers">
+          <h2 className="commit-strip__title">Commit tiers</h2>
+          <p className="commit-strip__lede">
+            One fixed monthly line for finance. Included metered usage refreshes
+            every cycle, applies to meters only, and beats the commit — overage
+            bills at list rates.
+          </p>
+          <ul className="commit-strip__grid">
+            {COMMIT_TIERS.map((tier) => (
+              <li key={tier.id} className="commit-strip__tier">
+                <h3>{formatUsdMoney(tier.usd_month)}/mo</h3>
+                <p>
+                  <strong>{formatUsdMoney(tier.included_usd)}</strong> metered
+                  usage included each cycle
+                </p>
+                <Link
+                  className="btn btn--ghost"
+                  href={`/billing/intermediate?commit=${tier.id}`}
+                >
+                  Commit {formatUsdMoney(tier.usd_month)}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+
         <div className="partner__cta cta-row">
           <Link href="/design-partners" className="link-quiet">
             Apply as founding design partner
@@ -103,7 +135,7 @@ export default function SubscriptionsPage() {
           </Link>
         </div>
         <table className="rate-table" aria-label="Intermediate meter list rates">
-          <caption>Intermediate meter list (USD)</caption>
+          <caption>Intermediate meter list (USD, rate card v2)</caption>
           <thead>
             <tr>
               <th scope="col">Meter</th>
@@ -131,11 +163,6 @@ export default function SubscriptionsPage() {
               <td>Membership</td>
               <td>per month</td>
               <td>$0 (card on file)</td>
-            </tr>
-            <tr>
-              <td>Credit pack</td>
-              <td>optional prepaid</td>
-              <td>$29</td>
             </tr>
           </tbody>
         </table>

@@ -1,12 +1,30 @@
-/** Intermediate PAYG list rates (USD) — mirrors at_utility.config defaults. */
+/**
+ * Rates come from the canonical rate card (pricing/rate_card.v2.json).
+ * Python config defaults are asserted equal by tests/test_rate_card.py —
+ * change the JSON (by issuing a new version) and everything follows.
+ */
+import rateCard from "../../../pricing/rate_card.v2.json";
+
+export const RATE_CARD_VERSION = rateCard.version;
+
 export const PAYG_RATES = {
   /** USD per 1k tokens (cache hit) */
-  cache_hit: 0.0005,
+  cache_hit: rateCard.meters.cache_hit.usd,
   /** USD per 1k tokens (cache miss) */
-  cache_miss: 0.002,
+  cache_miss: rateCard.meters.cache_miss.usd,
   /** USD per URL */
-  web_fetch: 0.001,
+  web_fetch: rateCard.meters.web_fetch.usd,
 } as const;
+
+export type CommitTier = {
+  id: string;
+  usd_month: number;
+  included_usd: number;
+};
+
+export const COMMIT_TIERS: readonly CommitTier[] = rateCard.commit_tiers;
+
+export const ENTERPRISE_FROM_USD_MONTH = rateCard.enterprise_from_usd_month;
 
 export const METER_LABELS = {
   cache_hit: "Cache hit (per 1k tokens)",

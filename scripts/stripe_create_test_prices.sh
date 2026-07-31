@@ -1,10 +1,9 @@
 #!/usr/bin/env bash
-# Create Stripe *test* Products/Prices for withOhm seat billing (requires stripe CLI).
+# LEGACY (rate card v1) — superseded by scripts/stripe_create_prices_v2.sh,
+# which creates the v2 seat/commit/enterprise Prices with tax_behavior set.
+# Kept for historical reference only; the $29 credit pack is retired.
 # Usage: from repo root after `stripe login`
 #   bash scripts/stripe_create_test_prices.sh
-#
-# Recommended Intermediate model: \$0 membership seat + metered Prices
-# (see scripts/stripe_create_meters.sh). \$29 is an optional credit pack.
 set -euo pipefail
 
 if ! command -v stripe >/dev/null 2>&1; then

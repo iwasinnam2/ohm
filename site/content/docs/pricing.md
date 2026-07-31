@@ -6,15 +6,27 @@
 
 See [/subscriptions](/subscriptions): **Intermediate (usage-led, $0 membership + meters, BYOK)** and Enterprise (design-partner rank). API/Stripe plan id for Intermediate is `payg`.
 
-## Intermediate list rates (USD)
+## Intermediate list rates (USD, rate card v2)
 
 | Meter | Unit | List |
 |-------|------|------|
-| Cache hit | per 1k tokens | `$0.0005` |
-| Cache miss | per 1k tokens | `$0.002` |
-| Web fetch | per URL | `$0.001` |
+| Cache hit | per 1k tokens | `$0.002` |
+| Cache miss | per 1k tokens | `$0.001` |
+| Web fetch | per URL | `$0.003` |
 
-Optional **$29 meter credit pack** prepaid toward usage — not a required seat. A soft daily fetch cap applies until the first paid invoice unlocks the account (`AT_FREE_TIER_FETCH_CAP_DAY`).
+Hits are priced against the inference they replace (still ~90% below re-running the call); misses are priced low — they are pipe rent while your cache builds. A soft daily fetch cap applies until the first paid invoice unlocks the account (`AT_FREE_TIER_FETCH_CAP_DAY`).
+
+## Commit tiers (optional)
+
+Fixed monthly line for finance; metered usage included every cycle. Included usage applies to meters only (never the seat) and refreshes each billing cycle.
+
+| Tier | Monthly | Included metered usage |
+|------|---------|------------------------|
+| `c29` | $29 | $35 |
+| `c99` | $99 | $125 |
+| `c499` | $499 | $700 |
+
+Overage past the included amount bills at list rates. Pass `commit: "c29"` (or `c99`/`c499`) to `POST /v1/billing/checkout`, or pick a tier at [/subscriptions](/subscriptions).
 
 ## Invoice basis
 

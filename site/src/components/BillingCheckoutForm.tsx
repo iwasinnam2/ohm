@@ -5,7 +5,7 @@ import Link from "next/link";
 
 const KEY_STORAGE = "ohm_api_key";
 
-export function BillingCheckoutForm() {
+export function BillingCheckoutForm({ commit = "" }: { commit?: string }) {
   const [organisation, setOrganisation] = useState("");
   const [email, setEmail] = useState("");
   const [termsAck, setTermsAck] = useState(false);
@@ -24,6 +24,7 @@ export function BillingCheckoutForm() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           plan: "payg",
+          commit,
           label: organisation,
           email,
           terms_ack: termsAck,
@@ -129,8 +130,11 @@ export function BillingCheckoutForm() {
       </button>
       <p className="billing-form__note">
         After you add a card, one button adds withOhm to Cursor — seat wired, no
-        JSON to assemble. Membership is $0; cache and web-fetch meters invoice
-        monthly. Model tokens stay on your provider keys (BYOK).{" "}
+        JSON to assemble.{" "}
+        {commit
+          ? "Your commit tier bills monthly with included metered usage each cycle; overage invoices at list rates."
+          : "Membership is $0; cache and web-fetch meters invoice monthly."}{" "}
+        Model tokens stay on your provider keys (BYOK).{" "}
         <Link href="/docs/pricing">Pricing</Link>
       </p>
     </form>

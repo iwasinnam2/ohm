@@ -52,9 +52,11 @@ class Settings(BaseSettings):
         "OhmBot/0.1 (+https://www.withohm.dev/docs/legal; public-retrieval; respect-robots)"
     )
 
-    at_price_per_1k_tokens_miss: float = 0.002
-    at_price_per_1k_tokens_hit: float = 0.0005
-    at_price_per_fetch: float = 0.001
+    # Rate card v2 (pricing/rate_card.v2.json) — defaults asserted equal to the
+    # canonical JSON by tests/test_rate_card.py. Env-overridable per deployment.
+    at_price_per_1k_tokens_miss: float = 0.001
+    at_price_per_1k_tokens_hit: float = 0.002
+    at_price_per_fetch: float = 0.003
     at_enterprise_monthly_usd: float = 2500.0
     # When true, env OPENAI/ANTHROPIC keys may fill in if X-Ohm-Upstream-Key is
     # absent. Default OFF: silently burning operator keys for customer traffic
@@ -79,9 +81,21 @@ class Settings(BaseSettings):
     # Recurring seat Price IDs ($0 Intermediate membership recommended)
     stripe_price_payg: str = ""
     stripe_price_enterprise: str = ""
-    # Optional $29 prepaid credit pack — sold via POST /v1/billing/topup
-    # (one-time Checkout; webhook credits the Stripe customer balance)
+    # Retired $29 credit pack (rate card v1) — kept only so in-flight webhooks
+    # from old sessions can still resolve. New prepay is via commit tiers.
     stripe_price_credit_pack: str = ""
+    # Commit tiers (rate card v2): licensed monthly seat Price IDs. Each cycle's
+    # invoice.paid grants the included metered usage as a Stripe billing credit
+    # scoped to metered prices (never offsets the seat fee itself).
+    stripe_price_commit_c29: str = ""
+    stripe_price_commit_c99: str = ""
+    stripe_price_commit_c499: str = ""
+    at_commit_included_usd_c29: float = 35.0
+    at_commit_included_usd_c99: float = 125.0
+    at_commit_included_usd_c499: float = 700.0
+    # Stripe Tax: enable after activating Stripe Tax + origin address in the
+    # dashboard (session creation fails if enabled without dashboard setup).
+    stripe_automatic_tax: bool = False
     # Metered Prices attached to Billing Meters (required for Intermediate in production)
     stripe_price_meter_web_fetch: str = ""
     stripe_price_meter_cache_hit: str = ""

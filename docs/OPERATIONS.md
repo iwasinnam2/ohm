@@ -54,8 +54,8 @@ key) to exercise the keyed money-path steps.
 
 ## Safe-by-default site
 
-The site's billing proxy routes (`/api/billing/checkout`, `/api/billing/topup`)
-default to `https://api.withohm.dev` when `OHM_API_URL` is unset, so a missing
+The site's billing proxy route (`/api/billing/checkout`) defaults to
+`https://api.withohm.dev` when `OHM_API_URL` is unset, so a missing
 env var can never point production at a loopback address.
 
 ## Remaining intentional local/operator actions
@@ -71,5 +71,10 @@ design, not by accident:
 3. **GoDaddy DNS flip** — pointing `api.withohm.dev` CNAME directly at the
    us-east-1 NLB (then final Global Accelerator teardown). See
    `infra/runbooks/SINGLE_REGION.md`.
-4. **Stripe dashboard changes** — prices, meters, webhook endpoints.
+4. **Stripe dashboard changes** — prices, meters, webhook endpoints. At
+   launch: run `scripts/stripe_create_prices_v2.sh` against live mode, set the
+   `STRIPE_PRICE_*` / `STRIPE_PRICE_COMMIT_*` envs on the cluster, activate
+   Stripe Tax + origin address then set `STRIPE_AUTOMATIC_TAX=true`, and add
+   the `STRIPE_PULSE_KEY` repo secret (restricted read-only key) for the
+   weekly pricing pulse.
 5. **PyPI publishes** of the `ohm-mcp` package (`scripts/sync_ohm_mcp.ps1`).
