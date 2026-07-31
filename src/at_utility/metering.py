@@ -21,6 +21,11 @@ log = logging.getLogger("at_utility.meter")
 # event `identifier` makes replay safe even if the original actually landed.
 STRIPE_METER_DLQ_KEY = "at:global:stripe_meter_dlq"
 
+# Cross-tenant aggregates powering the public savings counter and receipts.
+# Only anonymous totals — never per-tenant data.
+GLOBAL_AGG_HIT_TOKENS_KEY = "at:global:agg:cache_hit_tokens"
+GLOBAL_AGG_RECEIPTS_KEY = "at:global:agg:receipts_minted"
+
 
 @dataclass
 class UsageEvent:
@@ -185,6 +190,11 @@ class Meter:
         await self._bump(tenant, f"{kind}_tokens", float(total_tokens))
         await self._bump(tenant, f"{kind}_usd", billed)
         await self._bump(tenant, "requests", 1.0)
+        if cache_hit and total_tokens > 0:
+            # Anonymous cross-tenant total behind GET /v1/public/stats.
+            await self._store.incr_by_float(
+                GLOBAL_AGG_HIT_TOKENS_KEY, float(total_tokens)
+            )
         synced = False
         if units > 0:
             synced = await self._sync_stripe(
@@ -230,6 +240,21 @@ class Meter:
             stripe_synced=synced,
             billable_units=count,
         )
+
+    async def mark_receipt_minted(self) -> None:
+        await self._store.incr_by_float(GLOBAL_AGG_RECEIPTS_KEY, 1.0)
+
+    async def global_savings(self) -> dict[str, Any]:
+        """Anonymous cross-tenant totals for the public counter — no tenant ids."""
+        hit_raw = await self._store.get(GLOBAL_AGG_HIT_TOKENS_KEY)
+        receipts_raw = await self._store.get(GLOBAL_AGG_RECEIPTS_KEY)
+        hit_tokens = float(hit_raw) if hit_raw is not None else 0.0
+        avoided = (hit_tokens / 1000.0) * self._settings.at_price_per_1k_tokens_miss
+        return {
+            "cache_hit_tokens": hit_tokens,
+            "estimated_upstream_avoided_usd": avoided,
+            "receipts_minted": int(float(receipts_raw)) if receipts_raw else 0,
+        }
 
     async def today_fetches(self, tenant: str) -> float:
         day = _day_stamp()

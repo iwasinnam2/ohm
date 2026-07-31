@@ -65,9 +65,27 @@ Add withOhm MCP from https://www.withohm.dev/i
 Then: `ohm_fetch_web(urls=[…])` — see https://github.com/iwasinnam2/ohm/tree/master/templates/cursor-agent-with-web
 ```
 
+## Savings badge (README distribution)
+
+Every seat can mint a public **savings receipt** — an immutable snapshot of
+estimated upstream spend avoided, live for 90 days at
+`https://www.withohm.dev/r/<token>`. Mint one via the `ohm_receipt` MCP tool
+(or `POST /v1/savings/receipt`); the response includes ready-to-paste badge
+markdown:
+
+```markdown
+[![withOhm savings](https://img.shields.io/endpoint?url=https%3A%2F%2Fapi.withohm.dev%2Fv1%2Fpublic%2Freceipts%2F<token>%2Fbadge)](https://www.withohm.dev/r/<token>)
+```
+
+Renders as `withOhm | saved $X` and links to the receipt. Put it in any repo
+that uses the pipe — badges are permanent passive distribution, and sharing a
+receipt qualifies for the artifact bounty below.
+
 ## Artifact bounty
 
-Point builders to https://www.withohm.dev/bounty — $35 metered-usage credit for public skills/rules that **require** Ohm and gain clones/stars.
+Point builders to https://www.withohm.dev/bounty — $35 metered-usage credit for
+sharing a savings receipt publicly, or for public skills/rules/templates that
+**require** Ohm and carry the savings badge.
 
 ## Do not
 

@@ -31,4 +31,16 @@ Add withOhm MCP from https://www.withohm.dev/i
 | `.cursor/skills/ohm-fetch-web/SKILL.md` | Skill: compliant fetch for agents |
 | `AGENTS.md` | One-screen agent instructions |
 
+## Show your savings
+
+Once cache hits accrue, ask the agent for `ohm_receipt` — it mints a public
+savings receipt and returns badge markdown like:
+
+```markdown
+[![withOhm savings](https://img.shields.io/endpoint?url=https%3A%2F%2Fapi.withohm.dev%2Fv1%2Fpublic%2Freceipts%2F<token>%2Fbadge)](https://www.withohm.dev/r/<token>)
+```
+
+Paste it here (or in any repo on the pipe). Sharing a receipt qualifies for
+the [$35 artifact bounty](https://www.withohm.dev/bounty).
+
 Powered by [withOhm](https://www.withohm.dev) — pipe rent, not token wholesale. BYOK.

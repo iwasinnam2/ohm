@@ -5,7 +5,10 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import re
+import secrets
 import time
+import urllib.parse
 from contextlib import asynccontextmanager
 from typing import Any, AsyncIterator, Optional
 
@@ -414,6 +417,158 @@ async def savings_dashboard(
         "message": (
             "Estimated upstream cost avoided from identical-request cache hits — "
             "not a guaranteed savings promise. Ohm invoice ≠ provider pay-as-you-go."
+        ),
+        "receipt": {
+            "mint": "POST /v1/savings/receipt",
+            "note": (
+                "Mint a public, shareable savings receipt (page + README badge) "
+                "from this snapshot — via the API or the ohm_receipt MCP tool."
+            ),
+        },
+    }
+
+
+# --- Public savings receipts -------------------------------------------------
+# A receipt is an opt-in, immutable snapshot of a tenant's cache savings,
+# stored under an unguessable token. The public payload never contains the
+# tenant id — only the display name the tenant chose at mint time.
+
+RECEIPT_KEY_PREFIX = "at:global:receipt:"
+RECEIPT_TTL_SECONDS = 90 * 86400
+RECEIPT_TOKEN_RE = re.compile(r"[A-Za-z0-9_-]{8,64}")
+PUBLIC_SITE_BASE = "https://www.withohm.dev"
+PUBLIC_API_BASE = "https://api.withohm.dev"
+
+
+def _receipt_links(token: str) -> dict[str, str]:
+    badge_endpoint = f"{PUBLIC_API_BASE}/v1/public/receipts/{token}/badge"
+    badge_image = (
+        "https://img.shields.io/endpoint?url="
+        + urllib.parse.quote(badge_endpoint, safe="")
+    )
+    receipt_url = f"{PUBLIC_SITE_BASE}/r/{token}"
+    return {
+        "receipt_url": receipt_url,
+        "badge_endpoint": badge_endpoint,
+        "badge_image_url": badge_image,
+        "badge_markdown": f"[![withOhm savings]({badge_image})]({receipt_url})",
+    }
+
+
+def _sanitize_display_name(raw: str) -> str:
+    cleaned = "".join(ch for ch in raw if ch.isprintable()).strip()
+    return cleaned[:40]
+
+
+async def _public_rate_limit(request: Request, scope: str) -> None:
+    """IP token bucket for unauthenticated public endpoints."""
+    client_ip = (
+        (request.headers.get("x-forwarded-for") or "").split(",")[0].strip()
+        or (request.client.host if request.client else "")
+        or "unknown"
+    )
+    ok = await state.store.eval_token_bucket(
+        f"at:global:rl:{scope}:{client_ip}",
+        2.0,
+        10.0,
+        time.time(),
+    )
+    if not ok:
+        raise HTTPException(status_code=429, detail="Rate limit exceeded")
+
+
+class ReceiptBody(BaseModel):
+    display_name: str = ""
+
+
+@app.post("/v1/savings/receipt")
+async def mint_savings_receipt(
+    body: ReceiptBody,
+    auth: tuple[str, TenantRecord] = Depends(auth_tenant),
+) -> dict[str, Any]:
+    """Mint a public, shareable savings receipt (immutable snapshot)."""
+    api_key, tenant = auth
+    await rate_limit(api_key, tenant.tenant_id)
+    snap = await state.meter.snapshot(tenant.tenant_id)
+    hit_tok = float(snap.get("cache_hit_tokens") or 0)
+    avoided_usd = (hit_tok / 1000.0) * state.settings.at_price_per_1k_tokens_miss
+    token = secrets.token_urlsafe(12)
+    display = _sanitize_display_name(body.display_name) or "an anonymous workspace"
+    receipt = {
+        "token": token,
+        "display_name": display,
+        "created_at": int(time.time()),
+        "period": "all-time",
+        "cache_hit_tokens": hit_tok,
+        "cache_hit_ratio": snap.get("cache_hit_ratio"),
+        "requests": snap.get("requests"),
+        "estimated_upstream_avoided_usd": avoided_usd,
+        "estimate_only": True,
+        # Internal only — stripped from the public view. Kept so abuse can be
+        # traced back to the minting tenant.
+        "_tenant": tenant.tenant_id,
+    }
+    await state.store.set(
+        RECEIPT_KEY_PREFIX + token,
+        json.dumps(receipt),
+        ttl_seconds=RECEIPT_TTL_SECONDS,
+    )
+    await state.meter.mark_receipt_minted()
+    public = {k: v for k, v in receipt.items() if not k.startswith("_")}
+    return {
+        "receipt": public,
+        **_receipt_links(token),
+        "note": (
+            "Receipt is public at receipt_url for 90 days. Share it or drop "
+            "badge_markdown into a README — estimated savings, not a promise."
+        ),
+    }
+
+
+async def _load_public_receipt(token: str) -> dict[str, Any]:
+    if not RECEIPT_TOKEN_RE.fullmatch(token or ""):
+        raise HTTPException(status_code=404, detail="Receipt not found")
+    raw = await state.store.get(RECEIPT_KEY_PREFIX + token)
+    if not raw:
+        raise HTTPException(status_code=404, detail="Receipt not found")
+    receipt = json.loads(raw)
+    return {k: v for k, v in receipt.items() if not k.startswith("_")}
+
+
+@app.get("/v1/public/receipts/{token}")
+async def public_receipt(token: str, request: Request) -> dict[str, Any]:
+    """Public receipt view — no auth, no tenant data beyond the display name."""
+    await _public_rate_limit(request, "receipt")
+    receipt = await _load_public_receipt(token)
+    return {"receipt": receipt, **_receipt_links(token)}
+
+
+@app.get("/v1/public/receipts/{token}/badge")
+async def public_receipt_badge(token: str, request: Request) -> dict[str, Any]:
+    """Shields.io custom-endpoint schema for README badges."""
+    await _public_rate_limit(request, "receipt")
+    receipt = await _load_public_receipt(token)
+    avoided = float(receipt.get("estimated_upstream_avoided_usd") or 0)
+    return {
+        "schemaVersion": 1,
+        "label": "withOhm",
+        "message": f"saved ${avoided:,.2f}",
+        "color": "orange",
+        "cacheSeconds": 3600,
+    }
+
+
+@app.get("/v1/public/stats")
+async def public_stats(request: Request) -> dict[str, Any]:
+    """Anonymous cross-tenant savings counter for the site."""
+    await _public_rate_limit(request, "stats")
+    agg = await state.meter.global_savings()
+    return {
+        **agg,
+        "estimate_only": True,
+        "message": (
+            "Estimated upstream spend avoided across all withOhm tenants via "
+            "identical-request cache replay."
         ),
     }
 

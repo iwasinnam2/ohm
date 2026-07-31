@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { OhmMark } from "@/components/OhmMark";
+import { formatUsd, getPublicStats } from "@/lib/publicApi";
 
 const BOARD = [
   {
@@ -46,7 +47,8 @@ const BOARD = [
   },
 ] as const;
 
-export default function HomePage() {
+export default async function HomePage() {
+  const stats = await getPublicStats();
   return (
     <>
       <section className="hero">
@@ -61,6 +63,13 @@ export default function HomePage() {
           and more over MCP, bring your own provider keys (BYOK), and pay
           metered rates on a $0 Intermediate seat.
         </p>
+        {stats && stats.estimated_upstream_avoided_usd > 0 ? (
+          <p className="hero__promise">
+            Tenants have avoided an estimated{" "}
+            <strong>{formatUsd(stats.estimated_upstream_avoided_usd)}</strong>{" "}
+            of upstream model spend via prompt replay.
+          </p>
+        ) : null}
         <div className="hero__cta cta-row">
           <Link href="/subscriptions" className="btn btn--primary">
             Explore subscriptions

@@ -117,6 +117,13 @@ export default function BillingSuccessPage() {
       </p>
 
       <p className="postpay__cta-note">
+        Once cache hits accrue, ask your agent for <code>ohm_receipt</code> —
+        it mints a public savings receipt (page + README badge) you can share.
+        Sharing one qualifies for the{" "}
+        <Link href="/bounty">$35 artifact bounty</Link>.
+      </p>
+
+      <p className="postpay__cta-note">
         Next: <Link href="/docs/quickstart">Quickstart</Link>
         {" · "}
         <Link href="/connections">Connect other tools</Link>
