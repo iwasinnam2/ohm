@@ -67,7 +67,10 @@ design, not by accident:
    resources. State is in the configured backend; any machine with AWS creds
    works.
 2. **Secret rotations** — Secrets Manager values and the `AT_RS_EDGE_SECRET`
-   Kubernetes secret.
+   Kubernetes secret. For the live Stripe key specifically: roll it in the
+   dashboard, then run `scripts/rotate_stripe_key.ps1` (hidden prompt — the
+   key never touches chat, shell history, or disk; verifies against Stripe,
+   patches the cluster, restarts, and smoke-tests live checkout).
 3. **GoDaddy DNS flip** — pointing `api.withohm.dev` CNAME directly at the
    us-east-1 NLB (then final Global Accelerator teardown). See
    `infra/runbooks/SINGLE_REGION.md`.
