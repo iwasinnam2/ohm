@@ -33,7 +33,7 @@ cursor://anysphere.cursor-deeplink/mcp/install?name=ohm&config=<base64>
 Install once (slim client — no gateway stack):
 
 ```powershell
-pip install ohm-mcp
+pip install withohm-mcp
 # monorepo dev alternative: pip install -e ".[mcp]"
 ```
 

@@ -1,4 +1,4 @@
-# ohm-mcp
+# withohm-mcp
 
 Slim stdio MCP server for [withOhm](https://www.withohm.dev): prompt cache
 replay, dynamic model switching (BYOK), and compliant public-web fetch as
@@ -7,7 +7,7 @@ Cursor tools — without installing the full gateway stack.
 ## Install
 
 ```bash
-pip install ohm-mcp
+pip install withohm-mcp
 ```
 
 ## Cursor attach

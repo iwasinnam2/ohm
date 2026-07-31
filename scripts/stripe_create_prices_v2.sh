@@ -15,9 +15,9 @@
 #   - Enterprise $2,500/mo seat
 # All Prices carry tax_behavior=exclusive (Stripe Tax adds on top).
 #
-# Usage (Stripe CLI logged into the target mode — sandbox now, live at launch):
-#   bash scripts/stripe_create_meters.sh        # once, if meters do not exist
-#   bash scripts/stripe_create_prices_v2.sh
+# Usage (Stripe CLI logged in; meters are created here if missing):
+#   bash scripts/stripe_create_prices_v2.sh              # test mode
+#   STRIPE_LIVE=1 bash scripts/stripe_create_prices_v2.sh  # LIVE mode
 set -euo pipefail
 
 if ! command -v stripe >/dev/null 2>&1; then
@@ -25,37 +25,58 @@ if ! command -v stripe >/dev/null 2>&1; then
   exit 1
 fi
 
+LIVE_FLAG=()
+if [[ "${STRIPE_LIVE:-}" == "1" ]]; then
+  LIVE_FLAG=(--live)
+  echo "=== LIVE MODE — creating real billing objects ==="
+fi
+
+s() { stripe "$@" "${LIVE_FLAG[@]}"; }
+
 extract_id() {
-  python -c "import sys,json; print(json.load(sys.stdin)['id'])"
+  python -c "
+import sys, json
+data = json.load(sys.stdin)
+if 'id' not in data:
+    print(json.dumps(data), file=sys.stderr)
+    raise SystemExit('stripe returned an error object (see above)')
+print(data['id'])
+"
 }
 
-meter_id_for_event() {
-  # $1 = meter event_name → resolve the active Billing Meter id
-  stripe billing meters list --limit 100 | python -c "
+ensure_meter() {
+  # $1 = event_name, $2 = display name → resolve or create the Billing Meter
+  local id
+  id=$(s billing meters list --limit 100 | python -c "
 import sys, json
 event = '$1'
 data = json.load(sys.stdin)
 for m in data.get('data', []):
     if m.get('event_name') == event and m.get('status') == 'active':
         print(m['id']); break
-else:
-    raise SystemExit(f'no active meter for event {event} — run scripts/stripe_create_meters.sh first')
-"
+")
+  if [[ -z "$id" ]]; then
+    id=$(s billing meters create \
+      --display-name "$2" \
+      --event-name "$1" \
+      -d "default_aggregation[formula]=sum" | extract_id)
+  fi
+  echo "$id"
 }
 
-echo "Resolving Billing Meters..."
-HIT_METER=$(meter_id_for_event ohm_cache_hit)
-MISS_METER=$(meter_id_for_event ohm_cache_miss)
-FETCH_METER=$(meter_id_for_event ohm_web_fetch)
+echo "Resolving Billing Meters (created if missing)..."
+HIT_METER=$(ensure_meter ohm_cache_hit "withOhm cache hit (per 1k tokens)")
+MISS_METER=$(ensure_meter ohm_cache_miss "withOhm cache miss (per 1k tokens)")
+FETCH_METER=$(ensure_meter ohm_web_fetch "withOhm web fetch (per URL)")
 echo "HIT_METER=$HIT_METER MISS_METER=$MISS_METER FETCH_METER=$FETCH_METER"
 
 echo "Creating v2 metered Prices (tax exclusive)..."
-HIT_PROD=$(stripe products create \
+HIT_PROD=$(s products create \
   --name "withOhm cache hit (v2)" \
   --description "Redis identical-request replay rent (per 1k tokens)" \
   -d "metadata[meter]=ohm_cache_hit" \
   -d "metadata[rate_card]=2" | extract_id)
-HIT_PRICE=$(stripe prices create \
+HIT_PRICE=$(s prices create \
   --product "$HIT_PROD" \
   --currency usd \
   -d "recurring[interval]=month" \
@@ -66,12 +87,12 @@ HIT_PRICE=$(stripe prices create \
   -d "tax_behavior=exclusive" \
   -d "metadata[rate_card]=2" | extract_id)
 
-MISS_PROD=$(stripe products create \
+MISS_PROD=$(s products create \
   --name "withOhm cache miss (v2)" \
   --description "Pipe proxy fee on cache miss (per 1k tokens)" \
   -d "metadata[meter]=ohm_cache_miss" \
   -d "metadata[rate_card]=2" | extract_id)
-MISS_PRICE=$(stripe prices create \
+MISS_PRICE=$(s prices create \
   --product "$MISS_PROD" \
   --currency usd \
   -d "recurring[interval]=month" \
@@ -82,12 +103,12 @@ MISS_PRICE=$(stripe prices create \
   -d "tax_behavior=exclusive" \
   -d "metadata[rate_card]=2" | extract_id)
 
-FETCH_PROD=$(stripe products create \
+FETCH_PROD=$(s products create \
   --name "withOhm web fetch (v2)" \
   --description "Compliant URL ingest (per URL)" \
   -d "metadata[meter]=ohm_web_fetch" \
   -d "metadata[rate_card]=2" | extract_id)
-FETCH_PRICE=$(stripe prices create \
+FETCH_PRICE=$(s prices create \
   --product "$FETCH_PROD" \
   --currency usd \
   -d "recurring[interval]=month" \
@@ -99,12 +120,12 @@ FETCH_PRICE=$(stripe prices create \
   -d "metadata[rate_card]=2" | extract_id)
 
 echo "Creating \$0 Intermediate membership (v2, tax exclusive)..."
-PAYG_PROD=$(stripe products create \
+PAYG_PROD=$(s products create \
   --name "withOhm Intermediate membership (v2)" \
   --description "Card-on-file pipe access; cache + web-fetch metered separately" \
   -d "metadata[billing_model]=seat_plus_meters" \
   -d "metadata[rate_card]=2" | extract_id)
-PAYG_PRICE=$(stripe prices create \
+PAYG_PRICE=$(s prices create \
   --product "$PAYG_PROD" \
   --unit-amount 0 \
   --currency usd \
@@ -116,14 +137,14 @@ echo "Creating commit tiers c29 / c99 / c499..."
 create_commit() {
   # $1 = tier id, $2 = usd/month cents, $3 = included usd
   local prod price
-  prod=$(stripe products create \
+  prod=$(s products create \
     --name "withOhm commit $1" \
     --description "\$$(( $2 / 100 ))/mo commit — \$$3 metered usage included each cycle" \
     -d "metadata[billing_model]=commit_tier" \
     -d "metadata[commit_tier]=$1" \
     -d "metadata[included_usd]=$3" \
     -d "metadata[rate_card]=2" | extract_id)
-  price=$(stripe prices create \
+  price=$(s prices create \
     --product "$prod" \
     --unit-amount "$2" \
     --currency usd \
@@ -139,12 +160,12 @@ C99_PRICE=$(create_commit c99 9900 125)
 C499_PRICE=$(create_commit c499 49900 700)
 
 echo "Creating Enterprise \$2,500/mo (v2, tax exclusive)..."
-ENT_PROD=$(stripe products create \
+ENT_PROD=$(s products create \
   --name "withOhm Enterprise (v2)" \
   --description "Monthly enterprise seat / negotiated bundles" \
   -d "metadata[billing_model]=subscription_seat" \
   -d "metadata[rate_card]=2" | extract_id)
-ENT_PRICE=$(stripe prices create \
+ENT_PRICE=$(s prices create \
   --product "$ENT_PROD" \
   --unit-amount 250000 \
   --currency usd \

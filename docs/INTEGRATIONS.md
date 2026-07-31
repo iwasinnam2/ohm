@@ -7,7 +7,7 @@ Live version with pre-filled configs: [withohm.dev/connections](https://www.with
 ## Before any host
 
 1. Get a key: the $0 Intermediate seat at [withohm.dev/billing/intermediate](https://www.withohm.dev/billing/intermediate) issues an `sk-at-…` key at checkout.
-2. Install the server once: `pip install ohm-mcp` (monorepo dev: `pip install -e ".[mcp]"`).
+2. Install the server once: `pip install withohm-mcp` (monorepo dev: `pip install -e ".[mcp]"`).
 
 Every config is the same idea: run `ohm-mcp`, hand it `OHM_API_KEY`. Optional: `OHM_UPSTREAM_KEY` (BYOK provider key for cache misses), `OHM_BASE_URL` (defaults to `https://api.withohm.dev/v1`).
 
