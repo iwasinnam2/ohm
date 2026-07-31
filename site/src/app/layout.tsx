@@ -93,6 +93,20 @@ export default function RootLayout({
               <Link href="/docs/security">Security</Link>
               <Link href="/docs/legal">Compliance</Link>
               <Link href="/status">Status</Link>
+              <a
+                href="https://github.com/iwasinnam2/ohm"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                GitHub
+              </a>
+              <a
+                href="https://github.com/iwasinnam2/ohm/discussions"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Discussions
+              </a>
             </nav>
           </footer>
         </div>

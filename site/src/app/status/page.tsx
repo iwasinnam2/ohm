@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { formatUsd, getPublicStats } from "@/lib/publicApi";
 
 export const metadata: Metadata = {
   title: "Status",
@@ -27,7 +28,8 @@ const COMPONENTS = [
   },
 ] as const;
 
-export default function StatusPage() {
+export default async function StatusPage() {
+  const stats = await getPublicStats();
   return (
     <>
       <header className="page-head">
@@ -36,6 +38,17 @@ export default function StatusPage() {
           Live component view for withOhm. Also at{" "}
           <code>status.withohm.dev</code>.
         </p>
+        {stats && stats.estimated_upstream_avoided_usd > 0 ? (
+          <p>
+            Tenants have avoided an estimated{" "}
+            <strong>
+              {formatUsd(stats.estimated_upstream_avoided_usd)}
+            </strong>{" "}
+            of upstream model spend via prompt replay —{" "}
+            {Math.round(stats.cache_hit_tokens).toLocaleString("en-US")}{" "}
+            tokens served from cache instead of re-billing providers.
+          </p>
+        ) : null}
       </header>
       <ul className="status-list">
         {COMPONENTS.map((c) => (

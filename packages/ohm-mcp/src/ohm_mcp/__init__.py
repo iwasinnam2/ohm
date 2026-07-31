@@ -120,8 +120,32 @@ async def ohm_models() -> str:
 
 @mcp.tool()
 async def ohm_savings() -> str:
-    """Return the cache savings snapshot: replayed prompts and estimated spend avoided (GET /v1/savings)."""
+    """Return the cache savings snapshot: replayed prompts and estimated spend avoided (GET /v1/savings). Use ohm_receipt to mint a shareable public receipt of these savings."""
     return await _get("/savings")
+
+
+@mcp.tool()
+async def ohm_receipt(display_name: str = "") -> str:
+    """
+    Mint a public, shareable savings receipt (POST /v1/savings/receipt).
+
+    Returns a public page URL (withohm.dev/r/<token>) plus a shields.io
+    README badge snippet showing estimated upstream spend avoided. The
+    receipt is an immutable snapshot, live for 90 days, and exposes only
+    the display name — never the tenant id or API key.
+
+    Args:
+      display_name: Optional public name on the receipt (e.g. team or
+        project name). Defaults to "an anonymous workspace".
+    """
+    base, _, _ = _cfg()
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        res = await client.post(
+            f"{base}/savings/receipt",
+            headers=_headers(),
+            json={"display_name": display_name},
+        )
+        return res.text
 
 
 @mcp.tool()
