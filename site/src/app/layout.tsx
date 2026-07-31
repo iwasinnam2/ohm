@@ -33,7 +33,7 @@ export const revalidate = 300;
 const siteUrl = "https://www.withohm.dev";
 
 const description =
-  "AI public API model switching, prompt caching and compliant web browsing — one OpenAI-compatible pipe. Attach it to Cursor over MCP, bring your own provider keys (BYOK), and pay metered rates on a $0 Intermediate seat.";
+  "Interconnectedness and accessibility. Model switching, prompt caching and compliant web browsing — one OpenAI-compatible pipe. Connect it to Cursor, Claude Code, VS Code and more over MCP, bring your own provider keys (BYOK), and pay metered rates on a $0 Intermediate seat.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
@@ -71,15 +71,20 @@ export default function RootLayout({
       className={`${spaceGrotesk.variable} ${sourceSans.variable} ${plexMono.variable}`}
     >
       <body>
+        <a href="#main-content" className="skip-link">
+          Skip to content
+        </a>
         <div className="atmosphere" aria-hidden="true">
           <div className="atmosphere__current" />
         </div>
         <div className="shell">
           <SiteHeader />
-          <main className="shell__main">{children}</main>
+          <main id="main-content" className="shell__main">
+            {children}
+          </main>
           <footer className="site-footer">
             <span>
-              <strong>withOhm</strong> — AI traffic utility
+              <strong>withOhm</strong> — interconnectedness and accessibility
             </span>
             <nav className="site-footer__legal" aria-label="Legal">
               <Link href="/docs/terms">Terms</Link>

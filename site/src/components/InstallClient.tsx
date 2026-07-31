@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import { CopyBlock } from "@/components/CopyBlock";
 import { OhmMark } from "@/components/OhmMark";
 import { cursorOhmInstallHref } from "@/lib/cursorMcp";
 
@@ -9,23 +10,12 @@ const SHARE_LINE = "Add withOhm MCP from https://www.withohm.dev/i";
 
 export function InstallClient() {
   const [apiKey, setApiKey] = useState("");
-  const [copied, setCopied] = useState(false);
 
   const href = useMemo(() => {
     const key = apiKey.trim();
     if (!key) return null;
     return cursorOhmInstallHref({ apiKey: key });
   }, [apiKey]);
-
-  async function copyLine() {
-    try {
-      await navigator.clipboard.writeText(SHARE_LINE);
-      setCopied(true);
-      window.setTimeout(() => setCopied(false), 2000);
-    } catch {
-      /* ignore */
-    }
-  }
 
   return (
     <section className="steal">
@@ -34,17 +24,12 @@ export function InstallClient() {
       <h1 className="steal__title">withOhm</h1>
       <p className="steal__lede">
         One attach adds prompt cache replay and compliant public-web context to
-        Cursor over MCP. BYOK for model calls; metered rates on a $0
-        Intermediate seat.
+        Cursor over MCP. Bring your own provider keys (BYOK) for model calls;
+        metered rates on a $0 Intermediate seat.
       </p>
 
-      <pre className="steal__share" tabIndex={0}>
-        {SHARE_LINE}
-      </pre>
+      <CopyBlock text={SHARE_LINE} label="share line" compact />
       <div className="steal__row">
-        <button type="button" className="btn btn--ghost" onClick={copyLine}>
-          {copied ? "Copied" : "Copy line"}
-        </button>
         <Link className="btn btn--primary" href="/billing/intermediate">
           Get a free seat
         </Link>
@@ -72,6 +57,8 @@ export function InstallClient() {
       )}
 
       <p className="steal__foot">
+        <Link href="/connections">Other tools (Claude Code, VS Code…)</Link>
+        {" · "}
         <Link href="/fetch">Try the fetch demo</Link>
         {" · "}
         <Link href="/docs/quickstart">Quickstart</Link>

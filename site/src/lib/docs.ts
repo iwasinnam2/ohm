@@ -20,6 +20,21 @@ export const DOC_INDEX: DocMeta[] = [
     description: "Compliant fetch for agents — attach withOhm in Cursor.",
   },
   {
+    slug: "integrations",
+    title: "Integrations",
+    description: "Connect Cursor, Claude Code, VS Code, Windsurf, and Zed.",
+  },
+  {
+    slug: "commands",
+    title: "Command catalog",
+    description: "All seven MCP tools and their skills, with examples.",
+  },
+  {
+    slug: "optimized-usage",
+    title: "Optimized usage",
+    description: "Cache-first prompting, fetch with intent, read your meters.",
+  },
+  {
     slug: "examples",
     title: "Drop-in examples",
     description: "OpenAI-compatible API — no new protocol.",

@@ -43,6 +43,12 @@ Only if the deeplink isn’t available:
 | `ohm_fetch_web` | Compliant URL fetch → redacted **markdown** or **JSON** context |
 | `ohm_usage` | Usage snapshot (`GET /v1/usage`) |
 | `ohm_chat` | Chat through Ohm; optional `fetch_urls` for web context |
+| `ohm_savings` | Cache savings snapshot (`GET /v1/savings`) |
+| `ohm_models` | Routable model ids (`GET /v1/models`) |
+| `ohm_providers` | Upstream provider / failover status (`GET /v1/providers`) |
+| `ohm_policy` | Allowed web-fetch purposes (`GET /v1/compliance/policy`) |
+
+Full parameters and example prompts for every tool: [command catalog](/docs/commands). Other hosts (Claude Code, VS Code, Windsurf, Zed): [integrations](/docs/integrations).
 
 ### `ohm_fetch_web`
 
