@@ -2,8 +2,12 @@
  * Rates come from the canonical rate card (pricing/rate_card.v2.json).
  * Python config defaults are asserted equal by tests/test_rate_card.py —
  * change the JSON (by issuing a new version) and everything follows.
+ *
+ * ./rate_card.v2.json is a committed copy of pricing/rate_card.v2.json:
+ * Vercel deploys upload only site/, so the site cannot import outside it.
+ * When issuing a new rate card version, re-copy the JSON here.
  */
-import rateCard from "../../../pricing/rate_card.v2.json";
+import rateCard from "./rate_card.v2.json";
 
 export const RATE_CARD_VERSION = rateCard.version;
 
