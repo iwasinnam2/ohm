@@ -78,4 +78,5 @@ Complimentary `design_partner` plan (admin issue): time-boxed + soft USD quota. 
 
 `estimated_upstream_avoided_usd` aliases the provider figure. Always
 `estimate_only: true`. Not guaranteed savings. Ohm’s invoice ≠ provider token bills.
-See [GEM_POSITION.md](GEM_POSITION.md).
+See [GEM_POSITION.md](GEM_POSITION.md). Enterprise governance (SSO, ledger,
+org policy): [ENTERPRISE.md](ENTERPRISE.md) · [ENTERPRISE_CHAOS.md](ENTERPRISE_CHAOS.md).

@@ -43,6 +43,8 @@ class CacheStore(Protocol):
     async def list_push(self, key: str, value: str) -> int: ...
     async def list_pop(self, key: str) -> Optional[str]: ...
     async def list_len(self, key: str) -> int: ...
+    async def list_range(self, key: str, start: int, end: int) -> list[str]: ...
+    async def list_trim(self, key: str, start: int, end: int) -> None: ...
     async def scan_keys(self, pattern: str, limit: int = 10_000) -> list[str]: ...
     async def ping(self) -> bool: ...
     async def close(self) -> None: ...
@@ -132,6 +134,13 @@ class RedisStore:
     async def list_len(self, key: str) -> int:
         return int(await self._write.llen(key))
 
+    async def list_range(self, key: str, start: int, end: int) -> list[str]:
+        items = await self._write.lrange(key, start, end)
+        return list(items or [])
+
+    async def list_trim(self, key: str, start: int, end: int) -> None:
+        await self._write.ltrim(key, start, end)
+
     async def scan_keys(self, pattern: str, limit: int = 10_000) -> list[str]:
         out: list[str] = []
         async for key in self._write.scan_iter(match=pattern, count=500):
@@ -198,10 +207,30 @@ class MemoryStore:
     async def list_len(self, key: str) -> int:
         return len(self._lists.get(key, []))
 
+    async def list_range(self, key: str, start: int, end: int) -> list[str]:
+        items = self._lists.get(key, [])
+        n = len(items)
+        if n == 0:
+            return []
+        # Redis-style negative indexes
+        def _idx(i: int) -> int:
+            return n + i if i < 0 else i
+
+        a = max(0, _idx(start))
+        b = min(n - 1, _idx(end))
+        if a > b:
+            return []
+        return list(items[a : b + 1])
+
+    async def list_trim(self, key: str, start: int, end: int) -> None:
+        items = await self.list_range(key, start, end)
+        self._lists[key] = items
+
     async def scan_keys(self, pattern: str, limit: int = 10_000) -> list[str]:
         import fnmatch
 
-        return [k for k in list(self._data) if fnmatch.fnmatch(k, pattern)][:limit]
+        keys = list(self._data) + list(self._lists)
+        return [k for k in keys if fnmatch.fnmatch(k, pattern)][:limit]
 
     async def ping(self) -> bool:
         return True

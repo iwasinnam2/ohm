@@ -52,7 +52,7 @@ Repo: https://github.com/iwasinnam2/ohm · Plugin: `ohm` / withOhm
 3. Cold MCP: install from git, set `OHM_API_KEY`, call three tools
 4. Refresh https://cursor.com/marketplace/publish with [`MARKETPLACE.md`](MARKETPLACE.md)
 5. Update https://cursor.directory per [`CURSOR_DIRECTORY.md`](CURSOR_DIRECTORY.md)
-6. If silent >10 days: email marketplace@cursor.com
+6. If silent >10 days: email marketplace-publishing@cursor.com; also https://cursor.directory/plugins/new
 
 ## User DNS (outside repo)
 

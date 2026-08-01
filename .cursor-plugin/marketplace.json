@@ -5,15 +5,24 @@
     "email": "partners@withohm.dev"
   },
   "metadata": {
-    "description": "withOhm — compliant fetch for agents: prompt cache replay, ohm_fetch_web, BYOK OpenAI-compatible ingress."
+    "description": "withOhm — AI traffic control plane (chaos governor): prompt replay, compliant web ingest, org ledger, Agent Shell. BYOK. Cursor optional."
   },
   "plugins": [
     {
       "name": "ohm",
       "source": ".",
       "category": "Infrastructure",
-      "tags": ["caching", "web-fetch", "gateway", "metering", "byok"],
-      "description": "Compliant fetch for agents: prompt cache replay, ohm_fetch_web, BYOK OpenAI-compatible ingress. Use when agents need public URL context or pipe rent instead of token wholesale."
+      "tags": [
+        "caching",
+        "web-fetch",
+        "gateway",
+        "metering",
+        "byok",
+        "enterprise",
+        "finops",
+        "sso"
+      ],
+      "description": "AI traffic control plane: Redis prompt replay, compliant web ingest, SSO org ledger, Agent Shell. BYOK OpenAI-compatible ingress. Cursor optional."
     }
   ]
 }

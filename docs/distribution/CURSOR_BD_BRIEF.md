@@ -1,7 +1,11 @@
 # Cursor / Anysphere BD brief — withOhm
 
+> **Status:** Optional compatibility channel. Company thesis is enterprise
+> chaos governance ([ENTERPRISE_CHAOS.md](../ENTERPRISE_CHAOS.md)) — Cursor
+> is not required for distribution or product legitimacy.
+
 **Audience:** Cursor Marketplace reviewers, partnerships, agent-infra.  
-**Ask:** Feature/list withOhm and open a design-partner pilot conversation.  
+**Ask:** Feature/list withOhm as an optional MCP client.  
 **Not asking:** Replace Composer billing, wholesale our tokens, or native embed on day one.
 
 Companion: [GEM_POSITION.md](../GEM_POSITION.md) · Marketplace draft: [../listings/MARKETPLACE.md](../listings/MARKETPLACE.md)

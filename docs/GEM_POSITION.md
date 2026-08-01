@@ -1,60 +1,60 @@
 # Gem position — withOhm
 
-Canonical wedge for product, GTM, and Cursor Marketplace / BD.
+Canonical wedge for product and GTM. Enterprise framing: [ENTERPRISE_CHAOS.md](ENTERPRISE_CHAOS.md).
 
 ## The inefficiency
 
-Agent products (Cursor included) scale context across consecutive turns: tool
-results, retrieved files, compacted history. Naive routing **re-pays prefill**
-on every call. Compaction / “context summarised” is a pressure valve — it does
-not remove the economic waste of identical or near-mechanical repeats
-(retries, loops, CI prompt suites, stable system+file pairs).
+Agent products scale context across consecutive turns: tool results, retrieved
+files, compacted history. Naive routing **re-pays prefill** on every call.
+Compaction is a pressure valve — it does not remove waste from identical or
+near-mechanical repeats (retries, loops, CI prompt suites).
 
 ## The gem
 
-withOhm is the **tollbooth on wasted and repeated inference**:
+withOhm is the **tollbooth on wasted and repeated inference**, embedded in a
+broader **chaos governor** (SSO, compliance, clean ledger, Agent Shell):
 
 | Layer | Role |
 |-------|------|
-| Labs (OpenAI / Anthropic / xAI) | Generation + model billing (BYOK) |
-| Cursor / agent hosts | Cockpit + context assembly |
-| **withOhm** | Metered pipe: exact-match Redis replay + compliant web ingest |
+| Labs | Generation + model billing (BYOK or managed pool) |
+| Any client | Cockpit (Agent Shell, custom apps, optional Cursor/VS Code) |
+| **withOhm** | Metered pipe + governance: replay, compliant ingest, ledger |
 
-We do **not** sell bigger context windows, wholesale tokens, or an IDE.
-We rent plumbing that makes context scaling *economically* survivable.
+We do **not** sell bigger context windows or wholesale tokens on Intermediate.
+We rent plumbing that makes context scaling economically survivable — and
+make enterprise AI spend **governable**.
 
 ## Promise
 
-> Change one base URL (or one Cursor attach). Keep your keys and SDKs. Gain
-> prompt replay, a clearer pipe, compliant web context — and a bill that rents
-> the plumbing, not the model.
+> Point any OpenAI-compatible client (or the Ohm Agent Shell) at one base URL.
+> Keep your keys or use a managed pool. Gain prompt replay, compliant web
+> context, and a clean ledger — rent the plumbing, govern the chaos.
 
-## Dual savings ledger (proof contract)
+## Dual savings + clean ledger
 
-`GET /v1/savings` / receipts / `ohm_savings`:
+`GET /v1/savings` / receipts:
 
 | Field | Meaning |
 |-------|---------|
-| `estimated_provider_avoided_usd` | Hit tokens × blended provider list rate (`AT_PROVIDER_AVOIDED_PER_1K_TOKENS`, default $15/M) |
-| `pipe_rent_usd` | What Ohm metered (hits + misses + fetches) |
-| `roi_ratio` | Provider avoided ÷ pipe rent (“$X saved per $1 of pipe”) |
-| `estimate_only` | Always true — not a guarantee |
+| `estimated_provider_avoided_usd` | Hit tokens × blended provider list rate |
+| `pipe_rent_usd` | What Ohm metered |
+| `roi_ratio` | Provider avoided ÷ pipe rent |
+| `estimate_only` | Always true on blended estimates |
 
-`estimated_upstream_avoided_usd` aliases the provider figure for backward
-compatibility. Badges and public receipts use that hero number.
+Org FinOps export (`GET /v1/org/ledger/export`) attributes immutable usage
+events by **cost center** — the corporate clean ledger.
 
 ## Non-goals
 
-- Semantic / fuzzy cache (near-miss → refunds)
-- PAYG reseller of OpenAI/Anthropic tokens on self-serve
-- Replacing Cursor model billing or Composer UX
+- Semantic / fuzzy cache
+- PAYG reseller of lab tokens on Intermediate
 - Guaranteed savings SLAs
+- Cursor Marketplace as the company thesis
 
-## Cursor attention (two layers)
+## Distribution (priority order)
 
-1. **Users** — Marketplace, Forum, receipts: agents burn less upstream $.
-2. **Company** — [CURSOR_BD_BRIEF.md](distribution/CURSOR_BD_BRIEF.md) + refreshed
-   Marketplace listing for employee review: platform economics without Cursor
-   owning cache middleware or compliance browse.
+1. Enterprise apply + Agent Shell demo + OpenAI-compatible ingress  
+2. Indie / design-partner proof of meter  
+3. Optional MCP / directory listings (compatibility)
 
-Vision ledger: [VISION.md](VISION.md). Pricing honesty: [PRICING.md](PRICING.md).
+Vision: [VISION.md](VISION.md). Pricing: [PRICING.md](PRICING.md).

@@ -116,6 +116,26 @@ class Settings(BaseSettings):
     at_design_partner_soft_quota_usd: float = 50.0
     at_design_partner_request_cap: int = 100_000
 
+    # OIDC SSO (org console). Leave blank to use AT_SSO_DEV_SECRET for local.
+    at_oidc_issuer: str = ""
+    at_oidc_client_id: str = ""
+    at_oidc_client_secret: str = ""
+    at_oidc_authorize_url: str = ""
+    at_oidc_token_url: str = ""
+    at_oidc_userinfo_url: str = ""
+    at_oidc_scopes: str = "openid profile email"
+    at_oidc_redirect_uri: str = "https://www.withohm.dev/org/callback"
+    at_oidc_allow_unverified_id_token: bool = False
+    # Local/dev SSO shared secret (never set in production).
+    at_sso_dev_secret: str = ""
+    # Enterprise SKU delivery flags (catalog promises made real).
+    at_enterprise_audit_logs: bool = True
+    at_enterprise_managed_keys: bool = True
+    at_enterprise_sla_note: str = (
+        "Target 99.9% monthly API availability; credits negotiated per MSA. "
+        "No contractual SLA until countersigned order form."
+    )
+
     @property
     def api_key_set(self) -> set[str]:
         return {k.strip() for k in self.at_api_keys.split(",") if k.strip()}

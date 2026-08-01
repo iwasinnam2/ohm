@@ -1,13 +1,13 @@
 {
   "name": "ohm",
   "displayName": "withOhm",
-  "version": "0.2.0",
-  "description": "withOhm (ohm) — compliant fetch for agents: prompt cache replay, ohm_fetch_web, BYOK OpenAI-compatible ingress. Use when agents need public URL context or pipe rent instead of token wholesale.",
+  "version": "0.3.0",
+  "description": "withOhm — AI traffic control plane (chaos governor): Redis prompt replay, compliant web ingest, SSO org ledger, Agent Shell. BYOK OpenAI-compatible ingress. Cursor optional; MCP is a compatibility client.",
   "author": {
     "name": "Ohm",
     "email": "partners@withohm.dev"
   },
-  "homepage": "https://withohm.dev",
+  "homepage": "https://www.withohm.dev",
   "repository": "https://github.com/iwasinnam2/ohm",
   "license": "MIT",
   "keywords": [
@@ -15,17 +15,20 @@
     "withohm",
     "withOhm",
     "mcp",
+    "infrastructure",
+    "enterprise",
+    "chaos-governor",
     "prompt-cache",
     "cache",
+    "finops",
+    "sso",
+    "ledger",
     "web-fetch",
-    "web-scrape",
     "byok",
     "openai-compatible",
-    "web-context",
     "compliant-fetch",
-    "compliant-fetch-for-agents",
-    "agent-browse",
-    "url-context"
+    "agent-shell",
+    "control-plane"
   ],
   "logo": "assets/logo.svg",
   "mcpServers": "mcp.json",
@@ -36,7 +39,7 @@
       "OHM_API_KEY": {
         "type": "string",
         "title": "Ohm API key",
-        "description": "Tenant key from withohm.dev/billing (sk-at-…)"
+        "description": "Tenant key from withohm.dev (sk-at-…)"
       },
       "OHM_UPSTREAM_KEY": {
         "type": "string",

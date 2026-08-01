@@ -45,6 +45,11 @@ export const DOC_INDEX: DocMeta[] = [
     description: "SSE pass-through, failover scope, mid-stream limits.",
   },
   {
+    slug: "enterprise-chaos",
+    title: "Enterprise chaos",
+    description: "SSO, clean ledger, org policy, Agent Shell — Cursor optional.",
+  },
+  {
     slug: "pricing",
     title: "Pricing",
     description: "Seat + meters — pipe rent, not token wholesale.",

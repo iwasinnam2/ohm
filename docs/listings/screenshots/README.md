@@ -21,4 +21,4 @@ $env:OHM_BASE_URL = "https://api.withohm.dev/v1"
 .\scripts\external_smoke.ps1 -BaseUrl https://api.withohm.dev -ApiKey $env:OHM_API_KEY
 ```
 
-Follow-up if Marketplace silent >10 days: marketplace@cursor.com with plugin `ohm`, repo URL, submission date.
+Follow-up if Directory/Marketplace silent >10 days: marketplace-publishing@cursor.com with plugin `ohm`, repo URL, submission date.

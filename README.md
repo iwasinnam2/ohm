@@ -1,10 +1,10 @@
 # Ohm (withOhm)
 
-Unified AI infrastructure utility: OpenAI-compatible model routing, Redis prompt cache, provider failover, and compliant web ingestion—metered as a tollbooth between your applications and upstream model providers.
+AI traffic control plane: OpenAI-compatible ingress, Redis prompt replay, compliant web ingest, SSO org tenancy, and a corporate clean ledger — the entropy organizer for enterprise AI chaos. Cursor/MCP are optional clients.
 
-> Change one base URL (or one Cursor attach). Keep your keys and SDKs. Gain prompt replay, a clearer pipe, compliant web context — and a bill that rents the plumbing, not the model.
+> Point any OpenAI-compatible client (or the Ohm Agent Shell) at one base URL. Keep your keys or use a managed pool. Rent the plumbing; govern the chaos.
 
-**Site:** https://www.withohm.dev · **API:** https://api.withohm.dev/v1 · **Status:** https://status.withohm.dev · **Vision:** [`docs/VISION.md`](docs/VISION.md) · **Gem:** [`docs/GEM_POSITION.md`](docs/GEM_POSITION.md)
+**Site:** https://www.withohm.dev · **API:** https://api.withohm.dev/v1 · **Workbench:** `/workbench` · **Vision:** [`docs/VISION.md`](docs/VISION.md) · **Enterprise:** [`docs/ENTERPRISE_CHAOS.md`](docs/ENTERPRISE_CHAOS.md) · **Gem:** [`docs/GEM_POSITION.md`](docs/GEM_POSITION.md)
 
 **License:** MIT (see [`LICENSE`](LICENSE) + [`NOTICE`](NOTICE)). Source is open; the hosted withOhm pipe remains a commercial metered service. Package/key names may still say `at-utility` / `sk-at-*` (legacy AT prefix); the product is **withOhm**.
 
