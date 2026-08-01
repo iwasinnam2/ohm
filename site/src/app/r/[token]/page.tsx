@@ -14,7 +14,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const data = await getPublicReceipt(token);
   if (!data) return { title: "Savings receipt" };
   const { receipt } = data;
-  const saved = formatUsd(receipt.estimated_upstream_avoided_usd);
+  const avoided =
+    receipt.estimated_provider_avoided_usd ??
+    receipt.estimated_upstream_avoided_usd;
+  const saved = formatUsd(avoided);
   return {
     title: `${receipt.display_name} saved ~${saved}`,
     description:
@@ -26,7 +29,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 function shareLinks(data: NonNullable<Awaited<ReturnType<typeof getPublicReceipt>>>) {
-  const saved = formatUsd(data.receipt.estimated_upstream_avoided_usd);
+  const avoided =
+    data.receipt.estimated_provider_avoided_usd ??
+    data.receipt.estimated_upstream_avoided_usd;
+  const saved = formatUsd(avoided);
   const text = `We avoided ~${saved} of upstream model spend with @withOhm prompt replay. Receipt:`;
   return {
     x: `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(data.receipt_url)}`,
@@ -40,8 +46,15 @@ export default async function ReceiptPage({ params }: Props) {
   if (!data) notFound();
 
   const { receipt } = data;
-  const saved = formatUsd(receipt.estimated_upstream_avoided_usd);
+  const avoided =
+    receipt.estimated_provider_avoided_usd ??
+    receipt.estimated_upstream_avoided_usd;
+  const saved = formatUsd(avoided);
   const hitPct = Math.round((receipt.cache_hit_ratio || 0) * 100);
+  const roi =
+    receipt.roi_ratio != null && Number.isFinite(receipt.roi_ratio)
+      ? `${receipt.roi_ratio.toFixed(1)}×`
+      : null;
   const minted = new Date(receipt.created_at * 1000).toLocaleDateString(
     "en-US",
     { year: "numeric", month: "short", day: "numeric" }
@@ -66,7 +79,7 @@ export default async function ReceiptPage({ params }: Props) {
 
       <dl className="receipt__figures">
         <div className="receipt__figure">
-          <dt>Estimated avoided</dt>
+          <dt>Estimated provider avoided</dt>
           <dd>~{saved}</dd>
         </div>
         <div className="receipt__figure">
@@ -77,6 +90,18 @@ export default async function ReceiptPage({ params }: Props) {
           <dt>Replayed tokens</dt>
           <dd>{Math.round(receipt.cache_hit_tokens).toLocaleString("en-US")}</dd>
         </div>
+        {receipt.pipe_rent_usd != null ? (
+          <div className="receipt__figure">
+            <dt>Pipe rent</dt>
+            <dd>{formatUsd(receipt.pipe_rent_usd)}</dd>
+          </div>
+        ) : null}
+        {roi ? (
+          <div className="receipt__figure">
+            <dt>ROI (est.)</dt>
+            <dd>{roi}</dd>
+          </div>
+        ) : null}
       </dl>
 
       <div className="receipt__actions cta-row">

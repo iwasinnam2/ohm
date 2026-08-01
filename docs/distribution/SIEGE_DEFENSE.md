@@ -15,12 +15,13 @@ Facts these responses rest on (verified against code, 2026-07-31):
   cache hits require no upstream key.
 - Training on cache contents is hard-denied in code
   (`assert_cache_training_denied`).
-- The Rust edge full-proxies in production (Redis TLS gap), documented in
-  `docs/OPERATIONS.md` under "Edge cache tier (known degraded state)".
-  Launch copy was rewritten 2026-07-31 to state this rather than claim
-  edge-served hits.
-- `/v1/savings` is labeled `estimate_only: true` with an explicit
-  "not a guaranteed savings promise" message.
+- The Rust edge supports Redis TLS (`rediss://`); production edge HITs go
+  live when cluster secrets point at ElastiCache (see `docs/OPERATIONS.md`
+  "Edge cache tier"). Until then the edge may full-proxy — correctness OK.
+- `/v1/savings` is a **dual ledger**: provider-list estimate
+  (`estimated_provider_avoided_usd`, default $15/M × hit tokens) vs
+  `pipe_rent_usd`, plus `roi_ratio`. Always `estimate_only: true` — not a
+  guaranteed savings promise. See `docs/GEM_POSITION.md`.
 
 ---
 
@@ -44,8 +45,9 @@ Facts these responses rest on (verified against code, 2026-07-31):
 > carries X-AT-Billed-USD so there's no mystery about what a request cost.
 > The alternative pricing model is a subscription you pay whether the cache
 > earns you anything or not. Metering the hit keeps the incentive honest:
-> withOhm only makes money when it's saving you more. And the savings
-> endpoint deliberately reports estimates, labeled as estimates.
+> withOhm only makes money when it's saving you more. /v1/savings shows both
+> sides: estimated provider $ avoided (blended list rate) and Ohm pipe rent,
+> plus roi_ratio — all labeled estimate_only.
 
 ### "Cached replay breaks sampling — temperature > 0 should give different answers"
 

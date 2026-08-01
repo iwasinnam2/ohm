@@ -57,6 +57,10 @@ class Settings(BaseSettings):
     at_price_per_1k_tokens_miss: float = 0.001
     at_price_per_1k_tokens_hit: float = 0.002
     at_price_per_fetch: float = 0.003
+    # Blended provider list estimate for dual savings ledger ($/1k tokens).
+    # Default $15/M ≈ mid-tier agent call (input+output avoided on full replay).
+    # Override per deploy; always surfaced as estimate_only.
+    at_provider_avoided_per_1k_tokens: float = 0.015
     at_enterprise_monthly_usd: float = 2500.0
     # When true, env OPENAI/ANTHROPIC keys may fill in if X-Ohm-Upstream-Key is
     # absent. Default OFF: silently burning operator keys for customer traffic

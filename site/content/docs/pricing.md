@@ -49,6 +49,6 @@ Monthly dedicated / managed-capacity SKU with negotiated **transaction usage agr
 
 Start at [/billing/intermediate](/billing/intermediate) — Checkout issues your withOhm key once and collects a payment method. Meters invoice monthly. Enterprise applications: [/billing/enterprise](/billing/enterprise).
 
-## Savings (estimates)
+## Savings (estimates) — dual ledger
 
-`GET /v1/usage` and `GET /v1/savings` expose **estimated** upstream cost avoided from cache hits — not guaranteed savings. withOhm’s invoice and provider token bills stay separate.
+`GET /v1/savings` shows **estimated provider $ avoided** (blended list rate × cache-hit tokens), **pipe rent** (what withOhm metered), and **roi_ratio**. Always labeled estimate-only — not a guarantee. withOhm’s invoice and provider token bills stay separate.

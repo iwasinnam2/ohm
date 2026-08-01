@@ -65,6 +65,17 @@ Complimentary `design_partner` plan (admin issue): time-boxed + soft USD quota. 
 - Setup: [STRIPE.md](STRIPE.md)
 - Intermediate UI label ↔ API/Stripe plan id `payg`
 
-## Savings (estimates)
+## Savings (estimates) — dual ledger
 
-`GET /v1/usage` and `GET /v1/savings` expose **estimated** upstream cost avoided from identical-request cache hits. Not guaranteed savings. Ohm’s invoice ≠ provider token bills.
+`GET /v1/savings` (and receipts / `ohm_savings`) expose a **dual ledger**:
+
+| Field | Meaning |
+|-------|---------|
+| `estimated_provider_avoided_usd` | Cache-hit tokens × `AT_PROVIDER_AVOIDED_PER_1K_TOKENS` (default **$0.015/1k** = $15/M blended list estimate) |
+| `pipe_rent_usd` | Ohm metered revenue (hits + misses + fetches) |
+| `roi_ratio` | Provider avoided ÷ pipe rent |
+| `estimated_pipe_proxy_avoided_usd` | Legacy counterfactual at Ohm miss rent (understates labs) |
+
+`estimated_upstream_avoided_usd` aliases the provider figure. Always
+`estimate_only: true`. Not guaranteed savings. Ohm’s invoice ≠ provider token bills.
+See [GEM_POSITION.md](GEM_POSITION.md).

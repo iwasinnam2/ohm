@@ -25,7 +25,7 @@ from at_utility.compliance.policy import ALLOWED_PURPOSES, BLOCKED_PURPOSES, PUR
 from at_utility.compliance.terms import assert_cache_training_denied, terms_metadata
 from at_utility.config import Settings, get_settings
 from at_utility.ingest import fetch_web_context, inject_context_messages
-from at_utility.metering import Meter
+from at_utility.metering import Meter, STRIPE_METER_DLQ_KEY
 from at_utility.providers import (
     AnthropicProvider,
     MockProvider,
@@ -43,6 +43,7 @@ from at_utility.stream_usage import (
     usage_from_sse_line,
 )
 from at_utility import stripe_billing
+from at_utility.savings import SAVINGS_DISCLAIMER, dual_ledger
 from at_utility.tenants import TenantRecord, TenantRegistry
 
 log = logging.getLogger("at_utility")
@@ -401,28 +402,24 @@ async def usage(
 async def savings_dashboard(
     auth: tuple[str, TenantRecord] = Depends(auth_tenant),
 ) -> dict[str, Any]:
-    """Habit-loop dashboard: money not sent upstream thanks to cache hits."""
+    """Habit-loop dashboard: dual ledger (provider avoided vs pipe rent)."""
     api_key, tenant = auth
     await rate_limit(api_key, tenant.tenant_id)
     snap = await state.meter.snapshot(tenant.tenant_id)
     hit_tok = float(snap.get("cache_hit_tokens") or 0)
-    miss_price = state.settings.at_price_per_1k_tokens_miss
-    # Counterfactual: if hits had been misses at miss price
-    avoided_usd = (hit_tok / 1000.0) * miss_price
+    ledger = dual_ledger(
+        hit_tokens=hit_tok, snap=snap, settings=state.settings
+    )
     return {
         "tenant": tenant.tenant_id,
         "plan": tenant.plan,
         "cache_hit_ratio": snap.get("cache_hit_ratio"),
         "cache_hit_tokens": hit_tok,
-        "estimated_upstream_avoided_usd": avoided_usd,
+        **ledger,
         "billed_hit_usd": snap.get("cache_hit_usd"),
         "billed_miss_usd": snap.get("cache_miss_usd"),
         "revenue_usd": snap.get("revenue_usd"),
-        "estimate_only": True,
-        "message": (
-            "Estimated upstream cost avoided from identical-request cache hits — "
-            "not a guaranteed savings promise. Ohm invoice ≠ provider pay-as-you-go."
-        ),
+        "message": SAVINGS_DISCLAIMER,
         "receipt": {
             "mint": "POST /v1/savings/receipt",
             "note": (
@@ -496,7 +493,9 @@ async def mint_savings_receipt(
     await rate_limit(api_key, tenant.tenant_id)
     snap = await state.meter.snapshot(tenant.tenant_id)
     hit_tok = float(snap.get("cache_hit_tokens") or 0)
-    avoided_usd = (hit_tok / 1000.0) * state.settings.at_price_per_1k_tokens_miss
+    ledger = dual_ledger(
+        hit_tokens=hit_tok, snap=snap, settings=state.settings
+    )
     token = secrets.token_urlsafe(12)
     display = _sanitize_display_name(body.display_name) or "an anonymous workspace"
     receipt = {
@@ -507,7 +506,14 @@ async def mint_savings_receipt(
         "cache_hit_tokens": hit_tok,
         "cache_hit_ratio": snap.get("cache_hit_ratio"),
         "requests": snap.get("requests"),
-        "estimated_upstream_avoided_usd": avoided_usd,
+        "estimated_upstream_avoided_usd": ledger["estimated_upstream_avoided_usd"],
+        "estimated_provider_avoided_usd": ledger["estimated_provider_avoided_usd"],
+        "estimated_pipe_proxy_avoided_usd": ledger[
+            "estimated_pipe_proxy_avoided_usd"
+        ],
+        "pipe_rent_usd": ledger["pipe_rent_usd"],
+        "roi_ratio": ledger["roi_ratio"],
+        "provider_rate_per_1k_tokens": ledger["provider_rate_per_1k_tokens"],
         "estimate_only": True,
         # Internal only — stripped from the public view. Kept so abuse can be
         # traced back to the minting tenant.
@@ -553,7 +559,11 @@ async def public_receipt_badge(token: str, request: Request) -> dict[str, Any]:
     """Shields.io custom-endpoint schema for README badges."""
     await _public_rate_limit(request, "receipt")
     receipt = await _load_public_receipt(token)
-    avoided = float(receipt.get("estimated_upstream_avoided_usd") or 0)
+    avoided = float(
+        receipt.get("estimated_provider_avoided_usd")
+        or receipt.get("estimated_upstream_avoided_usd")
+        or 0
+    )
     return {
         "schemaVersion": 1,
         "label": "withOhm",
@@ -572,8 +582,9 @@ async def public_stats(request: Request) -> dict[str, Any]:
         **agg,
         "estimate_only": True,
         "message": (
-            "Estimated upstream spend avoided across all withOhm tenants via "
-            "identical-request cache replay."
+            "Estimated provider spend avoided across all withOhm tenants via "
+            "identical-request cache replay (blended list rate × hit tokens). "
+            "Estimates only."
         ),
     }
 
@@ -859,6 +870,40 @@ async def credit_pack_topup(
             "commit_tiers": ["c29", "c99", "c499"],
         },
     )
+
+
+@app.get("/v1/admin/ops")
+async def admin_ops(_admin: str = Depends(admin_dep)) -> dict[str, Any]:
+    """Observer watchdog snapshot: billing pipeline + aggregate health.
+
+    Scraped every 15 minutes by the observer-pulse workflow so a growing
+    Stripe meter DLQ (silent underbilling) pages within one probe interval
+    instead of surfacing at invoice time.
+    """
+    redis_ok = False
+    try:
+        redis_ok = bool(await state.store.ping())
+    except Exception:  # noqa: BLE001 — report, don't crash the probe
+        redis_ok = False
+    dlq_len = 0
+    try:
+        dlq_len = await state.store.list_len(STRIPE_METER_DLQ_KEY)
+    except Exception:  # noqa: BLE001
+        dlq_len = -1  # unreadable — probe treats as failure
+    agg = await state.meter.global_savings()
+    tenant_keys = await state.store.scan_keys("at:*:meta:record", limit=10_000)
+    return {
+        "ok": redis_ok and dlq_len == 0,
+        "ts": int(time.time()),
+        "region": state.settings.at_region,
+        "redis_ok": redis_ok,
+        "stripe_meter_dlq_len": dlq_len,
+        "tenant_records": len(tenant_keys),
+        "global": agg,
+        "thresholds": {
+            "stripe_meter_dlq_len": "0 expected; >0 means meter events failed and await replay",
+        },
+    }
 
 
 @app.post("/v1/admin/tenants")

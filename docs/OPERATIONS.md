@@ -84,23 +84,26 @@ design, not by accident:
    Note: `ohm-mcp` on PyPI is an unrelated third-party project — the console
    script is still `ohm-mcp`, only the distribution name differs.
 
-## Edge cache tier (known degraded state)
+## Edge cache tier (Redis TLS)
 
-`AT_RS_REDIS` / `AT_RS_REDIS_WRITE` in the cluster secret are deliberately
-black-holed (`127.0.0.1:9`): the Rust edge's RESP client is plain TCP and the
-ElastiCache leader requires TLS (`rediss://`), so the edge cannot reach Redis
-in production. Consequences and posture:
+The Rust edge RESP client supports TLS (`rediss://…` or `AT_RS_REDIS_TLS=true`
+with bare `host:port`) via rustls + webpki-roots (`gateway-rs/src/resp.rs`).
 
-- Edge auth treats unreachable Redis as **Unverified** and full-proxies to
-  Python, which authenticates every request itself. (Fail-closed edge auth
-  here once turned the cache tier outage into a total API outage for issued
-  keys — never reintroduce that.)
-- Edge-served cache HITs are therefore inactive in production; Python serves
-  all HITs from its own TLS Redis clients. Correctness and billing are
-  unaffected; only the edge-latency optimization is dormant.
-- To activate edge HITs: add TLS (rustls) to `gateway-rs/src/resp.rs`, point
-  `AT_RS_REDIS` at the replica endpoint, and verify the metered edge-HIT
-  golden step against production.
+**Activate edge HITs in production:**
+
+1. Point `AT_RS_REDIS` at the ElastiCache **reader** endpoint as
+   `rediss://<reader-host>:6379` (GET path).
+2. Point `AT_RS_REDIS_WRITE` at the **primary** as `rediss://<primary-host>:6379`
+   (SET path; defaults to read addr if unset).
+3. Ensure `AT_EDGE_SHARED_SECRET` matches Python so `POST /internal/edge-hit`
+   meters HITs.
+4. Roll the edge deployment; confirm `X-AT-Cache: HIT` from the edge plane
+   header and the metered edge-HIT golden smoke against production.
+
+Until secrets are updated, black-holed `127.0.0.1:9` keeps the edge in
+**Unverified** auth → full-proxy to Python (correctness/billing intact;
+edge latency optimization dormant). Fail-closed edge auth on Redis outage
+must never return — that turned a cache-tier blip into a total API outage.
 
 ## Region posture (pre-committed, like the pricing rules)
 

@@ -18,6 +18,9 @@ export type PublicReceipt = {
   cache_hit_ratio: number;
   requests: number;
   estimated_upstream_avoided_usd: number;
+  estimated_provider_avoided_usd?: number;
+  pipe_rent_usd?: number;
+  roi_ratio?: number | null;
   estimate_only: boolean;
 };
 
@@ -31,6 +34,7 @@ export type PublicReceiptResponse = {
 export type PublicStats = {
   cache_hit_tokens: number;
   estimated_upstream_avoided_usd: number;
+  estimated_provider_avoided_usd?: number;
   receipts_minted: number;
 };
 

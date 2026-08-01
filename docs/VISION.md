@@ -22,6 +22,8 @@ Ohm is an **AI traffic utility / model ingress** — invisible plumbing between 
 
 Ohm as a **Cursor / MCP / agent-runtime attach** — one config block, not a chat product. Cursor keeps model billing; Ohm rents cache + compliant browse.
 
+Gem / prefill-waste wedge: [GEM_POSITION.md](GEM_POSITION.md). Cursor BD: [distribution/CURSOR_BD_BRIEF.md](distribution/CURSOR_BD_BRIEF.md).
+
 ## Promise
 
 > Change one base URL (or one Cursor attach). Keep your keys and SDKs. Gain prompt replay, a clearer pipe, compliant web context — and a bill that rents the plumbing, not the model.
