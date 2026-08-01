@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 
 const KEY_STORAGE = "ohm_api_key";
+const FORM_STORAGE = "ohm_checkout_form";
 
 export function BillingCheckoutForm({ commit = "" }: { commit?: string }) {
   const [organisation, setOrganisation] = useState("");
@@ -12,11 +13,39 @@ export function BillingCheckoutForm({ commit = "" }: { commit?: string }) {
   const [dpaAck, setDpaAck] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [rateLimited, setRateLimited] = useState(false);
   const [issuedKey, setIssuedKey] = useState<string | null>(null);
+
+  // A failed attempt (rate limit, network blip, back button from Stripe)
+  // must never cost the visitor their typing — restore email/label.
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(FORM_STORAGE);
+      if (raw) {
+        const saved = JSON.parse(raw) as { email?: string; label?: string };
+        if (saved.email) setEmail(saved.email);
+        if (saved.label) setOrganisation(saved.label);
+      }
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        FORM_STORAGE,
+        JSON.stringify({ email, label: organisation }),
+      );
+    } catch {
+      /* ignore */
+    }
+  }, [email, organisation]);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    setRateLimited(false);
     setBusy(true);
     try {
       const res = await fetch("/api/billing/checkout", {
@@ -35,6 +64,14 @@ export function BillingCheckoutForm({ commit = "" }: { commit?: string }) {
       });
       const data = await res.json();
       if (!res.ok) {
+        if (res.status === 429) {
+          setRateLimited(true);
+          throw new Error(
+            "You've hit our once-in-a-while safety limit on new checkouts " +
+              "from one connection. Nothing is wrong with your details — " +
+              "they're saved. Wait about a minute and press the button again.",
+          );
+        }
         const detail = data?.detail;
         const msg =
           typeof detail === "string"
@@ -115,7 +152,18 @@ export function BillingCheckoutForm({ commit = "" }: { commit?: string }) {
           I agree to the <Link href="/docs/dpa">DPA</Link>
         </span>
       </label>
-      {error ? <p className="billing-form__error">{error}</p> : null}
+      {error ? (
+        <p className="billing-form__error" role="alert">
+          {error}
+          {!rateLimited ? (
+            <>
+              {" "}
+              Stuck? <Link href="/support">Support</Link> or{" "}
+              <a href="mailto:queries@withohm.dev">queries@withohm.dev</a>.
+            </>
+          ) : null}
+        </p>
+      ) : null}
       {issuedKey ? (
         <p className="billing-form__key">
           withOhm key (store now): <code>{issuedKey}</code>

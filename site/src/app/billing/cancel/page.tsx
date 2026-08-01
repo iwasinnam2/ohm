@@ -14,13 +14,21 @@ export default function BillingCancelPage() {
         <h1>Checkout cancelled</h1>
         <p>
           No charge was completed. Your withOhm key (if issued) may be suspended
-          once payment fails — start again when ready.
+          once payment fails — start again when ready. Your email and
+          organisation are still filled in on the checkout page.
         </p>
       </header>
-      <p>
-        <Link href="/billing/intermediate">Return to Intermediate</Link> ·{" "}
-        <Link href="/subscriptions">Subscriptions</Link>
-      </p>
+      <div className="cta-row">
+        <Link href="/billing/intermediate" className="btn btn--primary">
+          Resume checkout
+        </Link>
+        <Link href="/subscriptions" className="link-quiet">
+          Subscriptions
+        </Link>
+        <Link href="/support" className="link-quiet">
+          Something went wrong? Support
+        </Link>
+      </div>
     </>
   );
 }

@@ -1,0 +1,48 @@
+name: Observer admin digest
+
+# Business layer of the Observer: on the 1st of each month, summarize the
+# previous month's Stripe activity (invoices, tax, payouts, refunds,
+# disputes), post it to Slack, and open a Linear reconciliation task so
+# tax/invoice/admin work exists as a ticket instead of memory.
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 8 1 * *" # 1st of the month, 08:00 UTC
+
+permissions:
+  contents: read
+
+jobs:
+  digest:
+    name: monthly reconciliation digest
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install stripe SDK
+        run: pip install --quiet stripe
+
+      - name: Build and fan out digest
+        env:
+          STRIPE_PULSE_KEY: ${{ secrets.STRIPE_PULSE_KEY }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY }}
+          LINEAR_TEAM_ID: ${{ secrets.LINEAR_TEAM_ID }}
+        run: python scripts/observer_admin.py
+
+      - name: Notify Observer sinks on failure
+        if: failure()
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY }}
+          LINEAR_TEAM_ID: ${{ secrets.LINEAR_TEAM_ID }}
+        run: >
+          python scripts/observer_notify.py
+          --title "admin digest failed"
+          --body "Monthly reconciliation digest went red: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
