@@ -246,13 +246,25 @@ class Meter:
 
     async def global_savings(self) -> dict[str, Any]:
         """Anonymous cross-tenant totals for the public counter — no tenant ids."""
+        from at_utility.savings import dual_ledger
+
         hit_raw = await self._store.get(GLOBAL_AGG_HIT_TOKENS_KEY)
         receipts_raw = await self._store.get(GLOBAL_AGG_RECEIPTS_KEY)
         hit_tokens = float(hit_raw) if hit_raw is not None else 0.0
-        avoided = (hit_tokens / 1000.0) * self._settings.at_price_per_1k_tokens_miss
+        # Global aggregate has no pipe-rent rollup; ROI stays null.
+        ledger = dual_ledger(
+            hit_tokens=hit_tokens,
+            snap={"revenue_usd": 0.0},
+            settings=self._settings,
+        )
         return {
             "cache_hit_tokens": hit_tokens,
-            "estimated_upstream_avoided_usd": avoided,
+            "estimated_upstream_avoided_usd": ledger["estimated_upstream_avoided_usd"],
+            "estimated_provider_avoided_usd": ledger["estimated_provider_avoided_usd"],
+            "estimated_pipe_proxy_avoided_usd": ledger[
+                "estimated_pipe_proxy_avoided_usd"
+            ],
+            "provider_rate_per_1k_tokens": ledger["provider_rate_per_1k_tokens"],
             "receipts_minted": int(float(receipts_raw)) if receipts_raw else 0,
         }
 

@@ -4,7 +4,7 @@ Unified AI infrastructure utility: OpenAI-compatible model routing, Redis prompt
 
 > Change one base URL (or one Cursor attach). Keep your keys and SDKs. Gain prompt replay, a clearer pipe, compliant web context — and a bill that rents the plumbing, not the model.
 
-**Site:** https://www.withohm.dev · **API:** https://api.withohm.dev/v1 · **Status:** https://status.withohm.dev · **Vision:** [`docs/VISION.md`](docs/VISION.md)
+**Site:** https://www.withohm.dev · **API:** https://api.withohm.dev/v1 · **Status:** https://status.withohm.dev · **Vision:** [`docs/VISION.md`](docs/VISION.md) · **Gem:** [`docs/GEM_POSITION.md`](docs/GEM_POSITION.md)
 
 **License:** MIT (see [`LICENSE`](LICENSE) + [`NOTICE`](NOTICE)). Source is open; the hosted withOhm pipe remains a commercial metered service. Package/key names may still say `at-utility` / `sk-at-*` (legacy AT prefix); the product is **withOhm**.
 

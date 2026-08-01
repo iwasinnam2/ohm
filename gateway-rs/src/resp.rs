@@ -1,9 +1,17 @@
-//! Lightweight RESP encoder/decoder for Redis over TCP.
+//! Lightweight RESP encoder/decoder for Redis over TCP or TLS (`rediss://`).
+
+use std::io;
+use std::pin::Pin;
+use std::sync::Arc;
+use std::task::{Context, Poll};
 
 use anyhow::{anyhow, Result};
 use bytes::BytesMut;
-use tokio::io::{AsyncReadExt, AsyncWriteExt};
+use rustls::ClientConfig;
+use rustls::pki_types::ServerName;
+use tokio::io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt, ReadBuf};
 use tokio::net::TcpStream;
+use tokio_rustls::TlsConnector;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum RespValue {
@@ -14,20 +22,144 @@ pub enum RespValue {
     Array(Vec<RespValue>),
 }
 
+enum RedisStream {
+    Plain(TcpStream),
+    Tls(Box<tokio_rustls::client::TlsStream<TcpStream>>),
+}
+
+impl AsyncRead for RedisStream {
+    fn poll_read(
+        self: Pin<&mut Self>,
+        cx: &mut Context<'_>,
+        buf: &mut ReadBuf<'_>,
+    ) -> Poll<io::Result<()>> {
+        match self.get_mut() {
+            RedisStream::Plain(s) => Pin::new(s).poll_read(cx, buf),
+            RedisStream::Tls(s) => Pin::new(s.as_mut()).poll_read(cx, buf),
+        }
+    }
+}
+
+impl AsyncWrite for RedisStream {
+    fn poll_write(
+        self: Pin<&mut Self>,
+        cx: &mut Context<'_>,
+        buf: &[u8],
+    ) -> Poll<io::Result<usize>> {
+        match self.get_mut() {
+            RedisStream::Plain(s) => Pin::new(s).poll_write(cx, buf),
+            RedisStream::Tls(s) => Pin::new(s.as_mut()).poll_write(cx, buf),
+        }
+    }
+
+    fn poll_flush(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<io::Result<()>> {
+        match self.get_mut() {
+            RedisStream::Plain(s) => Pin::new(s).poll_flush(cx),
+            RedisStream::Tls(s) => Pin::new(s.as_mut()).poll_flush(cx),
+        }
+    }
+
+    fn poll_shutdown(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<io::Result<()>> {
+        match self.get_mut() {
+            RedisStream::Plain(s) => Pin::new(s).poll_shutdown(cx),
+            RedisStream::Tls(s) => Pin::new(s.as_mut()).poll_shutdown(cx),
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct RedisTarget {
+    pub host: String,
+    pub port: u16,
+    pub tls: bool,
+}
+
+/// Parse `host:port`, `redis://host:port`, or `rediss://host:port`.
+/// `AT_RS_REDIS_TLS=1|true` forces TLS for bare host:port targets.
+pub fn parse_redis_addr(addr: &str) -> Result<RedisTarget> {
+    let trimmed = addr.trim();
+    if trimmed.is_empty() {
+        return Err(anyhow!("empty redis address"));
+    }
+    let env_tls = std::env::var("AT_RS_REDIS_TLS")
+        .map(|v| v == "1" || v.eq_ignore_ascii_case("true"))
+        .unwrap_or(false);
+
+    let (scheme_tls, rest) = if let Some(r) = trimmed.strip_prefix("rediss://") {
+        (true, r)
+    } else if let Some(r) = trimmed.strip_prefix("redis://") {
+        (false, r)
+    } else {
+        (false, trimmed)
+    };
+
+    let rest = rest.split('/').next().unwrap_or(rest);
+    let rest = rest.split('?').next().unwrap_or(rest);
+    // drop optional userinfo
+    let hostport = rest.rsplit('@').next().unwrap_or(rest);
+
+    let (host, port) = if let Some((h, p)) = hostport.rsplit_once(':') {
+        let port: u16 = p
+            .parse()
+            .map_err(|_| anyhow!("invalid redis port in {addr}"))?;
+        (h.trim_matches('[').trim_matches(']').to_string(), port)
+    } else {
+        (hostport.to_string(), 6379)
+    };
+
+    if host.is_empty() {
+        return Err(anyhow!("empty redis host in {addr}"));
+    }
+
+    Ok(RedisTarget {
+        host,
+        port,
+        tls: scheme_tls || env_tls,
+    })
+}
+
+fn tls_connector() -> Result<TlsConnector> {
+    let mut roots = rustls::RootCertStore::empty();
+    roots.extend(webpki_roots::TLS_SERVER_ROOTS.iter().cloned());
+    let config = ClientConfig::builder()
+        .with_root_certificates(roots)
+        .with_no_client_auth();
+    Ok(TlsConnector::from(Arc::new(config)))
+}
+
 pub struct RespClient {
-    stream: TcpStream,
+    stream: RedisStream,
     buf: BytesMut,
 }
 
 impl RespClient {
     pub async fn connect(addr: &str) -> Result<Self> {
-        let stream = tokio::time::timeout(
+        let target = parse_redis_addr(addr)?;
+        let sock_addr = format!("{}:{}", target.host, target.port);
+        let tcp = tokio::time::timeout(
             std::time::Duration::from_secs(2),
-            TcpStream::connect(addr),
+            TcpStream::connect(&sock_addr),
         )
         .await
-        .map_err(|_| anyhow!("redis connect timeout to {addr}"))?
-        .map_err(|e| anyhow!("redis connect to {addr}: {e}"))?;
+        .map_err(|_| anyhow!("redis connect timeout to {sock_addr}"))?
+        .map_err(|e| anyhow!("redis connect to {sock_addr}: {e}"))?;
+
+        let stream = if target.tls {
+            let connector = tls_connector()?;
+            let server_name = ServerName::try_from(target.host.clone())
+                .map_err(|_| anyhow!("invalid TLS server name: {}", target.host))?;
+            let tls = tokio::time::timeout(
+                std::time::Duration::from_secs(3),
+                connector.connect(server_name, tcp),
+            )
+            .await
+            .map_err(|_| anyhow!("redis TLS handshake timeout to {sock_addr}"))?
+            .map_err(|e| anyhow!("redis TLS handshake to {sock_addr}: {e}"))?;
+            RedisStream::Tls(Box::new(tls))
+        } else {
+            RedisStream::Plain(tcp)
+        };
+
         Ok(Self {
             stream,
             buf: BytesMut::with_capacity(4096),
@@ -44,10 +176,13 @@ impl RespClient {
 
     pub async fn command(&mut self, args: &[&str]) -> Result<RespValue> {
         let payload = Self::encode_command(args);
-        tokio::time::timeout(std::time::Duration::from_secs(2), self.stream.write_all(&payload))
-            .await
-            .map_err(|_| anyhow!("redis write timeout"))?
-            .map_err(|e| anyhow!("redis write: {e}"))?;
+        tokio::time::timeout(
+            std::time::Duration::from_secs(2),
+            self.stream.write_all(&payload),
+        )
+        .await
+        .map_err(|_| anyhow!("redis write timeout"))?
+        .map_err(|e| anyhow!("redis write: {e}"))?;
         tokio::time::timeout(std::time::Duration::from_secs(2), self.read_value())
             .await
             .map_err(|_| anyhow!("redis read timeout"))?
@@ -169,5 +304,21 @@ mod tests {
         let (v, n) = parse_value(raw).unwrap().unwrap();
         assert_eq!(v, RespValue::Bulk(Some("bar".into())));
         assert_eq!(n, raw.len());
+    }
+
+    #[test]
+    fn parse_rediss_addr() {
+        let t = parse_redis_addr("rediss://master.example.cache.amazonaws.com:6379").unwrap();
+        assert!(t.tls);
+        assert_eq!(t.host, "master.example.cache.amazonaws.com");
+        assert_eq!(t.port, 6379);
+    }
+
+    #[test]
+    fn parse_plain_addr() {
+        let t = parse_redis_addr("127.0.0.1:6379").unwrap();
+        assert!(!t.tls);
+        assert_eq!(t.host, "127.0.0.1");
+        assert_eq!(t.port, 6379);
     }
 }
