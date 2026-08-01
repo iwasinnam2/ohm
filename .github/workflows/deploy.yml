@@ -64,6 +64,7 @@ jobs:
           kubectl -n "$NAMESPACE" set image deploy/gateway gateway="$ECR_REGISTRY/at-utility/gateway:$TAG"
           kubectl -n "$NAMESPACE" set image deploy/gateway-rs gateway-rs="$ECR_REGISTRY/at-utility/gateway-rs:$TAG"
           kubectl -n "$NAMESPACE" set image deploy/ingest-worker ingest="$ECR_REGISTRY/at-utility/ingest-worker:$TAG"
+          kubectl -n "$NAMESPACE" set image cronjob/quota-allotment allot="$ECR_REGISTRY/at-utility/gateway:$TAG"
           kubectl -n "$NAMESPACE" rollout status deploy/gateway --timeout=5m
           kubectl -n "$NAMESPACE" rollout status deploy/gateway-rs --timeout=5m
           kubectl -n "$NAMESPACE" rollout status deploy/ingest-worker --timeout=5m
@@ -72,3 +73,14 @@ jobs:
         run: |
           sleep 10
           curl -fsS --max-time 15 https://api.withohm.dev/health
+
+      - name: Notify Observer sinks on failure
+        if: failure()
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY }}
+          LINEAR_TEAM_ID: ${{ secrets.LINEAR_TEAM_ID }}
+        run: >
+          python3 scripts/observer_notify.py
+          --title "API deploy failed"
+          --body "Deploy run went red — live API may be on the previous image: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
