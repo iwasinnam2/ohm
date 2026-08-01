@@ -2137,6 +2137,69 @@ pre {
   color: var(--accent);
 }
 
+/* --- Support FAQs (/support) --- */
+.faq {
+  max-width: var(--measure-partner);
+  display: grid;
+  gap: var(--space-3);
+  margin: var(--space-6) 0;
+}
+
+.faq__item {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+}
+
+.faq__q {
+  cursor: pointer;
+  padding: var(--space-4) var(--space-5);
+  font-family: var(--font-display);
+  font-size: var(--text-md);
+  color: var(--fg);
+  list-style: none;
+}
+
+.faq__q::-webkit-details-marker {
+  display: none;
+}
+
+.faq__q::before {
+  content: "+";
+  display: inline-block;
+  margin-right: var(--space-3);
+  color: var(--accent);
+  font-family: var(--font-mono);
+}
+
+.faq__item[open] .faq__q::before {
+  content: "−";
+}
+
+.faq__a {
+  padding: 0 var(--space-5) var(--space-4);
+  color: var(--muted);
+}
+
+.faq__a a,
+.faq__escalate a {
+  color: var(--accent);
+}
+
+.faq__escalate {
+  max-width: var(--measure-partner);
+  margin: var(--space-6) 0;
+  padding: var(--space-5);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+}
+
+.faq__escalate p {
+  margin: 0 0 var(--space-4);
+}
+
 /* --- Responsive foundations: portrait, landscape, phone ---
    Keep this block last so its overrides win the cascade. */
 

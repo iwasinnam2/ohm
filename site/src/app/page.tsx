@@ -71,14 +71,16 @@ export default async function HomePage() {
           </p>
         ) : null}
         <div className="hero__cta cta-row">
-          <Link href="/subscriptions" className="btn btn--primary">
+          {/* Costco doctrine: title -> card entry in one click. Browsing is
+              the secondary path, not the toll gate. */}
+          <Link href="/billing/intermediate" className="btn btn--primary">
+            Start now — $0 seat
+          </Link>
+          <Link href="/subscriptions" className="link-quiet">
             Explore subscriptions
           </Link>
           <Link href="/connections" className="link-quiet">
             Connect your tools
-          </Link>
-          <Link href="/billing/intermediate" className="link-quiet">
-            Intermediate ($0 + meters)
           </Link>
           <Link href="/billing/enterprise" className="link-quiet">
             Enterprise application

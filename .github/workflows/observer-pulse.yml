@@ -1,0 +1,39 @@
+name: Observer pulse
+
+# Watchdog layer of the Observer: every 15 minutes, probe the surfaces a
+# paying customer depends on (API health/ready, public stats, homepage,
+# checkout page, support page, billing pipeline via /v1/admin/ops). Failures
+# fan out to Slack + Linear (deduped) and the run goes red so observer-meta
+# notices even if the sinks are unreachable.
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "*/15 * * * *"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: observer-pulse
+  cancel-in-progress: true
+
+jobs:
+  pulse:
+    name: probe public surface
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Run probes
+        env:
+          OHM_ADMIN_KEY: ${{ secrets.OHM_ADMIN_KEY }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY }}
+          LINEAR_TEAM_ID: ${{ secrets.LINEAR_TEAM_ID }}
+        run: python scripts/observer_pulse.py
