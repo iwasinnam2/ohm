@@ -31,8 +31,24 @@ def _cfg() -> tuple[str, str, str]:
             "https://www.withohm.dev/billing/intermediate and set the issued key "
             "in Cursor MCP env (do not use local bootstrap sk-at-dev in production)."
         )
+    # Never point the local bootstrap key at the public API (verification / misuse).
+    if key == "sk-at-dev" and "api.withohm.dev" in base:
+        raise RuntimeError(
+            "sk-at-dev is a local bootstrap key only. Issue a real seat key at "
+            "https://www.withohm.dev/billing/intermediate for api.withohm.dev."
+        )
     upstream = os.environ.get("OHM_UPSTREAM_KEY", "")
     return base, key, upstream
+
+
+def _safe_error_body(text: str, status: int) -> str:
+    """Return upstream errors without echoing Authorization or raw secrets."""
+    snippet = (text or "")[:2000]
+    for needle in ("Bearer ", "sk-at-", "sk-proj-", "sk-ant-"):
+        if needle in snippet:
+            snippet = "[redacted upstream error body]"
+            break
+    return json.dumps({"error": snippet, "status": status})
 
 
 def _headers(upstream: str = "") -> dict[str, str]:
@@ -90,7 +106,7 @@ async def ohm_fetch_web(
             f"{base}/chat/completions", headers=_headers(), json=body
         )
         if res.status_code >= 400:
-            return json.dumps({"error": res.text, "status": res.status_code})
+            return _safe_error_body(res.text, res.status_code)
         data = res.json()
         content = (
             ((data.get("choices") or [{}])[0].get("message") or {}).get("content")
@@ -201,7 +217,7 @@ async def ohm_chat(
             json=body,
         )
         if res.status_code >= 400:
-            return json.dumps({"error": res.text, "status": res.status_code})
+            return _safe_error_body(res.text, res.status_code)
         data = res.json()
         return (
             ((data.get("choices") or [{}])[0].get("message") or {}).get("content")

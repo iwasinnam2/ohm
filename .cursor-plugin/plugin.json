@@ -1,7 +1,7 @@
 {
   "name": "ohm",
   "displayName": "withOhm",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "withOhm — AI traffic control plane (chaos governor): Redis prompt replay, compliant web ingest, SSO org ledger, Agent Shell. BYOK OpenAI-compatible ingress. Cursor optional; MCP is a compatibility client.",
   "author": {
     "name": "Ohm",
