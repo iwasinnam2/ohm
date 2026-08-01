@@ -35,9 +35,11 @@ https://github.com/iwasinnam2/ohm/tree/master/templates/cursor-agent-with-web
 
 Open PR: https://github.com/punkpeye/awesome-mcp-servers/compare
 
-### 2. cursor.directory
+### 2. cursor.directory (primary listing channel)
 
-Use [docs/listings/CURSOR_DIRECTORY.md](../listings/CURSOR_DIRECTORY.md). One-liner must include **compliant fetch for agents**.
+Use [docs/listings/CURSOR_DIRECTORY.md](../listings/CURSOR_DIRECTORY.md).
+Lead with **chaos governor / control plane**; MCP is compatibility. Do not
+use Marketplace “save Cursor money” copy.
 
 ### 3. Agent / Cursor rule packs
 

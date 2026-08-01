@@ -12,7 +12,7 @@
 |---------|--------|--------|
 | Cursor Forum | Open | Post §1 below |
 | **Marketplace refresh** | Open | [MARKETPLACE.md](../listings/MARKETPLACE.md) — employee review notes |
-| cursor.directory | Open | Submit from [CURSOR_DIRECTORY.md](../listings/CURSOR_DIRECTORY.md) |
+| **cursor.directory (primary)** | Open | Chaos-governor packet — [CURSOR_DIRECTORY.md](../listings/CURSOR_DIRECTORY.md) |
 | r/cursor | Open | Post §2 (distinct copy) |
 | X thread | Open | Post §3 |
 | Steal-kit list PRs | Open | Open 1–2 PRs from [STEAL_KIT.md](STEAL_KIT.md) |
@@ -137,15 +137,17 @@ Repo: https://github.com/iwasinnam2/ohm
 
 ---
 
-## 4. cursor.directory
+## 4. cursor.directory (primary — support deferred marketplace here)
 
-Submit / update using the packet in [CURSOR_DIRECTORY.md](../listings/CURSOR_DIRECTORY.md).
+Submit / update using the **chaos governor** packet in
+[CURSOR_DIRECTORY.md](../listings/CURSOR_DIRECTORY.md) — not the old
+Cursor-MCP trojan one-liner.
 
 Checklist:
 
-- [ ] One-liner includes **compliant fetch for agents**
-- [ ] Links: site, docs/cursor, `/i`, GitHub
-- [ ] Design-partners URL in description
+- [ ] Title/one-liner lead with control plane / chaos governor (Cursor optional)
+- [ ] Links: site, `/docs/enterprise-chaos`, `/workbench`, `/org`, `/i`, GitHub
+- [ ] Publisher note cites ticket T-E60068 → directory
 - [ ] Record submit date in partner hit list notes
 
 ---

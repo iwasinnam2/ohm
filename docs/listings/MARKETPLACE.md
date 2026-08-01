@@ -76,10 +76,17 @@ replace Cursor model billing. Plan + BD brief linked in the long description
 design-partner pilot intro.
 ```
 
-3. Email follow-up (same day as submit): `marketplace@cursor.com` with subject
-   `withOhm marketplace refresh — employee review / gem position` and body
-   pointing at the two GitHub docs + this listing.
-4. cursor.directory — [CURSOR_DIRECTORY.md](CURSOR_DIRECTORY.md)
+3. **Canonical listing (2026):** submit/refresh at
+   https://cursor.directory/plugins/new — Cursor staff say directory replaced
+   the old marketplace publish queue for community plugins.
+4. Email follow-up (same day): **`marketplace-publishing@cursor.com`**
+   (confirmed by Cursor support ticket routing — not marketplace@ / not hi@
+   for listing process). Subject:
+   `withOhm (ohm) — listing review: cuts repeat agent prefill waste`
+5. If general support redirects again, cite ticket + this address.
+6. Optional Forum bump if silent >2 weeks:
+   https://forum.cursor.com (Help) — staff escalate from there.
+6. Listing copy also in [CURSOR_DIRECTORY.md](CURSOR_DIRECTORY.md)
 5. One-liner everywhere: `Add withOhm MCP from https://www.withohm.dev/i`
 
 ## Logo

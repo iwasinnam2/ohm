@@ -2245,3 +2245,58 @@ pre {
     bottom: var(--space-2);
   }
 }
+
+/* Org console + Agent Shell */
+.org-console__log,
+.agent-shell__thread pre {
+  font-family: var(--font-plex-mono), ui-monospace, monospace;
+  font-size: 0.8rem;
+  white-space: pre-wrap;
+  word-break: break-word;
+  background: color-mix(in srgb, var(--bg, #0e1116) 92%, #fff 8%);
+  padding: var(--space-3, 1rem);
+  border-radius: 4px;
+  max-height: 28rem;
+  overflow: auto;
+}
+
+.agent-shell__bar {
+  display: grid;
+  gap: var(--space-3, 1rem);
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  margin-bottom: var(--space-3, 1rem);
+}
+
+.agent-shell__bar label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.85rem;
+}
+
+.agent-shell__bar input,
+.agent-shell__compose textarea {
+  font: inherit;
+  padding: 0.55rem 0.7rem;
+}
+
+.agent-shell__meta {
+  font-family: var(--font-plex-mono), ui-monospace, monospace;
+  font-size: 0.8rem;
+  opacity: 0.85;
+}
+
+.agent-shell__thread {
+  min-height: 12rem;
+  margin: var(--space-3, 1rem) 0;
+}
+
+.agent-shell__msg {
+  margin-bottom: var(--space-3, 1rem);
+}
+
+.agent-shell__compose {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2, 0.75rem);
+}

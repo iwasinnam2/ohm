@@ -43,7 +43,12 @@ from at_utility.stream_usage import (
     usage_from_sse_line,
 )
 from at_utility import stripe_billing
+from at_utility.audit import AuditLog
+from at_utility.ledger import CleanLedger
+from at_utility.org_api import router as org_router
+from at_utility.orgs import OrgRegistry
 from at_utility.savings import SAVINGS_DISCLAIMER, dual_ledger
+from at_utility.sso import SsoService
 from at_utility.tenants import TenantRecord, TenantRegistry
 
 log = logging.getLogger("at_utility")
@@ -80,6 +85,10 @@ class AppState:
     store: CacheStore
     meter: Meter
     tenants: TenantRegistry
+    orgs: OrgRegistry
+    ledger: CleanLedger
+    audit: AuditLog
+    sso: SsoService
     mock: MockProvider
     openai: Optional[OpenAIProvider]
     anthropic: Optional[AnthropicProvider]
@@ -125,6 +134,10 @@ async def lifespan(_app: FastAPI):
     state.store = store
     state.meter = Meter(store, settings)
     state.tenants = TenantRegistry(store, settings)
+    state.orgs = OrgRegistry(store)
+    state.ledger = CleanLedger(store, settings)
+    state.audit = AuditLog(store)
+    state.sso = SsoService(store, settings, state.orgs)
     state.mock = MockProvider()
     # Always construct shells so BYOK can clone with X-Ohm-Upstream-Key
     state.openai = OpenAIProvider(
@@ -172,6 +185,81 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 
 
 app.add_middleware(SecurityHeadersMiddleware)
+app.include_router(org_router)
+
+
+async def _append_ledger(
+    tenant_rec: TenantRecord,
+    *,
+    kind: str,
+    model: str = "",
+    tokens: int = 0,
+    fetches: int = 0,
+    pipe_usd: float = 0.0,
+    cache_hit: bool = False,
+    purpose: str = "",
+    request_id: str = "",
+) -> None:
+    try:
+        await state.ledger.append(
+            tenant_id=tenant_rec.tenant_id,
+            org_id=tenant_rec.org_id or "",
+            cost_center=tenant_rec.cost_center or "default",
+            kind=kind,
+            model=model,
+            tokens=tokens,
+            fetches=fetches,
+            pipe_usd=pipe_usd,
+            cache_hit=cache_hit,
+            purpose=purpose,
+            request_id=request_id,
+        )
+    except Exception:  # noqa: BLE001 — metering must not fail the request
+        log.exception("ledger append failed tenant=%s", tenant_rec.tenant_id)
+
+
+async def _org_policy_gate(tenant_rec: TenantRecord, body: ChatCompletionRequest) -> None:
+    """Enforce org model allowlist + purpose allowlist when tenant is org-bound."""
+    if not tenant_rec.org_id:
+        return
+    org = await state.orgs.get(tenant_rec.org_id)
+    if not org:
+        return
+    policy = org.policy_obj()
+    if policy.model_allowlist:
+        if body.model not in policy.model_allowlist and body.model != "mock":
+            await state.audit.record(
+                org_id=org.org_id,
+                tenant_id=tenant_rec.tenant_id,
+                action="policy.model_deny",
+                detail={"model": body.model},
+                allowed=False,
+            )
+            raise HTTPException(
+                status_code=403,
+                detail={
+                    "code": "model_not_allowlisted",
+                    "message": f"Model {body.model} not in org allowlist",
+                    "allowlist": policy.model_allowlist,
+                },
+            )
+    if body.fetch_web_context and body.web_purpose:
+        if body.web_purpose not in policy.allowed_purposes:
+            await state.audit.record(
+                org_id=org.org_id,
+                tenant_id=tenant_rec.tenant_id,
+                action="policy.purpose_deny",
+                detail={"purpose": body.web_purpose},
+                allowed=False,
+            )
+            raise HTTPException(
+                status_code=403,
+                detail={
+                    "code": "purpose_not_allowed",
+                    "message": f"Purpose {body.web_purpose} not allowed by org policy",
+                    "allowed_purposes": policy.allowed_purposes,
+                },
+            )
 
 
 def _openai_error(
@@ -222,9 +310,31 @@ async def validation_exception_handler(
     )
 
 
+async def _ensure_state() -> None:
+    """Idempotent init for ASGI servers/tests that hit routes before lifespan."""
+    if getattr(state, "tenants", None) is not None:
+        return
+    settings = get_settings()
+    store = await build_store(settings)
+    state.settings = settings
+    state.store = store
+    state.meter = Meter(store, settings)
+    state.tenants = TenantRegistry(store, settings)
+    state.orgs = OrgRegistry(store)
+    state.ledger = CleanLedger(store, settings)
+    state.audit = AuditLog(store)
+    state.sso = SsoService(store, settings, state.orgs)
+    state.mock = MockProvider()
+    state.openai = OpenAIProvider(
+        settings.openai_api_key or "", settings.openai_base_url
+    )
+    state.anthropic = AnthropicProvider(settings.anthropic_api_key or "")
+
+
 async def auth_tenant(
     authorization: str | None = Header(default=None),
 ) -> tuple[str, TenantRecord]:
+    await _ensure_state()
     key = extract_bearer(authorization)
     record = await state.tenants.resolve(key)
     if record is None:
@@ -589,6 +699,36 @@ async def public_stats(request: Request) -> dict[str, Any]:
     }
 
 
+@app.get("/v1/ledger")
+async def tenant_ledger(
+    cost_center: str = "",
+    limit: int = 200,
+    auth: tuple[str, TenantRecord] = Depends(auth_tenant),
+) -> dict[str, Any]:
+    """Tenant-scoped clean ledger (use /v1/org/ledger when org-bound)."""
+    _key, tenant = auth
+    await rate_limit(_key, tenant.tenant_id)
+    org_id = tenant.org_id or ""
+    summary = await state.ledger.summarize(
+        org_id=org_id,
+        tenant_id=tenant.tenant_id if not org_id else "",
+        cost_center=cost_center or tenant.cost_center or "",
+    )
+    events = await state.ledger.list_events(
+        org_id=org_id,
+        tenant_id=tenant.tenant_id if not org_id else "",
+        cost_center=cost_center or "",
+        limit=min(max(limit, 1), 5000),
+    )
+    return {
+        "tenant_id": tenant.tenant_id,
+        "org_id": org_id or None,
+        "cost_center": tenant.cost_center,
+        "summary": summary,
+        "events": state.ledger.export_json(events),
+    }
+
+
 @app.get("/v1/enterprise/skus")
 async def enterprise_skus(
     auth: tuple[str, TenantRecord] = Depends(auth_tenant),
@@ -627,16 +767,28 @@ async def enterprise_skus(
                 "billing": "monthly",
                 "billing_model": "subscription_seat",
                 "price_usd": s.at_enterprise_monthly_usd,
-                "managed_keys": True,
-                "sla": None,
-                "sla_note": "No contractual uptime SLA published for MVP; capacity SKU only.",
+                "managed_keys": bool(s.at_enterprise_managed_keys),
+                "sla": "target_99_9",
+                "sla_note": s.at_enterprise_sla_note,
                 "includes": [
-                    "dedicated_connection_pools",
-                    "single_tenant_redis",
-                    "regional_quota_reservation",
+                    "sso_oidc",
+                    "scim_user_provisioning",
+                    "org_console",
+                    "corporate_clean_ledger",
+                    "cost_center_attribution",
                     "audit_logs",
                     "managed_provider_keys",
+                    "org_policy_profiles",
+                    "agent_shell",
                 ],
+                "delivered": {
+                    "audit_logs": bool(s.at_enterprise_audit_logs),
+                    "managed_keys": bool(s.at_enterprise_managed_keys),
+                    "sso": True,
+                    "scim": True,
+                    "clean_ledger": True,
+                    "org_policy": True,
+                },
             },
             {
                 "id": "design-partner",
@@ -737,6 +889,8 @@ class IssueTenantBody(BaseModel):
     soft_quota_usd: float = 0.0
     request_cap: int = 0
     partner_days: int = 0
+    org_id: str = ""
+    cost_center: str = "default"
 
 
 class TenantStatusBody(BaseModel):
@@ -941,6 +1095,8 @@ async def admin_issue_tenant(
         soft_quota_usd=soft,
         request_cap=caps,
         partner_days=days or s.at_design_partner_days,
+        org_id=body.org_id,
+        cost_center=body.cost_center or "default",
     )
     return {
         "api_key": raw_key,
@@ -1187,6 +1343,13 @@ async def edge_hit_meter(
         total_tokens=max(0, int(body.total_tokens)),
         stripe_customer_id=tenant_rec.stripe_customer_id or "",
     )
+    await _append_ledger(
+        tenant_rec,
+        kind="cache_hit",
+        tokens=max(0, int(body.total_tokens)),
+        pipe_usd=event.billed_usd,
+        cache_hit=True,
+    )
     return {
         "ok": True,
         "billed_usd": event.billed_usd,
@@ -1203,17 +1366,28 @@ async def chat_completions(
 ):
     api_key, tenant_rec = auth
     await rate_limit(api_key, tenant_rec.tenant_id)
+    await _org_policy_gate(tenant_rec, body)
     tenant = tenant_rec.tenant_id
     stripe_customer = tenant_rec.stripe_customer_id or ""
     messages = [m.model_dump() for m in body.messages]
     upstream_key = (x_ohm_upstream_key or "").strip()
-    # Enterprise managed pool may omit BYOK and use Ohm env keys
+    # Enterprise managed pool / org policy may omit BYOK and use Ohm env keys
+    org_managed = False
+    if tenant_rec.org_id:
+        _org = await state.orgs.get(tenant_rec.org_id)
+        org_managed = bool(_org and _org.policy_obj().managed_keys)
     allow_fallback = state.settings.at_byok_allow_env_fallback or (
         tenant_rec.plan in ("enterprise", "dev")
+    ) or (
+        org_managed and state.settings.at_enterprise_managed_keys
     )
 
     assert_cache_training_denied(state.settings.at_compliance_allow_cache_training)
     no_store = (body.cache_control or "").strip().lower() == "no_store"
+    if tenant_rec.org_id and not no_store:
+        _org2 = await state.orgs.get(tenant_rec.org_id)
+        if _org2 and _org2.policy_obj().default_cache_no_store:
+            no_store = True
 
     fetch_count = 0
     web_purpose = body.web_purpose or ""
@@ -1298,8 +1472,16 @@ async def chat_completions(
             )
             fetch_count = len([d for d in docs if d.get("ok")]) or 0
             if fetch_count:
-                await state.meter.record_fetch(
+                fev = await state.meter.record_fetch(
                     tenant, fetch_count, stripe_customer_id=stripe_customer
+                )
+                await _append_ledger(
+                    tenant_rec,
+                    kind="fetch",
+                    model=body.model,
+                    fetches=fetch_count,
+                    pipe_usd=fev.billed_usd,
+                    purpose=str(web_purpose or ""),
                 )
 
     extras = {
@@ -1333,6 +1515,15 @@ async def chat_completions(
                 cache_hit=True,
                 total_tokens=total,
                 stripe_customer_id=stripe_customer,
+            )
+            await _append_ledger(
+                tenant_rec,
+                kind="cache_hit",
+                model=body.model,
+                tokens=total,
+                pipe_usd=event.billed_usd,
+                cache_hit=True,
+                purpose=str(web_purpose or ""),
             )
             hit_headers = {
                 **cache_headers,
@@ -1426,11 +1617,20 @@ async def chat_completions(
                     if usage_total is not None
                     else approx_tokens_from_sse_lines(collected)
                 )
-                await state.meter.record_chat(
+                sev = await state.meter.record_chat(
                     tenant,
                     cache_hit=False,
                     total_tokens=total_tokens,
                     stripe_customer_id=stripe_customer,
+                )
+                await _append_ledger(
+                    tenant_rec,
+                    kind="cache_miss",
+                    model=body.model,
+                    tokens=total_tokens,
+                    pipe_usd=sev.billed_usd,
+                    cache_hit=False,
+                    purpose=str(web_purpose or ""),
                 )
                 if not no_store:
                     # Streamed MISS populates the same cache entry the JSON
@@ -1489,12 +1689,22 @@ async def chat_completions(
         total_tokens=total,
         stripe_customer_id=stripe_customer,
     )
+    await _append_ledger(
+        tenant_rec,
+        kind="cache_miss",
+        model=body.model,
+        tokens=total,
+        pipe_usd=event.billed_usd,
+        cache_hit=False,
+        purpose=str(web_purpose or ""),
+    )
     return JSONResponse(
         result,
         headers={
             **cache_headers,
             "X-AT-Cache": "BYPASS" if no_store else "MISS",
             "X-AT-Billed-USD": f"{event.billed_usd:.6f}",
+            "X-Ohm-Cost-Center": tenant_rec.cost_center or "default",
         },
     )
 
