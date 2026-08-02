@@ -64,7 +64,11 @@ jobs:
           kubectl -n "$NAMESPACE" set image deploy/gateway gateway="$ECR_REGISTRY/at-utility/gateway:$TAG"
           kubectl -n "$NAMESPACE" set image deploy/gateway-rs gateway-rs="$ECR_REGISTRY/at-utility/gateway-rs:$TAG"
           kubectl -n "$NAMESPACE" set image deploy/ingest-worker ingest="$ECR_REGISTRY/at-utility/ingest-worker:$TAG"
-          kubectl -n "$NAMESPACE" set image cronjob/quota-allotment allot="$ECR_REGISTRY/at-utility/gateway:$TAG"
+          # CronJob image roll is best-effort: ohm-github-deployer may lack batch/cronjobs RBAC.
+          # Deployments above are the live API path; allotment job can lag until IAM is widened.
+          if ! kubectl -n "$NAMESPACE" set image cronjob/quota-allotment allot="$ECR_REGISTRY/at-utility/gateway:$TAG"; then
+            echo "::warning::quota-allotment CronJob image not updated (RBAC or missing object) — continuing"
+          fi
           kubectl -n "$NAMESPACE" rollout status deploy/gateway --timeout=5m
           kubectl -n "$NAMESPACE" rollout status deploy/gateway-rs --timeout=5m
           kubectl -n "$NAMESPACE" rollout status deploy/ingest-worker --timeout=5m

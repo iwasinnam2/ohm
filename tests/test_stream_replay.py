@@ -6,31 +6,18 @@ from httpx import ASGITransport, AsyncClient
 
 from at_utility.config import get_settings
 from at_utility.main import app
-from at_utility.metering import Meter
-from at_utility.providers import MockProvider
-from at_utility.redis_store import MemoryStore
 from at_utility.stream_usage import (
     assemble_completion_from_sse_lines,
     sse_lines_from_completion,
 )
-from at_utility.tenants import TenantRegistry
-import at_utility.main as main_mod
+from tests.app_state import wire_memory_app_state
 
 HEADERS = {"Authorization": "Bearer sk-at-dev"}
 
 
 @pytest.fixture(autouse=True)
 async def _mem_state():
-    get_settings.cache_clear()
-    store = MemoryStore()
-    settings = get_settings()
-    main_mod.state.settings = settings
-    main_mod.state.store = store
-    main_mod.state.meter = Meter(store, settings)
-    main_mod.state.tenants = TenantRegistry(store, settings)
-    main_mod.state.mock = MockProvider()
-    main_mod.state.openai = None
-    main_mod.state.anthropic = None
+    store = await wire_memory_app_state()
     yield
     await store.close()
     get_settings.cache_clear()

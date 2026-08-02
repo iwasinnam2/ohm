@@ -5,28 +5,16 @@ from httpx import ASGITransport, AsyncClient
 
 from at_utility.config import get_settings
 from at_utility.main import app
-from at_utility.metering import Meter, billable_1k_units
-from at_utility.providers import MockProvider
-from at_utility.redis_store import MemoryStore
-from at_utility.tenants import TenantRegistry
+from at_utility.metering import billable_1k_units
 import at_utility.main as main_mod
 import at_utility.metering as metering_mod
+from tests.app_state import wire_memory_app_state
 
 
 @pytest.fixture(autouse=True)
 async def _mem_state():
-    get_settings.cache_clear()
-    store = MemoryStore()
-    settings = get_settings()
     # Never touch real Stripe from tests
-    settings.stripe_secret_key = ""
-    main_mod.state.settings = settings
-    main_mod.state.store = store
-    main_mod.state.meter = Meter(store, settings)
-    main_mod.state.tenants = TenantRegistry(store, settings)
-    main_mod.state.mock = MockProvider()
-    main_mod.state.openai = None
-    main_mod.state.anthropic = None
+    store = await wire_memory_app_state(clear_stripe=True)
     yield
     await store.close()
     get_settings.cache_clear()

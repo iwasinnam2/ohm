@@ -16,7 +16,8 @@ jobs:
           python-version: "3.11"
           cache: pip
       - name: Install
-        run: pip install -e ".[dev,billing]"
+        # mcp extra: directory-verification tests import ohm_mcp + mcp SDK
+        run: pip install -e ".[dev,billing,mcp]"
       - name: Test
         run: pytest -q
 
