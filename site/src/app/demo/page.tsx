@@ -20,9 +20,8 @@ export default function DemoPage() {
         </p>
         <ol className="demo-steps">
           <li>
-            Get a key at{" "}
-            <Link href="/billing/intermediate">Intermediate ($0 seat)</Link>{" "}
-            if you need one.
+            Restore a key on <Link href="/keys">API keys</Link>, or mint one at{" "}
+            <Link href="/billing/intermediate">Intermediate ($0 seat)</Link>.
           </li>
           <li>Paste the key below. Upstream/BYOK optional for <code>mock</code>.</li>
           <li>

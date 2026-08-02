@@ -4,23 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { OhmMark } from "@/components/OhmMark";
 import { cursorOhmInstallHref } from "@/lib/cursorMcp";
-
-const KEY_STORAGE = "ohm_api_key";
-const KEY_STORAGE_LOCAL = "ohm_api_key_backup";
-
-function readStoredKey(): string | null {
-  try {
-    const fromSession = sessionStorage.getItem(KEY_STORAGE);
-    if (fromSession) return fromSession;
-  } catch {
-    /* ignore */
-  }
-  try {
-    return localStorage.getItem(KEY_STORAGE_LOCAL);
-  } catch {
-    return null;
-  }
-}
+import { persistKey, readStoredKey } from "@/lib/keyStorage";
 
 export default function BillingSuccessPage() {
   const [apiKey, setApiKey] = useState<string | null>(null);
@@ -30,13 +14,7 @@ export default function BillingSuccessPage() {
   useEffect(() => {
     const key = readStoredKey();
     setApiKey(key);
-    if (key) {
-      try {
-        sessionStorage.setItem(KEY_STORAGE, key);
-      } catch {
-        /* ignore */
-      }
-    }
+    if (key) persistKey(key);
   }, []);
 
   const installHref = useMemo(() => {
@@ -80,8 +58,8 @@ export default function BillingSuccessPage() {
         </div>
       ) : (
         <p className="billing-form__error" role="alert">
-          Key not found in this browser. If you copied it before Stripe, use
-          that. Otherwise start again from{" "}
+          Key not found in this browser. Restore it on{" "}
+          <Link href="/keys">API keys</Link>, or mint a new one at{" "}
           <Link href="/billing/intermediate">Intermediate checkout</Link>.
         </p>
       )}
