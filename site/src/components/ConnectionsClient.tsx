@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { CopyBlock } from "@/components/CopyBlock";
+import { IntegrationBrandBoard } from "@/components/IntegrationBrandBoard";
 import { cursorOhmInstallHref } from "@/lib/cursorMcp";
 
 const KEY_PLACEHOLDER = "sk-at-YOUR_KEY";
@@ -141,14 +142,15 @@ export function ConnectionsClient() {
       <div className="page-head">
         <h1>Connections</h1>
         <p>
-          withOhm is a cog in your workflow machine, not another dashboard to
-          live in. Attach it once to the tools you already use — every host
-          below gets the same seven tools over MCP (an open protocol that lets
-          coding agents call external services).
+          Interconnectedness and accessibility — withOhm is a cog in your
+          workflow machine. Attach once to the tools you already use; every MCP
+          host below gets the same seven tools.
         </p>
       </div>
 
-      <div className="connect__setup">
+      <IntegrationBrandBoard showIntro={false} />
+
+      <div className="connect__setup" id="setup">
         <p className="connect__step">
           <strong>1.</strong> Install the server:
         </p>
@@ -172,7 +174,7 @@ export function ConnectionsClient() {
 
       <ul className="connect-grid">
         {HOSTS.map((host) => (
-          <li key={host.id} className="connect-card">
+          <li key={host.id} id={host.id} className="connect-card">
             <h2 className="connect-card__name">{host.name}</h2>
             <p className="connect-card__where">{host.where}</p>
             {host.id === "cursor" && cursorHref ? (

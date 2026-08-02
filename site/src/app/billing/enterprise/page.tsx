@@ -16,8 +16,8 @@ export default function EnterpriseBillingPage() {
         <p>
           The control plane for enterprise AI chaos: SSO tenancy, cost-center
           ledger, compliance policy, audit logs, and the Ohm Agent Shell —
-          from <strong>$2,500/month</strong>. Cursor optional. Govern the
-          entropy; rent the plumbing.
+          from <strong>$2,500/month</strong>. Connect the agents your teams
+          already use; govern the entropy; rent the plumbing.
         </p>
         <ul className="tier__pros">
           <li>OIDC SSO + SCIM user provisioning</li>

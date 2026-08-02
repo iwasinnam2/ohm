@@ -1,7 +1,8 @@
 # Quickstart
 
 Point any OpenAI-compatible client at one base URL. Keep your keys (BYOK).
-Cursor/MCP is optional.
+Connect MCP hosts from the [integrations board](/docs/integrations) when you
+want agents in the loop.
 
 ## Paths
 
@@ -10,7 +11,7 @@ Cursor/MCP is optional.
 3. **SDK base URL:** `https://api.withohm.dev/v1` (local edge: `http://localhost:8081/v1`).
 4. **BYOK:** send your provider key as `X-Ohm-Upstream-Key`. Authorization stays `sk-at-…`.
 5. **Govern:** [/org](/org) — cost centers, ledger statement, policy.
-6. **Optional MCP:** [Cursor](/docs/cursor) or [any MCP host](/docs/integrations) — compatibility clients.
+6. **Connect tools:** [Integrations](/docs/integrations) — Cursor, Claude Code, VS Code, Windsurf, Zed.
 7. **Enterprise:** [/billing/enterprise](/billing/enterprise).
 
 ## Python

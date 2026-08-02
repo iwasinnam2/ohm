@@ -4,7 +4,7 @@ import { ConnectionsClient } from "@/components/ConnectionsClient";
 export const metadata: Metadata = {
   title: "Connections",
   description:
-    "Connect withOhm to Cursor, Claude Code, VS Code, Windsurf, and Zed — one MCP attach, seven tools, keys that stay yours.",
+    "Interconnectedness and accessibility — connect withOhm to Cursor, Claude Code, VS Code, Windsurf, Zed, and the pipe stack.",
 };
 
 export default function ConnectionsPage() {
