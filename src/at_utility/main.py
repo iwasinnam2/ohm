@@ -14,6 +14,7 @@ from typing import Any, AsyncIterator, Optional
 
 from fastapi import Depends, FastAPI, Header, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel, Field
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -203,6 +204,34 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 
 
 app.add_middleware(SecurityHeadersMiddleware)
+# Browser Shell / org console (withohm.dev → api). Last added = outermost.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "https://www.withohm.dev",
+        "https://withohm.dev",
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://localhost:3001",
+        "http://127.0.0.1:3001",
+    ],
+    allow_origin_regex=r"https://.*\.amplifyapp\.com",
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allow_headers=[
+        "Authorization",
+        "Content-Type",
+        "X-Ohm-Upstream-Key",
+        "X-Ohm-Session",
+    ],
+    expose_headers=[
+        "X-AT-Cache",
+        "X-AT-Billed-Usd",
+        "X-AT-Plane",
+        "X-Ohm-Cost-Center",
+    ],
+    max_age=86400,
+)
 app.include_router(org_router)
 
 
