@@ -97,6 +97,36 @@ class AppState:
 state = AppState()
 
 
+def bind_runtime(
+    st: AppState,
+    store: CacheStore,
+    settings: Settings,
+    *,
+    mock: Optional[MockProvider] = None,
+    openai: Optional[OpenAIProvider] = None,
+    anthropic: Optional[AnthropicProvider] = None,
+    build_provider_shells: bool = False,
+) -> None:
+    """Wire full AppState (tenants + org/ledger/SSO stack). Safe to call from tests."""
+    st.settings = settings
+    st.store = store
+    st.meter = Meter(store, settings)
+    st.tenants = TenantRegistry(store, settings)
+    st.orgs = OrgRegistry(store)
+    st.ledger = CleanLedger(store, settings)
+    st.audit = AuditLog(store)
+    st.sso = SsoService(store, settings, st.orgs)
+    st.mock = mock if mock is not None else MockProvider()
+    if build_provider_shells:
+        st.openai = OpenAIProvider(
+            settings.openai_api_key or "", settings.openai_base_url
+        )
+        st.anthropic = AnthropicProvider(settings.anthropic_api_key or "")
+    else:
+        st.openai = openai
+        st.anthropic = anthropic
+
+
 BILLING_MAINTENANCE_INTERVAL_SECONDS = 60
 # Delinquency sweep scans the tenant keyspace — run every Nth tick, not every minute.
 DELINQUENCY_SWEEP_EVERY_TICKS = 10
@@ -130,20 +160,8 @@ async def _billing_maintenance_loop() -> None:
 async def lifespan(_app: FastAPI):
     settings = get_settings()
     store = await build_store(settings)
-    state.settings = settings
-    state.store = store
-    state.meter = Meter(store, settings)
-    state.tenants = TenantRegistry(store, settings)
-    state.orgs = OrgRegistry(store)
-    state.ledger = CleanLedger(store, settings)
-    state.audit = AuditLog(store)
-    state.sso = SsoService(store, settings, state.orgs)
-    state.mock = MockProvider()
-    # Always construct shells so BYOK can clone with X-Ohm-Upstream-Key
-    state.openai = OpenAIProvider(
-        settings.openai_api_key or "", settings.openai_base_url
-    )
-    state.anthropic = AnthropicProvider(settings.anthropic_api_key or "")
+    # Always construct provider shells so BYOK can clone with X-Ohm-Upstream-Key
+    bind_runtime(state, store, settings, build_provider_shells=True)
     maintenance = asyncio.create_task(_billing_maintenance_loop())
     log.info("ohm gateway ready region=%s", settings.at_region)
     yield
@@ -311,24 +329,23 @@ async def validation_exception_handler(
 
 
 async def _ensure_state() -> None:
-    """Idempotent init for ASGI servers/tests that hit routes before lifespan."""
-    if getattr(state, "tenants", None) is not None:
+    """Idempotent init for ASGI servers/tests that hit routes before lifespan.
+
+    Also hydrates the org/ledger stack when older test fixtures only wired
+    tenants — otherwise org routes see AppState without ``orgs``.
+    """
+    if getattr(state, "tenants", None) is None:
+        settings = get_settings()
+        store = await build_store(settings)
+        bind_runtime(state, store, settings, build_provider_shells=True)
         return
-    settings = get_settings()
-    store = await build_store(settings)
-    state.settings = settings
-    state.store = store
-    state.meter = Meter(store, settings)
-    state.tenants = TenantRegistry(store, settings)
-    state.orgs = OrgRegistry(store)
-    state.ledger = CleanLedger(store, settings)
-    state.audit = AuditLog(store)
-    state.sso = SsoService(store, settings, state.orgs)
-    state.mock = MockProvider()
-    state.openai = OpenAIProvider(
-        settings.openai_api_key or "", settings.openai_base_url
-    )
-    state.anthropic = AnthropicProvider(settings.anthropic_api_key or "")
+    if getattr(state, "orgs", None) is None:
+        store = state.store
+        settings = state.settings
+        state.orgs = OrgRegistry(store)
+        state.ledger = CleanLedger(store, settings)
+        state.audit = AuditLog(store)
+        state.sso = SsoService(store, settings, state.orgs)
 
 
 async def auth_tenant(
