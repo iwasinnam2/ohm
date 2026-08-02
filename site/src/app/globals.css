@@ -2451,15 +2451,6 @@ pre {
   opacity: 0.85;
 }
 
-.agent-shell__demo {
-  font-family: var(--font-plex-mono), ui-monospace, monospace;
-  font-size: 0.85rem;
-  margin: 0.5rem 0 0;
-  padding: 0.55rem 0.75rem;
-  border-left: 3px solid var(--accent, #c4a35a);
-  background: color-mix(in srgb, var(--accent, #c4a35a) 12%, transparent);
-}
-
 .demo-steps {
   margin: 1rem 0 1.5rem;
   padding-left: 1.25rem;
@@ -2469,6 +2460,64 @@ pre {
 
 .demo-steps li {
   margin-bottom: 0.4rem;
+}
+
+.demo-result {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3, 1rem);
+  margin: var(--space-3, 1rem) 0;
+  padding: var(--space-3, 1rem) var(--space-4, 1.25rem);
+  border: 1px solid var(--line);
+  border-radius: var(--radius, 4px);
+  background: var(--surface);
+}
+
+.demo-result__call {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.demo-result__label {
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.demo-result__badge {
+  font-family: var(--font-plex-mono), ui-monospace, monospace;
+  font-weight: 600;
+  font-size: 1.05rem;
+  letter-spacing: 0.04em;
+}
+
+.demo-result__badge--miss {
+  color: color-mix(in srgb, #c47a5a 85%, var(--fg));
+}
+
+.demo-result__badge--hit {
+  color: color-mix(in srgb, #5a9e6f 90%, var(--fg));
+}
+
+.demo-result__arrow {
+  color: var(--muted);
+  font-size: 1.25rem;
+  padding-top: 1rem;
+}
+
+.demo-result__ledger {
+  flex: 1 1 100%;
+  margin: 0;
+  font-family: var(--font-plex-mono), ui-monospace, monospace;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.agent-shell--demo .agent-shell__bar input[readonly] {
+  opacity: 0.85;
 }
 
 .agent-shell__thread {
