@@ -4,7 +4,7 @@ import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 
 const API = (
-  process.env.NEXT_PUBLIC_OHM_API_URL || "https://api.withohm.dev"
+  "/api/pipe"
 ).replace(/\/$/, "");
 
 function CallbackInner() {

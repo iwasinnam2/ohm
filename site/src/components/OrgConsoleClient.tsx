@@ -2,9 +2,7 @@
 
 import { useCallback, useState } from "react";
 
-const API = (
-  process.env.NEXT_PUBLIC_OHM_API_URL || "https://api.withohm.dev"
-).replace(/\/$/, "");
+const API = "/api/pipe";
 
 function currentUtcMonth(): string {
   const d = new Date();

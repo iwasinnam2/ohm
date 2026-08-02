@@ -2,9 +2,8 @@
 
 import { useState } from "react";
 
-const API = (
-  process.env.NEXT_PUBLIC_OHM_API_URL || "https://api.withohm.dev"
-).replace(/\/$/, "");
+// Always same-origin — browser→api.withohm.dev lacks CORS until the edge roll.
+const API = "/api/pipe";
 
 const DEMO_PROMPT = "ohm-self-proof-v1";
 
@@ -21,15 +20,34 @@ async function chatOnce(
     Authorization: `Bearer ${apiKey}`,
   };
   if (upstream) headers["X-Ohm-Upstream-Key"] = upstream;
-  const res = await fetch(`${API}/v1/chat/completions`, {
-    method: "POST",
-    headers,
-    body: JSON.stringify({ model, messages }),
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${API}/v1/chat/completions`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ model, messages }),
+    });
+  } catch (e) {
+    return {
+      cache: "?",
+      content: "",
+      billed: "",
+      center: "",
+      ok: false,
+      err:
+        `Network error talking to ${API}: ${String(e)}. ` +
+        "If this is a CORS/edge issue, the site should use /api/pipe — hard-refresh and retry.",
+    };
+  }
   const cache = res.headers.get("x-at-cache") || "?";
   const billed = res.headers.get("x-at-billed-usd") || "";
   const center = res.headers.get("x-ohm-cost-center") || "";
-  const data = await res.json();
+  let data: unknown;
+  try {
+    data = await res.json();
+  } catch {
+    data = { error: { message: await res.text().catch(() => "non-JSON body") } };
+  }
   if (!res.ok) {
     return {
       cache,
@@ -41,7 +59,8 @@ async function chatOnce(
     };
   }
   const content =
-    data?.choices?.[0]?.message?.content || JSON.stringify(data);
+    (data as { choices?: { message?: { content?: string } }[] })?.choices?.[0]
+      ?.message?.content || JSON.stringify(data);
   return { cache, content: String(content), billed, center, ok: true };
 }
 

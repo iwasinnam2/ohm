@@ -108,6 +108,69 @@ fn unauthorized() -> Response<ProxyBody> {
         .unwrap()
 }
 
+/// Browser Shell / org console call api.withohm.dev from withohm.dev — need CORS.
+fn allowed_cors_origin(origin: Option<&str>) -> Option<&str> {
+    let origin = origin?;
+    const ALLOWED: &[&str] = &[
+        "https://www.withohm.dev",
+        "https://withohm.dev",
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://localhost:3001",
+        "http://127.0.0.1:3001",
+    ];
+    if ALLOWED.contains(&origin) {
+        return Some(origin);
+    }
+    // Amplify preview deploys of the marketing site
+    if origin.starts_with("https://") && origin.ends_with(".amplifyapp.com") {
+        return Some(origin);
+    }
+    None
+}
+
+fn cors_preflight(origin: Option<&str>) -> Response<ProxyBody> {
+    let mut builder = Response::builder().status(StatusCode::NO_CONTENT);
+    if let Some(o) = allowed_cors_origin(origin) {
+        builder = builder
+            .header("access-control-allow-origin", o)
+            .header(
+                "access-control-allow-methods",
+                "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+            )
+            .header(
+                "access-control-allow-headers",
+                "authorization, content-type, x-ohm-upstream-key, x-ohm-session",
+            )
+            .header("access-control-max-age", "86400")
+            .header("access-control-allow-credentials", "true")
+            .header("vary", "Origin");
+    }
+    builder.body(full_body("")).unwrap()
+}
+
+fn with_cors(mut res: Response<ProxyBody>, origin: Option<&str>) -> Response<ProxyBody> {
+    if let Some(o) = allowed_cors_origin(origin) {
+        let headers = res.headers_mut();
+        headers.insert(
+            hyper::header::HeaderName::from_static("access-control-allow-origin"),
+            o.parse().unwrap(),
+        );
+        headers.insert(
+            hyper::header::HeaderName::from_static("access-control-allow-credentials"),
+            "true".parse().unwrap(),
+        );
+        headers.insert(
+            hyper::header::HeaderName::from_static("access-control-expose-headers"),
+            "x-at-cache, x-at-billed-usd, x-at-plane, x-ohm-cost-center"
+                .parse()
+                .unwrap(),
+        );
+        headers.insert(hyper::header::VARY, "Origin".parse().unwrap());
+    }
+    res
+}
+
 fn extract_bearer(req: &Request<Incoming>) -> Option<String> {
     req.headers()
         .get(hyper::header::AUTHORIZATION)
@@ -393,6 +456,22 @@ async fn proxy_once(
 }
 
 async fn handle(app: Arc<App>, req: Request<Incoming>) -> Result<Response<ProxyBody>, Infallible> {
+    let origin = req
+        .headers()
+        .get(hyper::header::ORIGIN)
+        .and_then(|v| v.to_str().ok())
+        .map(|s| s.to_string());
+    if req.method() == Method::OPTIONS {
+        return Ok(cors_preflight(origin.as_deref()));
+    }
+    let res = handle_inner(app, req).await?;
+    Ok(with_cors(res, origin.as_deref()))
+}
+
+async fn handle_inner(
+    app: Arc<App>,
+    req: Request<Incoming>,
+) -> Result<Response<ProxyBody>, Infallible> {
     let cfg = &app.cfg;
     let path_only = req.uri().path();
     // Liveness is answered at the edge; readiness is proxied without auth so
