@@ -2,23 +2,9 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { persistKey } from "@/lib/keyStorage";
 
-const KEY_STORAGE = "ohm_api_key";
-const KEY_STORAGE_LOCAL = "ohm_api_key_backup";
 const FORM_STORAGE = "ohm_checkout_form";
-
-function persistKey(key: string) {
-  try {
-    sessionStorage.setItem(KEY_STORAGE, key);
-  } catch {
-    /* ignore */
-  }
-  try {
-    localStorage.setItem(KEY_STORAGE_LOCAL, key);
-  } catch {
-    /* ignore */
-  }
-}
 
 export function BillingCheckoutForm({ commit = "" }: { commit?: string }) {
   const [organisation, setOrganisation] = useState("");

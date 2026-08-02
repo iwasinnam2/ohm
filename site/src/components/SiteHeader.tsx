@@ -22,6 +22,7 @@ export function SiteHeader() {
 
   const links = [
     { href: "/workbench", label: "Shell" },
+    { href: "/keys", label: "Keys" },
     { href: "/org", label: "Org" },
     { href: "/connections", label: "Connections" },
     { href: "/docs", label: "Docs" },
