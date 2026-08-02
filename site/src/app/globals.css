@@ -2286,6 +2286,26 @@ pre {
   opacity: 0.85;
 }
 
+.agent-shell__demo {
+  font-family: var(--font-plex-mono), ui-monospace, monospace;
+  font-size: 0.85rem;
+  margin: 0.5rem 0 0;
+  padding: 0.55rem 0.75rem;
+  border-left: 3px solid var(--accent, #c4a35a);
+  background: color-mix(in srgb, var(--accent, #c4a35a) 12%, transparent);
+}
+
+.demo-steps {
+  margin: 1rem 0 1.5rem;
+  padding-left: 1.25rem;
+  max-width: 40rem;
+  line-height: 1.5;
+}
+
+.demo-steps li {
+  margin-bottom: 0.4rem;
+}
+
 .agent-shell__thread {
   min-height: 12rem;
   margin: var(--space-3, 1rem) 0;

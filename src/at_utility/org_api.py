@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import re
 import secrets
 import time
+from datetime import datetime, timezone
 from typing import Any, Optional
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request
@@ -13,6 +15,26 @@ from pydantic import BaseModel, Field
 from at_utility.tenants import TenantRecord
 
 router = APIRouter(tags=["org"])
+
+_MONTH_RE = re.compile(r"^(\d{4})-(\d{2})$")
+
+
+def month_utc_bounds(month: str) -> tuple[int, int]:
+    """Return [since_ts, until_ts) UTC bounds for YYYY-MM."""
+    m = _MONTH_RE.match(month or "")
+    if not m:
+        raise HTTPException(
+            status_code=400, detail="month must be YYYY-MM (UTC calendar month)"
+        )
+    year, mon = int(m.group(1)), int(m.group(2))
+    if mon < 1 or mon > 12:
+        raise HTTPException(status_code=400, detail="month must be YYYY-MM")
+    start = datetime(year, mon, 1, tzinfo=timezone.utc)
+    if mon == 12:
+        end = datetime(year + 1, 1, 1, tzinfo=timezone.utc)
+    else:
+        end = datetime(year, mon + 1, 1, tzinfo=timezone.utc)
+    return int(start.timestamp()), int(end.timestamp())
 
 
 def _state():
@@ -265,39 +287,99 @@ async def org_ledger_export(
     format: str = Query(default="csv", pattern="^(csv|json)$"),
     cost_center: str = "",
     since_ts: int = 0,
+    until_ts: int = 0,
+    month: str = "",
     ctx: dict[str, Any] = Depends(auth_org_session),
 ):
     st = _state()
     org = ctx["org"]
+    if month:
+        since_ts, until_ts = month_utc_bounds(month)
     events = await st.ledger.list_events(
         org_id=org.org_id,
         cost_center=cost_center,
         limit=10_000,
         since_ts=since_ts,
+        until_ts=until_ts,
     )
     await st.audit.record(
         org_id=org.org_id,
         actor=ctx.get("email") or "api_key",
         action="org.ledger_export",
-        detail={"format": format, "count": len(events)},
+        detail={"format": format, "count": len(events), "month": month or None},
     )
     if format == "json":
         return {
             "org_id": org.org_id,
             "exported_at": int(time.time()),
+            "month": month or None,
+            "since_ts": since_ts or None,
+            "until_ts": until_ts or None,
             "events": st.ledger.export_json(events),
             "summary": await st.ledger.summarize(
-                org_id=org.org_id, cost_center=cost_center, since_ts=since_ts
+                org_id=org.org_id,
+                cost_center=cost_center,
+                since_ts=since_ts,
+                until_ts=until_ts,
             ),
         }
     csv_body = st.ledger.export_csv(events)
+    fname = (
+        f"ohm-ledger-{org.org_id}-{month}.csv"
+        if month
+        else f"ohm-ledger-{org.org_id}.csv"
+    )
     return PlainTextResponse(
         csv_body,
         media_type="text/csv",
-        headers={
-            "Content-Disposition": f'attachment; filename="ohm-ledger-{org.org_id}.csv"'
-        },
+        headers={"Content-Disposition": f'attachment; filename="{fname}"'},
     )
+
+
+@router.get("/v1/org/ledger/statement")
+async def org_ledger_statement(
+    month: str = Query(..., description="UTC calendar month YYYY-MM"),
+    cost_center: str = "",
+    ctx: dict[str, Any] = Depends(auth_org_session),
+) -> dict[str, Any]:
+    """Monthly FinOps statement — summary by cost center for a UTC month."""
+    st = _state()
+    org = ctx["org"]
+    since_ts, until_ts = month_utc_bounds(month)
+    summary = await st.ledger.summarize(
+        org_id=org.org_id,
+        cost_center=cost_center,
+        since_ts=since_ts,
+        until_ts=until_ts,
+    )
+    await st.audit.record(
+        org_id=org.org_id,
+        actor=ctx.get("email") or "api_key",
+        action="org.ledger_statement",
+        detail={"month": month, "event_count": summary.get("event_count", 0)},
+    )
+    return {
+        "org_id": org.org_id,
+        "month": month,
+        "since_ts": since_ts,
+        "until_ts": until_ts,
+        "timezone": "UTC",
+        "summary": summary,
+        "by_cost_center": summary.get("by_cost_center", {}),
+        "pipe_rent_usd": summary.get("pipe_rent_usd", 0),
+        "estimated_provider_avoided_usd": summary.get(
+            "estimated_provider_avoided_usd", 0
+        ),
+        "cache_hits": summary.get("cache_hits", 0),
+        "cache_misses": summary.get("cache_misses", 0),
+        "fetches": summary.get("fetches", 0),
+        "estimate_only": True,
+        "note": (
+            "FinOps export contract: pipe rent is billable Ohm meters; "
+            "estimated_provider_avoided_usd is blended list estimate on cache "
+            "hits only. Provider invoice import / true reconcile not yet wired."
+        ),
+    }
 
 
 @router.get("/v1/org/audit")

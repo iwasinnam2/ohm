@@ -1,54 +1,52 @@
 import Link from "next/link";
 import { OhmMark } from "@/components/OhmMark";
-import { formatUsd, getPublicStats } from "@/lib/publicApi";
 
 const BOARD = [
   {
+    href: "/workbench",
+    eyebrow: "Shell",
+    title: "Agent Shell",
+    desc: "Thin workbench that talks only through the Ohm pipe — miss→HIT demo built in.",
+    go: "Open the shell",
+  },
+  {
+    href: "/org",
+    eyebrow: "Govern",
+    title: "Org & ledger",
+    desc: "Cost centers, FinOps export, policy — corporate clean ledger.",
+    go: "Open org console",
+  },
+  {
+    href: "/docs/quickstart",
+    eyebrow: "base_URL",
+    title: "OpenAI-compatible pipe",
+    desc: "Point any SDK at api.withohm.dev/v1. Keep your keys (BYOK).",
+    go: "Quickstart",
+  },
+  {
+    href: "/demo",
+    eyebrow: "Proof",
+    title: "60s miss→HIT demo",
+    desc: "Identical call twice — watch Redis replay and the ledger tick.",
+    go: "Run the demo",
+  },
+  {
+    href: "/docs/enterprise-chaos",
+    eyebrow: "Enterprise",
+    title: "Chaos governor",
+    desc: "SSO, audit, compliant fetch — Cursor optional.",
+    go: "Read the thesis",
+  },
+  {
     href: "/connections",
-    eyebrow: "Connect",
-    title: "Connections",
-    desc: "Cursor, Claude Code, VS Code, Windsurf, Zed — one attach, seven tools.",
-    go: "Open the hub",
-  },
-  {
-    href: "/docs/commands",
-    eyebrow: "Commands",
-    title: "Command catalog",
-    desc: "Every MCP tool and skill, with parameters and example prompts.",
-    go: "Browse the catalog",
-  },
-  {
-    href: "/docs/optimized-usage",
-    eyebrow: "Cache",
-    title: "Prompt replay",
-    desc: "Identical prompts replay from Redis instead of re-billing the provider.",
-    go: "Run it optimized",
-  },
-  {
-    href: "/fetch",
-    eyebrow: "Fetch",
-    title: "Compliant web context",
-    desc: "Public pages in, redacted markdown out — robots-gated and metered.",
-    go: "Try the demo",
-  },
-  {
-    href: "/docs/pricing",
-    eyebrow: "Meters",
-    title: "Pipe rent",
-    desc: "A $0 seat plus metered rates. You rent the plumbing, not the model.",
-    go: "See the rates",
-  },
-  {
-    href: "/status",
-    eyebrow: "Grid",
-    title: "Status & limits",
-    desc: "Edge availability, rate limits, and provider health at a glance.",
-    go: "Check the grid",
+    eyebrow: "Also",
+    title: "Any client (incl. Cursor)",
+    desc: "MCP attach for Cursor, Claude Code, VS Code — compatibility, not the product.",
+    go: "Connect tools",
   },
 ] as const;
 
-export default async function HomePage() {
-  const stats = await getPublicStats();
+export default function HomePage() {
   return (
     <>
       <section className="hero">
@@ -56,40 +54,30 @@ export default async function HomePage() {
           <OhmMark className="hero__mark" />
           <h1 className="hero__brand">withOhm</h1>
         </div>
-        <p className="hero__strapline">Interconnectedness and accessibility.</p>
+        <p className="hero__strapline">Govern AI chaos. Rent the plumbing.</p>
         <p className="hero__promise">
-          Model switching, prompt caching and compliant web browsing — one
-          OpenAI-compatible pipe. Connect it to Cursor, Claude Code, VS Code
-          and more over MCP, bring your own provider keys (BYOK), and pay
-          metered rates on a $0 Intermediate seat.
+          Point any OpenAI-compatible client — or the Ohm Agent Shell — at one
+          base URL. Exact-match prompt replay, compliant web ingest, and a
+          clean ledger. Bring your own provider keys. Cursor is optional.
         </p>
-        {stats && stats.estimated_upstream_avoided_usd > 0 ? (
-          <p className="hero__promise">
-            Tenants have avoided an estimated{" "}
-            <strong>{formatUsd(stats.estimated_upstream_avoided_usd)}</strong>{" "}
-            of upstream model spend via prompt replay.
-          </p>
-        ) : null}
         <div className="hero__cta cta-row">
-          {/* Costco doctrine: title -> card entry in one click. Browsing is
-              the secondary path, not the toll gate. */}
-          <Link href="/billing/intermediate" className="btn btn--primary">
-            Start now — $0 seat
+          <Link href="/workbench" className="btn btn--primary">
+            Open Agent Shell
           </Link>
-          <Link href="/subscriptions" className="link-quiet">
-            Explore subscriptions
+          <Link href="/billing/intermediate" className="link-quiet">
+            Get a $0 seat
           </Link>
-          <Link href="/connections" className="link-quiet">
-            Connect your tools
+          <Link href="/demo" className="link-quiet">
+            60s demo
           </Link>
           <Link href="/billing/enterprise" className="link-quiet">
-            Enterprise application
+            Enterprise
           </Link>
         </div>
       </section>
       <section className="board" aria-labelledby="board-label">
         <p className="board__label" id="board-label">
-          The board — everything, compartmentalised
+          The board — pipe first, any client second
         </p>
         <ul className="board__grid">
           {BOARD.map((item) => (

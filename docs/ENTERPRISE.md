@@ -10,6 +10,7 @@ Thesis: [ENTERPRISE_CHAOS.md](ENTERPRISE_CHAOS.md).
 | Org model | `POST /v1/org`, `GET /v1/org` |
 | Cost centers | `PUT /v1/org/cost-centers` |
 | Clean ledger | `GET /v1/org/ledger`, `GET /v1/org/ledger/export` |
+| Monthly statement | `GET /v1/org/ledger/statement?month=YYYY-MM` |
 | Audit log | `GET /v1/org/audit` |
 | Org policy | `PUT /v1/org/policy` |
 | Service keys | `POST /v1/org/keys` |
@@ -21,6 +22,36 @@ Thesis: [ENTERPRISE_CHAOS.md](ENTERPRISE_CHAOS.md).
 | Org console | https://www.withohm.dev/org |
 
 SKU catalog: `GET /v1/enterprise/skus` → `delivered` flags.
+
+## FinOps export contract
+
+**Monthly statement** — chargeback-grade summary for one UTC calendar month:
+
+```http
+GET /v1/org/ledger/statement?month=2026-08
+Authorization: Bearer sk-at-…
+```
+
+Response fields (selected):
+
+| Field | Meaning |
+|-------|---------|
+| `month` / `since_ts` / `until_ts` | UTC month window `[since, until)` |
+| `by_cost_center` | Pipe rent + estimated provider avoided per center |
+| `pipe_rent_usd` | Billable Ohm meters for the window |
+| `estimated_provider_avoided_usd` | Blended list estimate on **cache hits only** |
+| `cache_hits` / `cache_misses` / `fetches` | Event counts |
+| `estimate_only` | Always `true` until invoice import lands |
+
+**CSV for the same window:**
+
+```http
+GET /v1/org/ledger/export?format=csv&month=2026-08
+```
+
+Org console: https://www.withohm.dev/org — **This month statement** + **Download month CSV**.
+
+Not in this slice: provider invoice import / true reconcile (`provider_invoice_import_usd` stays null).
 
 ## Invoice / PO
 
