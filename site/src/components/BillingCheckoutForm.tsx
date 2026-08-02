@@ -4,7 +4,21 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 
 const KEY_STORAGE = "ohm_api_key";
+const KEY_STORAGE_LOCAL = "ohm_api_key_backup";
 const FORM_STORAGE = "ohm_checkout_form";
+
+function persistKey(key: string) {
+  try {
+    sessionStorage.setItem(KEY_STORAGE, key);
+  } catch {
+    /* ignore */
+  }
+  try {
+    localStorage.setItem(KEY_STORAGE_LOCAL, key);
+  } catch {
+    /* ignore */
+  }
+}
 
 export function BillingCheckoutForm({ commit = "" }: { commit?: string }) {
   const [organisation, setOrganisation] = useState("");
@@ -15,6 +29,8 @@ export function BillingCheckoutForm({ commit = "" }: { commit?: string }) {
   const [error, setError] = useState<string | null>(null);
   const [rateLimited, setRateLimited] = useState(false);
   const [issuedKey, setIssuedKey] = useState<string | null>(null);
+  const [checkoutUrl, setCheckoutUrl] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
 
   // A failed attempt (rate limit, network blip, back button from Stripe)
   // must never cost the visitor their typing — restore email/label.
@@ -41,6 +57,22 @@ export function BillingCheckoutForm({ commit = "" }: { commit?: string }) {
       /* ignore */
     }
   }, [email, organisation]);
+
+  async function copyKey() {
+    if (!issuedKey) return;
+    try {
+      await navigator.clipboard.writeText(issuedKey);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 2500);
+    } catch {
+      /* ignore */
+    }
+  }
+
+  function continueToStripe() {
+    if (!checkoutUrl) return;
+    window.location.href = checkoutUrl;
+  }
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -81,25 +113,53 @@ export function BillingCheckoutForm({ commit = "" }: { commit?: string }) {
       }
       const key = data.api_key as string;
       const url = data.checkout?.url as string | undefined;
-      if (key) {
-        try {
-          sessionStorage.setItem(KEY_STORAGE, key);
-        } catch {
-          /* ignore */
-        }
-        setIssuedKey(key);
+      if (!key) {
+        throw new Error("API key missing from checkout response.");
       }
-      if (url) {
-        window.location.href = url;
-        return;
+      if (!url) {
+        throw new Error(
+          "Checkout URL missing — Stripe may be unconfigured on the API.",
+        );
       }
-      throw new Error(
-        "Checkout URL missing — Stripe may be unconfigured on the API.",
-      );
+      persistKey(key);
+      setIssuedKey(key);
+      setCheckoutUrl(url);
+      setBusy(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
       setBusy(false);
     }
+  }
+
+  // Gate: key issued — do not auto-redirect. User must save, then continue.
+  if (issuedKey && checkoutUrl) {
+    return (
+      <div className="billing-form billing-form--key-gate" role="status">
+        <h2 className="billing-form__gate-title">Save your withOhm key</h2>
+        <p className="billing-form__gate-lede">
+          This is shown once. Copy it before you continue to Stripe — we cannot
+          email it again. After card setup you&apos;ll land on a success page
+          that also keeps it in this browser.
+        </p>
+        <div className="billing-form__key-panel">
+          <code className="billing-form__key-code">{issuedKey}</code>
+          <button type="button" className="btn btn--primary" onClick={copyKey}>
+            {copied ? "Copied" : "Copy key"}
+          </button>
+        </div>
+        <button
+          type="button"
+          className="btn btn--primary"
+          onClick={continueToStripe}
+        >
+          I&apos;ve saved it — continue to Stripe
+        </button>
+        <p className="billing-form__note">
+          Tip: paste into a password manager now. After Stripe, open{" "}
+          <Link href="/demo">/demo</Link> with this key for the miss→HIT proof.
+        </p>
+      </div>
+    );
   }
 
   return (
@@ -164,24 +224,16 @@ export function BillingCheckoutForm({ commit = "" }: { commit?: string }) {
           ) : null}
         </p>
       ) : null}
-      {issuedKey ? (
-        <p className="billing-form__key">
-          withOhm key (store now): <code>{issuedKey}</code>
-        </p>
-      ) : null}
       <button
         type="submit"
         className="btn btn--primary"
         disabled={busy || !termsAck || !dpaAck}
       >
-        {busy ? "Redirecting…" : "Continue to Checkout"}
+        {busy ? "Issuing key…" : "Get key & continue"}
       </button>
       <p className="billing-form__note">
-        After you add a card, one button adds withOhm to Cursor — seat wired, no
-        JSON to assemble.{" "}
-        {commit
-          ? "Your commit tier bills monthly with included metered usage each cycle; overage invoices at list rates."
-          : "Membership is $0; cache and web-fetch meters invoice monthly."}{" "}
+        We issue your <code>sk-at-…</code> key first and pause so you can copy
+        it — then Stripe for the card. Membership is $0; meters invoice monthly.
         Model tokens stay on your provider keys (BYOK).{" "}
         <Link href="/docs/pricing">Pricing</Link>
       </p>
