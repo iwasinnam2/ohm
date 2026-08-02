@@ -187,6 +187,40 @@ export function ConnectionsClient() {
         ))}
       </ul>
 
+      <section
+        className="connect-stack"
+        id="neon"
+        aria-labelledby="connect-neon-title"
+      >
+        <h2 id="connect-neon-title">On the stack — Neon</h2>
+        <div className="connect-card connect-card--stack">
+          <h3 className="connect-card__name">Neon</h3>
+          <p className="connect-card__where">
+            Serverless Postgres — branches, previews, scale-to-zero compute for
+            apps and agents.
+          </p>
+          <p className="connect-stack__body">
+            Neon holds application state. Agents that create branches and run
+            previews are also a sink for inference. withOhm meters exact-match
+            replay on those loops — complementary, not competing. State in
+            Neon; repeat prompts through the Ohm pipe.
+          </p>
+          <div className="cta-row">
+            <a
+              className="btn btn--primary"
+              href="https://neon.tech"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              neon.tech
+            </a>
+            <Link className="btn" href="/demo">
+              Hit ratio demo
+            </Link>
+          </div>
+        </div>
+      </section>
+
       <section className="connect-scopes" aria-labelledby="connect-scopes-title">
         <h2 id="connect-scopes-title">What withOhm can access</h2>
         <p className="connect-scopes__lede">

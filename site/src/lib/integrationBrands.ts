@@ -93,6 +93,14 @@ export const INTEGRATION_BRANDS: BrandTile[] = [
     setupHref: "/docs/optimized-usage",
   },
   {
+    id: "neon",
+    name: "Neon",
+    kind: "pipe",
+    blurb: "Serverless Postgres for agents",
+    href: "https://neon.tech",
+    setupHref: "/connections#neon",
+  },
+  {
     id: "shell",
     name: "Agent Shell",
     kind: "surface",
