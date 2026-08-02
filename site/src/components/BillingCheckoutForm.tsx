@@ -142,7 +142,7 @@ export function BillingCheckoutForm({ commit = "" }: { commit?: string }) {
         </button>
         <p className="billing-form__note">
           Tip: paste into a password manager now. After Stripe, open{" "}
-          <Link href="/demo">/demo</Link> with this key for the miss→HIT proof.
+          <Link href="/demo">the hit ratio demo</Link> with this key.
         </p>
       </div>
     );

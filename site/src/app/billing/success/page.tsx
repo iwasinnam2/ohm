@@ -66,7 +66,7 @@ export default function BillingSuccessPage() {
 
       <div className="cta-row postpay__next">
         <Link href="/demo" className="btn btn--primary">
-          Run 60s miss→HIT demo
+          Run hit ratio demo
         </Link>
         <Link href="/workbench" className="btn">
           Open Agent Shell
