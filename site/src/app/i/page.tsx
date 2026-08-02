@@ -4,7 +4,7 @@ import { InstallClient } from "@/components/InstallClient";
 export const metadata: Metadata = {
   title: "Install",
   description:
-    "Add withOhm MCP from https://www.withohm.dev/i — compliant fetch for agents.",
+    "Install withOhm — Agent Shell or OpenAI-compatible base URL. MCP/Cursor optional.",
 };
 
 export default function InstallPage() {

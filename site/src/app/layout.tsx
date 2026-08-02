@@ -33,7 +33,7 @@ export const revalidate = 300;
 const siteUrl = "https://www.withohm.dev";
 
 const description =
-  "Interconnectedness and accessibility. Model switching, prompt caching and compliant web browsing — one OpenAI-compatible pipe. Connect it to Cursor, Claude Code, VS Code and more over MCP, bring your own provider keys (BYOK), and pay metered rates on a $0 Intermediate seat.";
+  "AI traffic control plane: OpenAI-compatible ingress, prompt replay, compliant web ingest, and a clean ledger. Agent Shell or any SDK — Cursor optional. BYOK. Rent the plumbing; govern the chaos.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),

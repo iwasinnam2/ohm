@@ -104,6 +104,7 @@ class CleanLedger:
         cost_center: str = "",
         limit: int = 500,
         since_ts: int = 0,
+        until_ts: int = 0,
     ) -> list[LedgerEvent]:
         key = self._list_key(org_id, tenant_id)
         raw_items = await self._store.list_range(key, -max(limit * 4, 500), -1)
@@ -114,6 +115,8 @@ class CleanLedger:
             except (ValueError, TypeError, KeyError):
                 continue
             if since_ts and ev.ts < since_ts:
+                continue
+            if until_ts and ev.ts >= until_ts:
                 continue
             if cost_center and ev.cost_center != cost_center:
                 continue
@@ -129,6 +132,7 @@ class CleanLedger:
         tenant_id: str = "",
         cost_center: str = "",
         since_ts: int = 0,
+        until_ts: int = 0,
     ) -> dict[str, Any]:
         events = await self.list_events(
             org_id=org_id,
@@ -136,6 +140,7 @@ class CleanLedger:
             cost_center=cost_center,
             limit=10_000,
             since_ts=since_ts,
+            until_ts=until_ts,
         )
         by_center: dict[str, dict[str, float]] = {}
         pipe = 0.0

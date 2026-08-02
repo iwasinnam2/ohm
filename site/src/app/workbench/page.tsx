@@ -14,7 +14,10 @@ export default function WorkbenchPage() {
         <h1>Ohm Agent Shell</h1>
         <p>
           A thin workbench that talks only to the withOhm pipe. No Cursor
-          required — bring any OpenAI-compatible key bound to your org.
+          required — paste an Intermediate key and use{" "}
+          <strong>Run miss→HIT demo</strong> for a one-click proof (model{" "}
+          <code>mock</code>). Guided steps also live on{" "}
+          <a href="/demo">/demo</a>.
         </p>
       </header>
       <AgentShellClient />

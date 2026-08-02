@@ -12,27 +12,12 @@ export const DOC_INDEX: DocMeta[] = [
   {
     slug: "quickstart",
     title: "Quickstart",
-    description: "Local edge, BYOK, billing, and subscription path.",
+    description: "base_URL + BYOK — Agent Shell first; MCP optional.",
   },
   {
-    slug: "cursor",
-    title: "Cursor / MCP",
-    description: "Compliant fetch for agents — attach withOhm in Cursor.",
-  },
-  {
-    slug: "integrations",
-    title: "Integrations",
-    description: "Connect Cursor, Claude Code, VS Code, Windsurf, and Zed.",
-  },
-  {
-    slug: "commands",
-    title: "Command catalog",
-    description: "All seven MCP tools and their skills, with examples.",
-  },
-  {
-    slug: "optimized-usage",
-    title: "Optimized usage",
-    description: "Cache-first prompting, fetch with intent, read your meters.",
+    slug: "enterprise-chaos",
+    title: "Enterprise chaos",
+    description: "SSO, clean ledger, org policy, Agent Shell — Cursor optional.",
   },
   {
     slug: "examples",
@@ -40,14 +25,29 @@ export const DOC_INDEX: DocMeta[] = [
     description: "OpenAI-compatible API — no new protocol.",
   },
   {
+    slug: "optimized-usage",
+    title: "Optimized usage",
+    description: "Cache-first prompting, fetch with intent, read your meters.",
+  },
+  {
+    slug: "cursor",
+    title: "Cursor / MCP (compatibility)",
+    description: "Optional MCP attach — not required to use withOhm.",
+  },
+  {
+    slug: "integrations",
+    title: "Integrations (compatibility)",
+    description: "MCP hosts: Cursor, Claude Code, VS Code, Windsurf, Zed.",
+  },
+  {
+    slug: "commands",
+    title: "Command catalog",
+    description: "MCP tools and skills (compatibility surface).",
+  },
+  {
     slug: "streaming",
     title: "Streaming & failover",
     description: "SSE pass-through, failover scope, mid-stream limits.",
-  },
-  {
-    slug: "enterprise-chaos",
-    title: "Enterprise chaos",
-    description: "SSO, clean ledger, org policy, Agent Shell — Cursor optional.",
   },
   {
     slug: "pricing",

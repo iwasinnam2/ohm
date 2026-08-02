@@ -1,6 +1,10 @@
-# Add withOhm to Cursor
+# Cursor / MCP (compatibility)
 
-After Checkout, the success screen’s primary action is **Add withOhm to Cursor** — a one-click deeplink into Cursor’s MCP install confirm. Your withOhm key is already in the config. That is the product path; manual JSON is only a fallback.
+withOhm’s primary product is the OpenAI-compatible pipe and [Agent Shell](/workbench).
+MCP in Cursor is an optional compatibility client — not required.
+
+After Checkout, success may offer **Add withOhm to Cursor** — a deeplink into
+Cursor’s MCP install confirm. Manual JSON is a fallback.
 
 ## One-click (preferred)
 

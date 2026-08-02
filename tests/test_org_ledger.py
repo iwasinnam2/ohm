@@ -52,6 +52,30 @@ async def test_org_create_ledger_and_export():
         assert "event_id" in export.text
         assert "cost_center" in export.text
 
+        from datetime import datetime, timezone
+
+        month = datetime.now(timezone.utc).strftime("%Y-%m")
+        stmt = await client.get(
+            "/v1/org/ledger/statement",
+            headers=headers,
+            params={"month": month},
+        )
+        assert stmt.status_code == 200, stmt.text
+        sbody = stmt.json()
+        assert sbody["month"] == month
+        assert sbody["timezone"] == "UTC"
+        assert sbody["estimate_only"] is True
+        assert "by_cost_center" in sbody
+        assert sbody["since_ts"] < sbody["until_ts"]
+        assert sbody["summary"]["event_count"] >= 1
+
+        bad = await client.get(
+            "/v1/org/ledger/statement",
+            headers=headers,
+            params={"month": "not-a-month"},
+        )
+        assert bad.status_code == 400
+
 
 @pytest.mark.asyncio
 async def test_dev_sso_and_audit(monkeypatch):
