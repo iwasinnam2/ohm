@@ -3,42 +3,44 @@ import Link from "next/link";
 import { AgentShellClient } from "@/components/AgentShellClient";
 
 export const metadata: Metadata = {
-  title: "60s miss→HIT demo",
+  title: "Hit ratio demo",
   description:
-    "Prove withOhm in sixty seconds — identical call twice, watch Redis HIT and the ledger tick.",
+    "Identical prompt twice through withOhm — watch MISS become HIT. Hit ratio is the inventory; the spread is the arbitrage.",
 };
 
 export default function DemoPage() {
   return (
     <>
       <header className="page-head">
-        <h1>60s miss→HIT demo</h1>
+        <h1>Hit ratio in sixty seconds</h1>
         <p>
-          Paste an Intermediate key, leave model as <code>mock</code>, click{" "}
-          <strong>Run miss→HIT demo</strong>. First call MISS, second HIT —
-          ledger strip updates. No Cursor required.
+          Same prompt, twice, through the Ohm pipe. First call misses the
+          cache; the second hits. That ratio — how often identical traffic
+          replays — is what withOhm meters.
         </p>
         <ol className="demo-steps">
           <li>
-            Restore a key on <Link href="/keys">API keys</Link>, or mint one at{" "}
-            <Link href="/billing/intermediate">Intermediate ($0 seat)</Link>.
-          </li>
-          <li>Paste the key below. Upstream/BYOK optional for <code>mock</code>.</li>
-          <li>
-            Click <strong>Run miss→HIT demo</strong> — fixed prompt{" "}
-            <code>ohm-self-proof-v1</code> twice.
+            Paste your <code>sk-at-…</code> key (from{" "}
+            <Link href="/keys">API keys</Link> or{" "}
+            <Link href="/billing/intermediate">Intermediate</Link>).
           </li>
           <li>
-            Optional: mint a public receipt via API / MCP — see repo{" "}
-            <code>docs/SELF_PROOF.md</code>.
+            Leave model as <code>mock</code> — no provider key needed for this
+            proof.
+          </li>
+          <li>
+            Click <strong>Prove miss → HIT</strong>. Read the strip: first
+            MISS, second HIT.
           </li>
         </ol>
       </header>
-      <AgentShellClient />
+      <AgentShellClient variant="demo" />
       <p className="receipt__foot">
-        Full workbench: <Link href="/workbench">/workbench</Link>
+        <Link href="/workbench">Agent Shell</Link>
         {" · "}
-        Org ledger: <Link href="/org">/org</Link>
+        <Link href="/org">Org ledger</Link>
+        {" · "}
+        <Link href="/docs/enterprise-chaos">Enterprise chaos</Link>
       </p>
     </>
   );
