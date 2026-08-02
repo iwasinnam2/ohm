@@ -6,7 +6,7 @@ const BOARD = [
     href: "/workbench",
     eyebrow: "Shell",
     title: "Agent Shell",
-    desc: "Thin workbench on the Ohm pipe — miss→HIT demo built in.",
+    desc: "Thin workbench on the Ohm pipe — hit ratio proof built in.",
     go: "Open the shell",
   },
   {
@@ -26,8 +26,8 @@ const BOARD = [
   {
     href: "/demo",
     eyebrow: "Proof",
-    title: "60s miss→HIT demo",
-    desc: "Identical call twice — watch Redis replay and the ledger tick.",
+    title: "Hit ratio demo",
+    desc: "Identical prompt twice — MISS then HIT. That’s the inventory we meter.",
     go: "Run the demo",
   },
   {
@@ -69,7 +69,7 @@ export default function HomePage() {
             Integrations
           </Link>
           <Link href="/demo" className="link-quiet">
-            60s demo
+            Hit ratio demo
           </Link>
           <Link href="/billing/enterprise" className="link-quiet">
             Enterprise
