@@ -6,15 +6,15 @@ const BOARD = [
     href: "/workbench",
     eyebrow: "Shell",
     title: "Agent Shell",
-    desc: "Thin workbench that talks only through the Ohm pipe — miss→HIT demo built in.",
+    desc: "Thin workbench on the Ohm pipe — miss→HIT demo built in.",
     go: "Open the shell",
   },
   {
-    href: "/org",
-    eyebrow: "Govern",
-    title: "Org & ledger",
-    desc: "Cost centers, FinOps export, policy — corporate clean ledger.",
-    go: "Open org console",
+    href: "/docs/integrations",
+    eyebrow: "Connect",
+    title: "Integrations",
+    desc: "Cursor, Claude, VS Code, Windsurf, Zed — and the pipe stack, interlinked.",
+    go: "Open the board",
   },
   {
     href: "/docs/quickstart",
@@ -31,18 +31,18 @@ const BOARD = [
     go: "Run the demo",
   },
   {
+    href: "/org",
+    eyebrow: "Govern",
+    title: "Org & ledger",
+    desc: "Cost centers, FinOps export, policy — corporate clean ledger.",
+    go: "Open org console",
+  },
+  {
     href: "/docs/enterprise-chaos",
     eyebrow: "Enterprise",
     title: "Chaos governor",
-    desc: "SSO, audit, compliant fetch — Cursor optional.",
-    go: "Read the thesis",
-  },
-  {
-    href: "/connections",
-    eyebrow: "Also",
-    title: "Any client (incl. Cursor)",
-    desc: "MCP attach for Cursor, Claude Code, VS Code — compatibility, not the product.",
-    go: "Connect tools",
+    desc: "SSO, audit, compliant fetch — govern shadow AI and repeat spend.",
+    go: "Read the guide",
   },
 ] as const;
 
@@ -54,18 +54,19 @@ export default function HomePage() {
           <OhmMark className="hero__mark" />
           <h1 className="hero__brand">withOhm</h1>
         </div>
-        <p className="hero__strapline">Govern AI chaos. Rent the plumbing.</p>
+        <p className="hero__strapline">Interconnectedness and accessibility.</p>
         <p className="hero__promise">
-          Point any OpenAI-compatible client — or the Ohm Agent Shell — at one
-          base URL. Exact-match prompt replay, compliant web ingest, and a
-          clean ledger. Bring your own provider keys. Cursor is optional.
+          Model switching, prompt caching, and compliant web browsing — one
+          OpenAI-compatible pipe. Connect Cursor, Claude Code, VS Code, and
+          more; bring your own provider keys (BYOK); pay metered rates on a $0
+          Intermediate seat. Or open the Agent Shell and stay on the pipe.
         </p>
         <div className="hero__cta cta-row">
-          <Link href="/workbench" className="btn btn--primary">
-            Open Agent Shell
+          <Link href="/billing/intermediate" className="btn btn--primary">
+            Start now — $0 seat
           </Link>
-          <Link href="/billing/intermediate" className="link-quiet">
-            Get a $0 seat
+          <Link href="/docs/integrations" className="link-quiet">
+            Integrations
           </Link>
           <Link href="/demo" className="link-quiet">
             60s demo
@@ -77,7 +78,7 @@ export default function HomePage() {
       </section>
       <section className="board" aria-labelledby="board-label">
         <p className="board__label" id="board-label">
-          The board — pipe first, any client second
+          The board — everything, compartmentalised
         </p>
         <ul className="board__grid">
           {BOARD.map((item) => (

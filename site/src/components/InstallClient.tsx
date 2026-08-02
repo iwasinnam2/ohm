@@ -24,16 +24,16 @@ export function InstallClient() {
       <p className="steal__eyebrow">Install withOhm</p>
       <h1 className="steal__title">withOhm</h1>
       <p className="steal__lede">
-        Primary path: Agent Shell or any OpenAI SDK against one base URL.
-        MCP attach (Cursor and friends) is compatibility — not required.
+        Interconnectedness and accessibility — Agent Shell, any OpenAI SDK, or
+        MCP attach for Cursor and friends. Same pipe either way.
       </p>
 
       <div className="steal__row">
         <Link className="btn btn--primary" href="/workbench">
           Open Agent Shell
         </Link>
-        <Link className="btn" href="/demo">
-          60s miss→HIT demo
+        <Link className="btn" href="/docs/integrations">
+          Integrations board
         </Link>
         <Link className="btn" href="/billing/intermediate">
           Get a $0 seat
@@ -46,7 +46,7 @@ export function InstallClient() {
       <CopyBlock text={SHARE_LINE} label="share line" compact />
 
       <label className="steal__key">
-        <span>Optional — wire Cursor MCP with your key</span>
+        <span>Wire Cursor with your key</span>
         <input
           type="password"
           autoComplete="off"
@@ -56,22 +56,22 @@ export function InstallClient() {
         />
       </label>
       {href ? (
-        <a className="btn steal__install" href={href}>
-          Add MCP to Cursor (compatibility)
+        <a className="btn btn--primary steal__install" href={href}>
+          Add withOhm to Cursor
         </a>
       ) : (
         <p className="steal__hint">
-          Prefer the Shell. MCP is optional — enter a key only if you want
-          one-click Cursor attach.
+          Enter your key for one-click MCP install, or start from{" "}
+          <Link href="/billing/intermediate">Intermediate</Link>.
         </p>
       )}
 
       <p className="steal__foot">
-        <Link href="/docs/quickstart">Quickstart (base_URL)</Link>
+        <Link href="/docs/quickstart">Quickstart</Link>
+        {" · "}
+        <Link href="/connections">All hosts</Link>
         {" · "}
         <Link href="/org">Org console</Link>
-        {" · "}
-        <Link href="/connections">Other MCP hosts</Link>
         {" · "}
         <Link href="/docs/pricing">Pricing</Link>
       </p>

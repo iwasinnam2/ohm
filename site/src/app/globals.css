@@ -761,11 +761,130 @@ pre {
   transform: translateX(var(--space-1));
 }
 
+.doc-group {
+  margin-bottom: var(--space-6, 2rem);
+}
+
+.doc-group__title {
+  margin: 0 0 var(--space-3, 1rem);
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 600;
+}
+
 .doc-layout {
   display: grid;
-  grid-template-columns: 11.5rem 1fr;
+  grid-template-columns: 12.5rem 1fr;
   gap: var(--space-7);
   padding-top: var(--space-3);
+}
+
+.doc-nav__all {
+  margin-bottom: var(--space-2);
+  font-weight: 500;
+}
+
+.doc-nav__group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-top: var(--space-3, 1rem);
+}
+
+.doc-nav__group-title {
+  margin: 0 0 0.25rem;
+  font-size: 0.65rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.doc-body {
+  min-width: 0;
+}
+
+/* Integrations brand board */
+.brand-board {
+  margin-bottom: var(--space-5, 1.5rem);
+}
+
+.brand-board__lede {
+  max-width: var(--measure-wide, 40rem);
+  color: var(--muted);
+  margin: 0 0 var(--space-4, 1.25rem);
+  line-height: 1.5;
+}
+
+.brand-board__group {
+  margin-bottom: var(--space-4, 1.25rem);
+}
+
+.brand-board__group-title {
+  margin: 0 0 var(--space-2, 0.75rem);
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.brand-board__grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr));
+  gap: var(--space-2, 0.75rem);
+}
+
+.brand-tile {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--line);
+  border-radius: var(--radius, 4px);
+  background: var(--surface);
+  overflow: hidden;
+  min-height: 6.5rem;
+}
+
+.brand-tile__outer {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: var(--space-3, 1rem);
+  flex: 1;
+  color: inherit;
+  text-decoration: none;
+}
+
+.brand-tile__outer:hover .brand-tile__name {
+  color: var(--accent);
+}
+
+.brand-tile__name {
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.brand-tile__blurb {
+  font-size: var(--text-sm, 0.85rem);
+  color: var(--muted);
+  line-height: 1.35;
+}
+
+.brand-tile__setup {
+  padding: 0.45rem var(--space-3, 1rem);
+  border-top: 1px solid var(--line);
+  font-size: var(--text-sm, 0.85rem);
+  color: var(--muted);
+  text-decoration: none;
+}
+
+.brand-tile__setup:hover {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
 }
 
 @media (max-width: 760px) {
@@ -1990,6 +2109,7 @@ pre {
   background: var(--surface);
   border-radius: var(--radius-card);
   box-shadow: var(--shadow-card);
+  scroll-margin-top: 5rem;
 }
 
 .connect-card__name {

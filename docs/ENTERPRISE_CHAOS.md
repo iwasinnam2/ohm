@@ -11,7 +11,8 @@ bills, and client lock-in.
 
 withOhm is the **control plane that governs that chaos** — SSO tenancy,
 compliance policy, corporate clean ledger, OpenAI-compatible ingress, and the
-Ohm Agent Shell. Any IDE (including Cursor) is an optional client.
+Ohm Agent Shell. Coding agents (Cursor, Claude Code, VS Code, and friends)
+attach over MCP; SDKs and the Shell use the same pipe.
 
 ## Chaos map
 
@@ -21,7 +22,7 @@ Ohm Agent Shell. Any IDE (including Cursor) is an optional client.
 | Shadow AI | Personal keys, unmanaged tools | SSO org, enforced ingress, model allowlists |
 | Unsafe browse | Scrapers, PII, legal risk | Purpose-bound compliant ingest |
 | Opaque vendors | Multi-lab invoices | Cost-center attribution + FinOps export |
-| Client lock-in | “We depend on one IDE” | Agent Shell + `base_url` ingress |
+| Client lock-in | “We depend on one IDE” | Agent Shell + `base_url` + integrations board |
 | Procurement fear | No admin / audit / DPA | Org console, audit log, enterprise pack |
 
 ## Buyers (triad)
@@ -39,16 +40,16 @@ Indie design partners remain **meter proof**, not the end customer.
 | `api.withohm.dev` | OpenAI-compatible pipe (BYOK or managed pool) |
 | Org console (`/org`) | Members, cost centers, policy, ledger export |
 | Agent Shell (`/workbench`) | Thin workbench that **must** use the Ohm pipe |
-| MCP / Cursor / VS Code | Compatibility clients — never required |
+| Integrations board | Cursor, Claude Code, VS Code, Windsurf, Zed + pipe stack |
 
 ## Non-goals
 
-- Depending on Anysphere / Cursor Marketplace for legitimacy  
 - Semantic cache  
 - PAYG wholesale of lab tokens on Intermediate  
-- Full VS Code fork in v1 (Agent Shell is the anti-lock-in surface)
+- Full VS Code fork in v1 (Agent Shell + open `base_url` cover the workbench)
 
 ## Success bar
 
 A platform lead can SSO in, mint a service key, attribute spend to two cost
-centers, export a month, and show Legal a denied fetch — **without Cursor**.
+centers, export a month, and show Legal a denied fetch — from the org console
+and pipe, with whatever clients their teams already run.

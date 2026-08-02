@@ -67,8 +67,8 @@ export default function BillingSuccessPage() {
 
       <h1 className="postpay__title">Your withOhm key</h1>
       <p className="postpay__lede">
-        Copy it now if you haven&apos;t already. Then prove the pipe in Agent
-        Shell — Cursor MCP is optional.
+        Copy it now if you haven&apos;t already. Prove the pipe in Agent Shell,
+        or wire Cursor from the integrations board.
       </p>
 
       {apiKey ? (
