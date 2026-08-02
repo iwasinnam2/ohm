@@ -150,6 +150,9 @@ resource "aws_eks_node_group" "leader" {
   ]
 
   tags = { Project = var.project }
+  # Cluster-autoscaler discovery tags live on the managed ASG via
+  # aws_autoscaling_group_tag in autoscaler.tf (node-group tags do not
+  # propagate to the ASG).
 }
 
 # Broader: allow Redis from entire VPC (EKS pods use CNI ENIs in VPC CIDR)

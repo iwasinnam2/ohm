@@ -46,7 +46,9 @@ metadata:
   name: gateway
   namespace: at-utility
 spec:
-  replicas: 2
+  # replicas intentionally unset — the gateway HPA (Observer reflex layer)
+  # owns scale between 1 (idle) and 4 (burst). Setting it here would fight
+  # the HPA on every kubectl apply.
   selector:
     matchLabels:
       app: gateway
@@ -105,7 +107,7 @@ metadata:
   name: gateway-rs
   namespace: at-utility
 spec:
-  replicas: 2
+  # replicas unset — owned by the gateway-rs HPA (min 1 / max 4).
   selector:
     matchLabels:
       app: gateway-rs
@@ -201,7 +203,7 @@ metadata:
   name: ingest-worker
   namespace: at-utility
 spec:
-  replicas: 2
+  # replicas unset — owned by the ingest-worker HPA (min 1 / max 4).
   selector:
     matchLabels:
       app: ingest-worker
@@ -249,6 +251,78 @@ spec:
     - port: 8090
       targetPort: 8090
 ---
+# Observer reflex layer: HPAs own replica counts. metrics-server must be
+# installed once (infra/scripts/observer_bootstrap.sh) or targets read
+# <unknown> and the HPAs hold current scale.
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: gateway
+  namespace: at-utility
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: gateway
+  minReplicas: 1
+  maxReplicas: 4
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 65
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 300
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: gateway-rs
+  namespace: at-utility
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: gateway-rs
+  minReplicas: 1
+  maxReplicas: 4
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 65
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 300
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: ingest-worker
+  namespace: at-utility
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: ingest-worker
+  minReplicas: 1
+  maxReplicas: 4
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 65
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 300
+---
 apiVersion: batch/v1
 kind: CronJob
 metadata:
@@ -263,7 +337,9 @@ spec:
           restartPolicy: OnFailure
           containers:
             - name: allot
-              image: 594161136574.dkr.ecr.us-east-1.amazonaws.com/at-utility/gateway:0.1.7
+              # Rolled to the git-SHA tag by deploy.yml alongside the
+              # deployments — never pin behind the running gateway again.
+              image: 594161136574.dkr.ecr.us-east-1.amazonaws.com/at-utility/gateway:0.1.9
               command:
                 - python
                 - -m
@@ -279,7 +355,13 @@ spec:
                     secretKeyRef:
                       name: at-utility-secrets
                       key: REDIS_WRITE_URL
----
+              resources:
+                requests:
+                  cpu: "50m"
+                  memory: "128Mi"
+                limits:
+                  cpu: "250m"
+                  memory: "256Mi"
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
@@ -333,6 +415,10 @@ rules:
   - apiGroups: [""]
     resources: ["pods"]
     verbs: ["get", "list", "watch"]
+  # deploy.yml rolls the quota-allotment CronJob image with the deployments.
+  - apiGroups: ["batch"]
+    resources: ["cronjobs"]
+    verbs: ["get", "list", "watch", "patch", "update"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
