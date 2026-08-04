@@ -49,3 +49,9 @@ The marketing site is documentation plus self-serve billing. No advertising trac
 ## Changes
 
 Material changes bump the policy date and, where API acks are versioned, related terms/DPA versions.
+
+## Amendments (2026-08)
+
+- **Path and cost center.** We process optional traffic path labels and cost-center identifiers, plus spend-cap evaluation state, as operational metadata on the clean ledger.
+- **Public receipts.** Opt-in public receipts expose a chosen display name and aggregate savings metrics only — never prompts or completions. Receipt tokens expire (≈90 days TTL).
+- **Ledger retention.** Append-only ledger events are retained for billing / FinOps export under configured store bounds; they are not a training corpus.

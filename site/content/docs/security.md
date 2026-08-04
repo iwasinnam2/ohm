@@ -30,3 +30,8 @@ Model providers you enable, Amazon Web Services (or host), Stripe (billing), AWS
 | `X-AT-Cache-Purpose` | `identical-request-replay` |
 | `X-AT-Region` | Serving region |
 | `x-at-plane` | `rust` when via Rust edge |
+| `X-Ohm-Path` | Frequency-farm path label (normalized); echoed when set |
+| `X-Ohm-Cost-Center` | Cost-center attribution |
+| `X-Ohm-Spend-Cap` / `X-Ohm-Spend-Cap-Usd` | Soft spend-cap notice on allowed MISS |
+
+Clean ledger events include `path` (default `default`). Public receipt threat model unchanged — unguessable token, no prompts.

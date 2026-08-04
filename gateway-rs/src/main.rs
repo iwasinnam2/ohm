@@ -140,7 +140,7 @@ fn cors_preflight(origin: Option<&str>) -> Response<ProxyBody> {
             )
             .header(
                 "access-control-allow-headers",
-                "authorization, content-type, x-ohm-upstream-key, x-ohm-session",
+                "authorization, content-type, x-ohm-upstream-key, x-ohm-session, x-ohm-path, x-ohm-cost-center",
             )
             .header("access-control-max-age", "86400")
             .header("access-control-allow-credentials", "true")
@@ -162,7 +162,7 @@ fn with_cors(mut res: Response<ProxyBody>, origin: Option<&str>) -> Response<Pro
         );
         headers.insert(
             hyper::header::HeaderName::from_static("access-control-expose-headers"),
-            "x-at-cache, x-at-billed-usd, x-at-plane, x-ohm-cost-center"
+            "x-at-cache, x-at-billed-usd, x-at-plane, x-ohm-cost-center, x-ohm-path, x-ohm-spend-cap, x-ohm-spend-cap-usd"
                 .parse()
                 .unwrap(),
         );

@@ -74,6 +74,14 @@ Step "status page 200 (single-region truth)" {
   if ($r.Content -match "Global Accelerator") { throw "stale multi-region claim on status page" }
 }
 
+Step "demo page 200 + mint receipt claim" {
+  $r = Get-Page "$SiteUrl/demo"
+  if ($r.StatusCode -ne 200) { throw "status $($r.StatusCode)" }
+  foreach ($phrase in @("Mint public receipt", "Prove miss")) {
+    if ($r.Content -notmatch [regex]::Escape($phrase)) { throw "missing phrase '$phrase'" }
+  }
+}
+
 Step "api health (Rust plane)" {
   $h = Invoke-RestMethod -Uri "$ApiUrl/health" -TimeoutSec 60 -UseBasicParsing
   if ($h.ok -ne $true) { throw "health.ok != true" }

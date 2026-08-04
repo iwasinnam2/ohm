@@ -55,6 +55,13 @@ Monthly dedicated pool SKU (`enterprise-dedicated-pool`): Ohm-held provider keys
 
 Complimentary `design_partner` plan (admin issue): time-boxed + soft USD quota. No Stripe required. See [DESIGN_PARTNERS.md](DESIGN_PARTNERS.md).
 
+### Org spend caps (enterprise surface)
+
+Org policy may set monthly **pipe-rent** caps per cost center (`soft` headers or
+`hard` `402`). Caps are **not** Intermediate credits or prepaid balance — they
+gate MISS upstream flood; HITs still serve. Aligns with tenant `soft_quota_usd`
+messaging on solo seats.
+
 ## Stripe
 
 - **Self-serve:** `POST /v1/billing/checkout` (site `/billing/intermediate`) — issues withOhm key once + Checkout URL ($0 membership + meters)

@@ -71,9 +71,9 @@ Then: `ohm_fetch_web(urls=[…])` — see https://github.com/iwasinnam2/ohm/tree
 
 Every seat can mint a public **savings receipt** — an immutable snapshot of
 estimated upstream spend avoided, live for 90 days at
-`https://www.withohm.dev/r/<token>`. Mint one via the `ohm_receipt` MCP tool
-(or `POST /v1/savings/receipt`); the response includes ready-to-paste badge
-markdown:
+`https://www.withohm.dev/r/<token>`. Fastest path: [/demo](https://www.withohm.dev/demo)
+→ prove miss→HIT → **Mint public receipt**. Same mint via `ohm_receipt` MCP or
+`POST /v1/savings/receipt`; the response includes ready-to-paste badge markdown:
 
 ```markdown
 [![withOhm savings](https://img.shields.io/endpoint?url=https%3A%2F%2Fapi.withohm.dev%2Fv1%2Fpublic%2Freceipts%2F<token>%2Fbadge)](https://www.withohm.dev/r/<token>)

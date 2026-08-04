@@ -54,3 +54,12 @@ Listing: Open Plugins package under `.cursor-plugin/` (stdio MCP + skills).
 | Install | `pip install withohm-mcp` then `ohm-mcp` on PATH |
 
 Reviewer packet: [listings/DIRECTORY_VERIFICATION.md](listings/DIRECTORY_VERIFICATION.md).
+
+## Amendments (2026-08) — path, spend caps, receipts
+
+| Surface | Behavior |
+|---------|----------|
+| `X-Ohm-Path` | Optional frequency-farm label (normalized `[a-z0-9_-]{1,64}`); echoed on responses; stored on ledger events |
+| Spend-cap headers | Soft mode: `X-Ohm-Spend-Cap: soft` + `X-Ohm-Spend-Cap-Usd` on allowed MISS; hard mode: `402` `spend_cap_exceeded` |
+| Clean ledger | Events include `path` (default `default` if absent); hit-ratio APIs group by cost center or path |
+| Public receipts | Threat model unchanged — unguessable token, no prompts, display name + aggregates only |

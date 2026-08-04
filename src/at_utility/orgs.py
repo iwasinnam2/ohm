@@ -31,6 +31,11 @@ class OrgPolicy:
     fetch_cap_day: int = 0  # 0 = use tenant/plan default
     default_cache_no_store: bool = False
     managed_keys: bool = False  # enterprise managed upstream pool
+    # Monthly pipe-rent USD cap per cost center (0 = disabled). Soft allows MISS
+    # with headers; hard returns 402 spend_cap_exceeded. HITs always serve.
+    spend_cap_usd_month: float = 0.0
+    spend_cap_mode: str = "soft"  # soft | hard
+    spend_caps_by_cost_center: dict[str, float] = field(default_factory=dict)
 
 
 @dataclass
@@ -61,6 +66,17 @@ class OrgRecord:
 
     def policy_obj(self) -> OrgPolicy:
         p = self.policy or {}
+        mode = str(p.get("spend_cap_mode") or "soft").strip().lower()
+        if mode not in ("soft", "hard"):
+            mode = "soft"
+        by_cc_raw = p.get("spend_caps_by_cost_center") or {}
+        by_cc: dict[str, float] = {}
+        if isinstance(by_cc_raw, dict):
+            for k, v in by_cc_raw.items():
+                try:
+                    by_cc[str(k).strip() or "default"] = float(v)
+                except (TypeError, ValueError):
+                    continue
         return OrgPolicy(
             allowed_purposes=list(
                 p.get("allowed_purposes")
@@ -70,6 +86,9 @@ class OrgRecord:
             fetch_cap_day=int(p.get("fetch_cap_day") or 0),
             default_cache_no_store=bool(p.get("default_cache_no_store") or False),
             managed_keys=bool(p.get("managed_keys") or self.plan == "enterprise"),
+            spend_cap_usd_month=float(p.get("spend_cap_usd_month") or 0),
+            spend_cap_mode=mode,
+            spend_caps_by_cost_center=by_cc,
         )
 
 

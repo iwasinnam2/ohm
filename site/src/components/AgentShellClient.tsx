@@ -5,6 +5,7 @@ import { persistKey, readStoredKey } from "@/lib/keyStorage";
 
 const API = "/api/pipe";
 const DEMO_PROMPT = "ohm-self-proof-v1";
+const DEMO_PATH_DEFAULT = "self-proof";
 
 type Msg = { role: "user" | "assistant" | "system"; content: string };
 
@@ -13,18 +14,27 @@ type DemoResult = {
   second: string;
   events: number | null;
   pipe: number | null;
+  proofOk: boolean;
+};
+
+type ReceiptMint = {
+  receipt_url: string;
+  badge_markdown: string;
+  err?: string;
 };
 
 async function chatOnce(
   apiKey: string,
   upstream: string,
   model: string,
-  messages: Msg[]
+  messages: Msg[],
+  path: string
 ): Promise<{
   cache: string;
   content: string;
   billed: string;
   center: string;
+  pathEcho: string;
   ok: boolean;
   err?: string;
 }> {
@@ -33,12 +43,18 @@ async function chatOnce(
     Authorization: `Bearer ${apiKey}`,
   };
   if (upstream) headers["X-Ohm-Upstream-Key"] = upstream;
+  const p = path.trim().toLowerCase();
+  if (p) headers["X-Ohm-Path"] = p;
   let res: Response;
   try {
     res = await fetch(`${API}/v1/chat/completions`, {
       method: "POST",
       headers,
-      body: JSON.stringify({ model, messages }),
+      body: JSON.stringify({
+        model,
+        messages,
+        ...(p ? { ohm_path: p } : {}),
+      }),
     });
   } catch {
     return {
@@ -46,6 +62,7 @@ async function chatOnce(
       content: "",
       billed: "",
       center: "",
+      pathEcho: "",
       ok: false,
       err: "Could not reach the Ohm pipe. Check your connection and try again.",
     };
@@ -53,6 +70,7 @@ async function chatOnce(
   const cache = (res.headers.get("x-at-cache") || "?").toUpperCase();
   const billed = res.headers.get("x-at-billed-usd") || "";
   const center = res.headers.get("x-ohm-cost-center") || "";
+  const pathEcho = res.headers.get("x-ohm-path") || "";
   let data: unknown;
   try {
     data = await res.json();
@@ -66,12 +84,19 @@ async function chatOnce(
       "error" in data &&
       typeof (data as { error?: { message?: string } }).error?.message === "string"
         ? (data as { error: { message: string } }).error.message
-        : `Request failed (${res.status})`;
+        : typeof data === "object" &&
+            data &&
+            "detail" in data &&
+            typeof (data as { detail?: { message?: string } }).detail?.message ===
+              "string"
+          ? (data as { detail: { message: string } }).detail.message
+          : `Request failed (${res.status})`;
     return {
       cache,
       content: "",
       billed,
       center,
+      pathEcho,
       ok: false,
       err: msg,
     };
@@ -79,7 +104,14 @@ async function chatOnce(
   const content =
     (data as { choices?: { message?: { content?: string } }[] })?.choices?.[0]
       ?.message?.content || JSON.stringify(data);
-  return { cache, content: String(content), billed, center, ok: true };
+  return {
+    cache,
+    content: String(content),
+    billed,
+    center,
+    pathEcho,
+    ok: true,
+  };
 }
 
 async function ledgerSummary(
@@ -101,6 +133,49 @@ async function ledgerSummary(
   }
 }
 
+async function mintReceiptOnce(
+  apiKey: string,
+  displayName: string
+): Promise<ReceiptMint> {
+  try {
+    const res = await fetch(`${API}/v1/savings/receipt`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({ display_name: displayName }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      const msg =
+        typeof data?.detail === "string"
+          ? data.detail
+          : data?.error?.message || `Mint failed (${res.status})`;
+      return { receipt_url: "", badge_markdown: "", err: msg };
+    }
+    const avoided = Number(
+      data?.receipt?.estimated_provider_avoided_usd ??
+        data?.receipt?.estimated_upstream_avoided_usd ??
+        0
+    );
+    const hits = Number(data?.receipt?.cache_hit_tokens ?? 0);
+    if (!hits && avoided <= 0) {
+      return {
+        receipt_url: "",
+        badge_markdown: "",
+        err: "Need accrued cache hits — demo just created them; mint again.",
+      };
+    }
+    return {
+      receipt_url: String(data.receipt_url || ""),
+      badge_markdown: String(data.badge_markdown || ""),
+    };
+  } catch (e) {
+    return { receipt_url: "", badge_markdown: "", err: String(e) };
+  }
+}
+
 export function AgentShellClient({
   variant = "workbench",
 }: {
@@ -110,6 +185,7 @@ export function AgentShellClient({
   const [apiKey, setApiKey] = useState("");
   const [upstream, setUpstream] = useState("");
   const [model, setModel] = useState("mock");
+  const [path, setPath] = useState(isDemo ? DEMO_PATH_DEFAULT : "");
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<Msg[]>([]);
   const [meta, setMeta] = useState(
@@ -118,6 +194,9 @@ export function AgentShellClient({
       : "Ready — traffic goes only through withOhm."
   );
   const [demoResult, setDemoResult] = useState<DemoResult | null>(null);
+  const [receiptName, setReceiptName] = useState("withOhm hit-ratio demo");
+  const [receipt, setReceipt] = useState<ReceiptMint | null>(null);
+  const [mintBusy, setMintBusy] = useState(false);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
@@ -137,8 +216,9 @@ export function AgentShellClient({
     setInput("");
     setBusy(true);
     setDemoResult(null);
+    setReceipt(null);
     try {
-      const r = await chatOnce(apiKey, upstream, model, next);
+      const r = await chatOnce(apiKey, upstream, model, next, path);
       if (!r.ok) {
         setMeta(r.err || "Error");
         return;
@@ -149,6 +229,7 @@ export function AgentShellClient({
         `Cache ${r.cache}` +
           (r.billed ? ` · billed $${r.billed}` : "") +
           (r.center ? ` · ${r.center}` : "") +
+          (r.pathEcho ? ` · path ${r.pathEcho}` : "") +
           (led.events != null ? ` · ${led.events} ledger events` : "") +
           (led.pipe != null ? ` · pipe $${led.pipe}` : "")
       );
@@ -163,11 +244,18 @@ export function AgentShellClient({
     if (!apiKey) return;
     setBusy(true);
     setDemoResult(null);
+    setReceipt(null);
     const demoMessages: Msg[] = [{ role: "user", content: DEMO_PROMPT }];
     setMessages(demoMessages);
     setMeta("Sending identical prompt twice…");
     try {
-      const first = await chatOnce(apiKey, upstream, model, demoMessages);
+      const first = await chatOnce(
+        apiKey,
+        upstream,
+        model,
+        demoMessages,
+        path || DEMO_PATH_DEFAULT
+      );
       if (!first.ok) {
         setMeta(first.err || "First call failed");
         return;
@@ -176,7 +264,13 @@ export function AgentShellClient({
         ...demoMessages,
         { role: "assistant", content: first.content },
       ]);
-      const second = await chatOnce(apiKey, upstream, model, demoMessages);
+      const second = await chatOnce(
+        apiKey,
+        upstream,
+        model,
+        demoMessages,
+        path || DEMO_PATH_DEFAULT
+      );
       if (!second.ok) {
         setMeta(second.err || "Second call failed");
         return;
@@ -190,23 +284,50 @@ export function AgentShellClient({
         },
       ]);
       const led = await ledgerSummary(apiKey);
+      const proofOk =
+        first.cache.includes("MISS") && second.cache.includes("HIT");
       setDemoResult({
         first: first.cache,
         second: second.cache,
         events: led.events,
         pipe: led.pipe,
+        proofOk,
       });
-      const ok =
-        first.cache.includes("MISS") && second.cache.includes("HIT");
       setMeta(
-        ok
-          ? "Hit ratio proof complete — identical traffic replayed from cache."
+        proofOk
+          ? "Hit ratio proof complete — mint a public receipt next."
           : `Finished · first ${first.cache} · second ${second.cache}`
       );
     } catch (e) {
       setMeta(String(e));
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function mintPublicReceipt() {
+    if (!apiKey) return;
+    setMintBusy(true);
+    setReceipt(null);
+    try {
+      let result = await mintReceiptOnce(apiKey, receiptName);
+      if (result.err?.includes("Need accrued cache hits")) {
+        await new Promise((r) => setTimeout(r, 800));
+        result = await mintReceiptOnce(apiKey, receiptName);
+        if (result.err?.includes("Need accrued cache hits")) {
+          setReceipt(result);
+          setMeta(result.err);
+          return;
+        }
+      }
+      setReceipt(result);
+      if (result.err) {
+        setMeta(result.err);
+      } else if (result.receipt_url) {
+        setMeta("Public receipt minted — share the link or badge.");
+      }
+    } finally {
+      setMintBusy(false);
     }
   }
 
@@ -242,11 +363,27 @@ export function AgentShellClient({
             readOnly={isDemo}
           />
         </label>
+        <label>
+          Path
+          <input
+            value={path}
+            onChange={(e) => setPath(e.target.value)}
+            placeholder="e.g. docs-bot"
+            autoComplete="off"
+            spellCheck={false}
+          />
+        </label>
       </div>
 
       <p className="agent-shell__meta" aria-live="polite">
         {meta}
       </p>
+      {isDemo ? (
+        <p className="receipt__foot">
+          Path labels (X-Ohm-Path) feed the hit-ratio surface by frequency farm
+          — e.g. docs-bot, ci-prompts, self-proof.
+        </p>
+      ) : null}
 
       {demoResult ? (
         <div className="demo-result" aria-live="polite">
@@ -280,6 +417,47 @@ export function AgentShellClient({
                 : ""}
             </p>
           )}
+          {isDemo && demoResult.proofOk ? (
+            <div className="demo-result__receipt">
+              <label className="billing-form__field">
+                <span>Receipt display name</span>
+                <input
+                  value={receiptName}
+                  onChange={(e) => setReceiptName(e.target.value)}
+                  autoComplete="off"
+                />
+              </label>
+              <button
+                type="button"
+                className="btn btn--primary"
+                disabled={mintBusy || !apiKey.trim()}
+                onClick={mintPublicReceipt}
+              >
+                {mintBusy ? "Minting…" : "Mint public receipt"}
+              </button>
+              {receipt?.err ? (
+                <p className="demo-result__ledger">{receipt.err}</p>
+              ) : null}
+              {receipt?.receipt_url ? (
+                <div className="demo-result__ledger">
+                  <p>
+                    <a
+                      href={receipt.receipt_url}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      {receipt.receipt_url}
+                    </a>
+                  </p>
+                  {receipt.badge_markdown ? (
+                    <pre className="org-console__log">
+                      {receipt.badge_markdown}
+                    </pre>
+                  ) : null}
+                </div>
+              ) : null}
+            </div>
+          ) : null}
         </div>
       ) : null}
 

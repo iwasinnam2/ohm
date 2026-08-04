@@ -11,6 +11,8 @@ Thesis: [ENTERPRISE_CHAOS.md](ENTERPRISE_CHAOS.md).
 | Cost centers | `PUT /v1/org/cost-centers` |
 | Clean ledger | `GET /v1/org/ledger`, `GET /v1/org/ledger/export` |
 | Monthly statement | `GET /v1/org/ledger/statement?month=YYYY-MM` |
+| Hit-ratio inventory | `GET /v1/org/ledger/hit-ratio?month=YYYY-MM&group_by=cost_center\|path` |
+| Spend caps | Org policy `spend_cap_usd_month` / `spend_cap_mode` / `spend_caps_by_cost_center` |
 | Audit log | `GET /v1/org/audit` |
 | Org policy | `PUT /v1/org/policy` |
 | Service keys | `POST /v1/org/keys` |
@@ -38,10 +40,23 @@ Response fields (selected):
 |-------|---------|
 | `month` / `since_ts` / `until_ts` | UTC month window `[since, until)` |
 | `by_cost_center` | Pipe rent + estimated provider avoided per center |
+| `by_path` | Same shape by frequency-farm path (`X-Ohm-Path`) |
 | `pipe_rent_usd` | Billable Ohm meters for the window |
 | `estimated_provider_avoided_usd` | Blended list estimate on **cache hits only** |
 | `cache_hits` / `cache_misses` / `fetches` | Event counts |
 | `estimate_only` | Always `true` until invoice import lands |
+
+**Hit ratio** — inventory by cost center or path for one UTC month:
+
+```http
+GET /v1/org/ledger/hit-ratio?month=2026-08&group_by=path
+Authorization: Bearer sk-at-…
+```
+
+**Spend caps** — meter pipe rent USD this UTC month per cost center; evaluated
+on cache **MISS** before upstream. Soft: allow + `X-Ohm-Spend-Cap` headers /
+audit `org.spend_cap_soft`. Hard: `402` `spend_cap_exceeded` / audit
+`org.spend_cap_hard`. HITs always serve. Caps ≠ prepaid credits.
 
 **CSV for the same window:**
 
@@ -51,7 +66,7 @@ GET /v1/org/ledger/export?format=csv&month=2026-08
 
 Org console: https://www.withohm.dev/org — **This month statement** + **Download month CSV**.
 
-Not in this slice: provider invoice import / true reconcile (`provider_invoice_import_usd` stays null).
+Not in this slice: provider invoice import / true reconcile (`provider_invoice_import_usd` stays null). FinOps remains `estimate_only`.
 
 ## Invoice / PO
 

@@ -14,6 +14,13 @@ nothing about the production experience changes.
 | Stripe webhooks / metering | Hit `api.withohm.dev` directly | — |
 | Quota allotment cron | In-cluster CronJob | Part of the k8s manifests |
 
+## Spend caps and audit (ops)
+
+Org hard/soft spend caps emit audit actions `org.spend_cap_hard` /
+`org.spend_cap_soft`. Soft MISS responses include `X-Ohm-Spend-Cap` headers.
+Caps meter **pipe rent** for the current UTC month per cost center — not
+provider invoices. Hit-ratio reads: `GET /v1/org/ledger/hit-ratio`.
+
 ## Shipping the API from anywhere (no local tooling)
 
 `.github/workflows/deploy.yml` runs on pushes to `master` that touch `src/`,

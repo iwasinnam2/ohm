@@ -58,5 +58,6 @@ You pay pipe rent (routing, caching, compliant fetch), not token wholesale — s
 2. ohm_chat(prompt, model)         → work; identical reruns replay
 3. ohm_fetch_web(urls, purpose)    → context when the web is needed
 4. ohm_savings / ohm_usage         → confirm ROI
-5. ohm_receipt                     → mint a public badge when the number is real
+5. ohm_receipt (or /demo mint)     → public badge when the number is real
+6. X-Ohm-Path + hit-ratio API      → inventarize frequency farms by path
 ```

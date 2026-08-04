@@ -87,6 +87,18 @@ No params. Returns the allowed web-fetch purposes and their limits from `GET /v1
 Call ohm_policy — is job_listings an allowed purpose on my seat?
 ```
 
+## ohm_receipt (and demo mint)
+
+Mint a public savings receipt (`POST /v1/savings/receipt`). The [/demo](/demo)
+**Mint public receipt** button after miss→HIT is the same mint — no MCP required.
+Receipts are `estimate_only` (display name + aggregates; never prompts).
+
+## Path + hit ratio
+
+Send `X-Ohm-Path` (or JSON `ohm_path`) on chat to label a frequency farm. Read
+inventory with `GET /v1/ledger/hit-ratio` (tenant) or
+`GET /v1/org/ledger/hit-ratio?month=YYYY-MM&group_by=path|cost_center` (org).
+
 ## Environment
 
 | Var | Role |
