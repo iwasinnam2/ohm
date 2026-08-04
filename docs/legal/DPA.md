@@ -62,3 +62,12 @@ Large-scale monitoring, special-category data, or systematic people-profiling vi
 ## Acknowledgement
 
 API field `dpa_ack: true` and tenant `dpa_version` at key issue bind this version.
+
+## Amendments (2026-08)
+
+Additive under `dpa-2026-07-26` (existing acks remain valid):
+
+- Categories of processor operations include path labels, cost-center
+  attribution, spend-cap enforcement state, and opt-in public receipt snapshots
+  (display name + aggregates). Customer instructs path labels via API headers /
+  body fields. No training on Customer Content.

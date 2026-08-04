@@ -47,6 +47,7 @@ Install the server first: `pip install withohm-mcp`.
 | `ohm_usage` / `ohm_savings` | Meters and dual savings |
 | `ohm_models` / `ohm_providers` | Routing status |
 | `ohm_policy` | Compliance purposes |
-| `ohm_receipt` | Mint a public savings receipt |
+| `ohm_receipt` | Mint a public savings receipt (same as [/demo](/demo) one-click mint) |
 
-Full catalog: [Command catalog](/docs/commands).
+Full catalog: [Command catalog](/docs/commands). Tag chat with `X-Ohm-Path` when
+routing frequency farms; hit-ratio lives on the org console / ledger APIs.

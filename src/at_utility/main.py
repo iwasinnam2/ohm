@@ -45,8 +45,8 @@ from at_utility.stream_usage import (
 )
 from at_utility import stripe_billing
 from at_utility.audit import AuditLog
-from at_utility.ledger import CleanLedger
-from at_utility.org_api import router as org_router
+from at_utility.ledger import CleanLedger, normalize_path
+from at_utility.org_api import month_utc_bounds, router as org_router
 from at_utility.orgs import OrgRegistry
 from at_utility.savings import SAVINGS_DISCLAIMER, dual_ledger
 from at_utility.sso import SsoService
@@ -79,6 +79,8 @@ class ChatCompletionRequest(BaseModel):
     web_format: Optional[str] = None
     # identical-request-replay | no_store (skip Redis write)
     cache_control: Optional[str] = None
+    # Frequency-farm path label (also accept X-Ohm-Path header)
+    ohm_path: Optional[str] = None
 
 
 class AppState:
@@ -223,12 +225,17 @@ app.add_middleware(
         "Content-Type",
         "X-Ohm-Upstream-Key",
         "X-Ohm-Session",
+        "X-Ohm-Path",
+        "X-Ohm-Cost-Center",
     ],
     expose_headers=[
         "X-AT-Cache",
         "X-AT-Billed-Usd",
         "X-AT-Plane",
         "X-Ohm-Cost-Center",
+        "X-Ohm-Path",
+        "X-Ohm-Spend-Cap",
+        "X-Ohm-Spend-Cap-Usd",
     ],
     max_age=86400,
 )
@@ -246,6 +253,7 @@ async def _append_ledger(
     cache_hit: bool = False,
     purpose: str = "",
     request_id: str = "",
+    path: str = "default",
 ) -> None:
     try:
         await state.ledger.append(
@@ -260,9 +268,88 @@ async def _append_ledger(
             cache_hit=cache_hit,
             purpose=purpose,
             request_id=request_id,
+            path=path,
         )
     except Exception:  # noqa: BLE001 — metering must not fail the request
         log.exception("ledger append failed tenant=%s", tenant_rec.tenant_id)
+
+
+async def _spend_cap_on_miss(
+    tenant_rec: TenantRecord,
+) -> dict[str, str]:
+    """Before upstream on cache MISS: soft-header or hard-block org spend caps.
+
+    HITs are never gated — they are the arbitrage. Returns extra response headers.
+    """
+    if not tenant_rec.org_id:
+        return {}
+    org = await state.orgs.get(tenant_rec.org_id)
+    if not org:
+        return {}
+    policy = org.policy_obj()
+    center = (tenant_rec.cost_center or "default").strip() or "default"
+    cap = policy.spend_caps_by_cost_center.get(center)
+    if cap is None:
+        cap = policy.spend_cap_usd_month
+    try:
+        cap_f = float(cap or 0)
+    except (TypeError, ValueError):
+        return {}
+    if cap_f <= 0:
+        return {}
+    month = time.strftime("%Y-%m", time.gmtime())
+    since_ts, until_ts = month_utc_bounds(month)
+    summary = await state.ledger.summarize(
+        org_id=org.org_id,
+        cost_center=center,
+        since_ts=since_ts,
+        until_ts=until_ts,
+    )
+    spent = float(summary.get("pipe_rent_usd") or 0)
+    if spent < cap_f:
+        return {}
+    if policy.spend_cap_mode == "hard":
+        await state.audit.record(
+            org_id=org.org_id,
+            actor=tenant_rec.tenant_id,
+            action="org.spend_cap_hard",
+            detail={
+                "cost_center": center,
+                "cap_usd": cap_f,
+                "spent_usd": spent,
+                "month": month,
+            },
+        )
+        raise HTTPException(
+            status_code=402,
+            detail={
+                "code": "spend_cap_exceeded",
+                "message": (
+                    f"Org spend cap ${cap_f:.2f} exceeded for cost center "
+                    f"'{center}' this UTC month (pipe rent ${spent:.4f}). "
+                    "Cache HITs still serve; raise the cap or wait for next month."
+                ),
+                "cost_center": center,
+                "cap_usd": cap_f,
+                "spent_usd": spent,
+                "month": month,
+            },
+        )
+    await state.audit.record(
+        org_id=org.org_id,
+        actor=tenant_rec.tenant_id,
+        action="org.spend_cap_soft",
+        detail={
+            "cost_center": center,
+            "cap_usd": cap_f,
+            "spent_usd": spent,
+            "month": month,
+        },
+    )
+    return {
+        "X-Ohm-Spend-Cap": "soft",
+        "X-Ohm-Spend-Cap-Usd": f"{cap_f:.2f}",
+    }
 
 
 async def _org_policy_gate(tenant_rec: TenantRecord, body: ChatCompletionRequest) -> None:
@@ -772,6 +859,41 @@ async def tenant_ledger(
         "cost_center": tenant.cost_center,
         "summary": summary,
         "events": state.ledger.export_json(events),
+    }
+
+
+@app.get("/v1/ledger/hit-ratio")
+async def tenant_ledger_hit_ratio(
+    month: str = "",
+    group_by: str = "path",
+    auth: tuple[str, TenantRecord] = Depends(auth_tenant),
+) -> dict[str, Any]:
+    """Tenant-scoped hit-ratio (Intermediate solo seats without org)."""
+    _key, tenant = auth
+    await rate_limit(_key, tenant.tenant_id)
+    gb = (group_by or "path").strip().lower()
+    if gb not in ("cost_center", "path"):
+        raise HTTPException(
+            status_code=400, detail="group_by must be cost_center or path"
+        )
+    m = (month or "").strip() or time.strftime("%Y-%m", time.gmtime())
+    since_ts, until_ts = month_utc_bounds(m)
+    org_id = tenant.org_id or ""
+    summary = await state.ledger.summarize(
+        org_id=org_id,
+        tenant_id=tenant.tenant_id if not org_id else "",
+        since_ts=since_ts,
+        until_ts=until_ts,
+    )
+    report = state.ledger.hit_ratio_report(summary, group_by=gb)
+    return {
+        "tenant_id": tenant.tenant_id,
+        "org_id": org_id or None,
+        "month": m,
+        "since_ts": since_ts,
+        "until_ts": until_ts,
+        "timezone": "UTC",
+        **report,
     }
 
 
@@ -1409,12 +1531,14 @@ async def chat_completions(
     request: Request,
     auth: tuple[str, TenantRecord] = Depends(auth_tenant),
     x_ohm_upstream_key: Optional[str] = Header(default=None, alias="X-Ohm-Upstream-Key"),
+    x_ohm_path: Optional[str] = Header(default=None, alias="X-Ohm-Path"),
 ):
     api_key, tenant_rec = auth
     await rate_limit(api_key, tenant_rec.tenant_id)
     await _org_policy_gate(tenant_rec, body)
     tenant = tenant_rec.tenant_id
     stripe_customer = tenant_rec.stripe_customer_id or ""
+    traffic_path = normalize_path(x_ohm_path or body.ohm_path)
     messages = [m.model_dump() for m in body.messages]
     upstream_key = (x_ohm_upstream_key or "").strip()
     # Enterprise managed pool / org policy may omit BYOK and use Ohm env keys
@@ -1528,6 +1652,7 @@ async def chat_completions(
                     fetches=fetch_count,
                     pipe_usd=fev.billed_usd,
                     purpose=str(web_purpose or ""),
+                    path=traffic_path,
                 )
 
     extras = {
@@ -1548,6 +1673,8 @@ async def chat_completions(
         "X-AT-Cache-Purpose": "identical-request-replay",
         "X-AT-Region": state.settings.at_region,
         "X-Ohm-Byok": "1" if upstream_key else "0",
+        "X-Ohm-Path": traffic_path,
+        "X-Ohm-Cost-Center": tenant_rec.cost_center or "default",
     }
 
     if not no_store:
@@ -1570,6 +1697,7 @@ async def chat_completions(
                 pipe_usd=event.billed_usd,
                 cache_hit=True,
                 purpose=str(web_purpose or ""),
+                path=traffic_path,
             )
             hit_headers = {
                 **cache_headers,
@@ -1610,6 +1738,9 @@ async def chat_completions(
                 "header": "X-Ohm-Upstream-Key",
             },
         )
+
+    spend_cap_headers = await _spend_cap_on_miss(tenant_rec)
+    cache_headers = {**cache_headers, **spend_cap_headers}
 
     provider, model = resolve_provider(
         body.model,
@@ -1677,6 +1808,7 @@ async def chat_completions(
                     pipe_usd=sev.billed_usd,
                     cache_hit=False,
                     purpose=str(web_purpose or ""),
+                    path=traffic_path,
                 )
                 if not no_store:
                     # Streamed MISS populates the same cache entry the JSON
@@ -1743,6 +1875,7 @@ async def chat_completions(
         pipe_usd=event.billed_usd,
         cache_hit=False,
         purpose=str(web_purpose or ""),
+        path=traffic_path,
     )
     return JSONResponse(
         result,
@@ -1750,7 +1883,6 @@ async def chat_completions(
             **cache_headers,
             "X-AT-Cache": "BYPASS" if no_store else "MISS",
             "X-AT-Billed-USD": f"{event.billed_usd:.6f}",
-            "X-Ohm-Cost-Center": tenant_rec.cost_center or "default",
         },
     )
 

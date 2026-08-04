@@ -46,11 +46,16 @@ is who signs the MSA.
 POST /v1/org                              create org + bind key
 GET  /v1/org/ledger                       summary + events
 GET  /v1/org/ledger/statement?month=YYYY-MM
+GET  /v1/org/ledger/hit-ratio?month=YYYY-MM&group_by=path|cost_center
 GET  /v1/org/ledger/export?format=csv&month=YYYY-MM
-PUT  /v1/org/policy                       model allowlist, purposes
+PUT  /v1/org/policy                       purposes, spend caps, model allowlist
 GET  /v1/org/audit
 POST /v1/org/sso/dev-login                local SSO (dev secret)
 ```
+
+Tag agents with `X-Ohm-Path` (docs-bot, ci-prompts, …). Org spend caps soft- or
+hard-stop MISS flood per cost center; HITs still serve. FinOps stays
+`estimate_only` — provider invoice import is not shipped.
 
 Full commercial pack: repo `docs/ENTERPRISE.md`. Deep thesis: `docs/ENTERPRISE_CHAOS.md`.
 
@@ -74,4 +79,5 @@ automation, CI prompt suites):
 | CI prompt suites | Byte-identical checks on every PR |
 
 Point those agents at the Ohm `base_url` (or attach MCP), keep prompts
-byte-identical, and the ledger records HIT vs MISS by cost center.
+byte-identical, send a stable `X-Ohm-Path`, and the ledger records HIT vs MISS
+by cost center and path.

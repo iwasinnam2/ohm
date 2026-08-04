@@ -134,3 +134,10 @@ not: private-account access, training on gated corpora without rights, people-in
 - US: CFAA; *Van Buren*; *Nosal*; *hiQ* (public scrape CFAA limits in 9th Cir.); *Power Ventures* (revoked access).
 
 Templates: [legal/](legal/). Trust/retention: [SECURITY.md](SECURITY.md).
+
+## 2026-08 amendments (path, receipts, spend caps)
+
+Additive sections under existing `tos-2026-07-26` / `dpa-2026-07-26` (acks remain
+valid). See Terms / Privacy / DPA / Security — path + cost-center operational
+metadata, public receipt aggregates, and org spend-cap MISS gates. Site mirrors
+under `site/content/docs/`.

@@ -52,3 +52,7 @@ Start at [/billing/intermediate](/billing/intermediate) — Checkout issues your
 ## Savings (estimates) — dual ledger
 
 `GET /v1/savings` shows **estimated provider $ avoided** (blended list rate × cache-hit tokens), **pipe rent** (what withOhm metered), and **roi_ratio**. Always labeled estimate-only — not a guarantee. withOhm’s invoice and provider token bills stay separate.
+
+## Org spend caps
+
+Org policy may set monthly **pipe-rent** caps per cost center (`soft` response headers or `hard` HTTP 402). Caps are **not** Intermediate credits or prepaid balance — they gate MISS upstream flood; HITs still serve.

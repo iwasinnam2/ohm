@@ -26,11 +26,17 @@ export default function DemoPage() {
           </li>
           <li>
             Leave model as <code>mock</code> — no provider key needed for this
-            proof.
+            proof. Path defaults to <code>self-proof</code> (feeds hit-ratio).
           </li>
           <li>
             Click <strong>Prove miss → HIT</strong>. Read the strip: first
             MISS, second HIT.
+          </li>
+          <li>
+            Click <strong>Mint public receipt</strong> — shareable{" "}
+            <code>/r/…</code> link + README badge (same as{" "}
+            <code>POST /v1/savings/receipt</code> / MCP <code>ohm_receipt</code>
+            ).
           </li>
         </ol>
       </header>

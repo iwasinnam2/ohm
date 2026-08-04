@@ -13,8 +13,8 @@ distribution or legitimacy. See [ENTERPRISE_CHAOS.md](ENTERPRISE_CHAOS.md).
 2. **Browse / compliance gravity** — Purpose-bound, robots-aware public-web
    ingest as governed context (primary variable revenue on Intermediate).
 3. **Governance gravity** — SSO tenancy, org policy, audit log, and a
-   **corporate clean ledger** (cost centers + FinOps export) so abstracted
-   enterprise AI spend becomes attributable.
+   **corporate clean ledger** (cost centers, path inventory, spend caps, FinOps
+   export) so abstracted enterprise AI spend becomes attributable.
 
 ## Ledger (money paths)
 

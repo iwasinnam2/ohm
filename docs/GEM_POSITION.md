@@ -30,6 +30,13 @@ make enterprise AI spend **governable**.
 > Keep your keys or use a managed pool. Gain prompt replay, compliant web
 > context, and a clean ledger — rent the plumbing, govern the chaos.
 
+## Path inventory + spend caps
+
+Tag traffic with `X-Ohm-Path` (docs-bot, ci-prompts, support-triage, …). Hit-ratio
+APIs and the org console inventarize frequency farms; org spend caps soft-stop or
+hard-block MISS flood so the spread (provider avoided − pipe rent) is protected
+without overclaiming a savings SLA.
+
 ## Dual savings + clean ledger
 
 `GET /v1/savings` / receipts:

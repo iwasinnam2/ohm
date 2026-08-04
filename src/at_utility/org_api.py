@@ -109,6 +109,9 @@ class PolicyBody(BaseModel):
     fetch_cap_day: int | None = None
     default_cache_no_store: bool | None = None
     managed_keys: bool | None = None
+    spend_cap_usd_month: float | None = None
+    spend_cap_mode: str | None = None
+    spend_caps_by_cost_center: dict[str, float] | None = None
 
 
 class MintKeyBody(BaseModel):
@@ -194,6 +197,15 @@ async def set_policy(
     if ctx.get("role") not in ("owner", "admin", "service"):
         raise HTTPException(status_code=403, detail="admin role required")
     patch = {k: v for k, v in body.model_dump().items() if v is not None}
+    if "spend_cap_mode" in patch:
+        mode = str(patch["spend_cap_mode"]).strip().lower()
+        if mode not in ("soft", "hard"):
+            raise HTTPException(
+                status_code=400, detail="spend_cap_mode must be soft or hard"
+            )
+        patch["spend_cap_mode"] = mode
+    if "spend_cap_usd_month" in patch and float(patch["spend_cap_usd_month"]) < 0:
+        raise HTTPException(status_code=400, detail="spend_cap_usd_month must be >= 0")
     org = await st.orgs.update_policy(ctx["org"].org_id, patch)
     await st.audit.record(
         org_id=org.org_id,
@@ -366,6 +378,7 @@ async def org_ledger_statement(
         "timezone": "UTC",
         "summary": summary,
         "by_cost_center": summary.get("by_cost_center", {}),
+        "by_path": summary.get("by_path", {}),
         "pipe_rent_usd": summary.get("pipe_rent_usd", 0),
         "estimated_provider_avoided_usd": summary.get(
             "estimated_provider_avoided_usd", 0
@@ -378,6 +391,50 @@ async def org_ledger_statement(
             "FinOps export contract: pipe rent is billable Ohm meters; "
             "estimated_provider_avoided_usd is blended list estimate on cache "
             "hits only. Provider invoice import / true reconcile not yet wired."
+        ),
+    }
+
+
+@router.get("/v1/org/ledger/hit-ratio")
+async def org_ledger_hit_ratio(
+    month: str = Query(..., description="UTC calendar month YYYY-MM"),
+    group_by: str = Query(
+        default="cost_center",
+        description="cost_center | path",
+    ),
+    ctx: dict[str, Any] = Depends(auth_org_session),
+) -> dict[str, Any]:
+    """Hit-ratio inventory by cost center or traffic path for a UTC month."""
+    st = _state()
+    org = ctx["org"]
+    gb = (group_by or "cost_center").strip().lower()
+    if gb not in ("cost_center", "path"):
+        raise HTTPException(
+            status_code=400, detail="group_by must be cost_center or path"
+        )
+    since_ts, until_ts = month_utc_bounds(month)
+    summary = await st.ledger.summarize(
+        org_id=org.org_id,
+        since_ts=since_ts,
+        until_ts=until_ts,
+    )
+    report = st.ledger.hit_ratio_report(summary, group_by=gb)
+    await st.audit.record(
+        org_id=org.org_id,
+        actor=ctx.get("email") or "api_key",
+        action="org.hit_ratio",
+        detail={"month": month, "group_by": gb},
+    )
+    return {
+        "org_id": org.org_id,
+        "month": month,
+        "since_ts": since_ts,
+        "until_ts": until_ts,
+        "timezone": "UTC",
+        **report,
+        "note": (
+            "Hit ratio = cache_hits / (cache_hits + cache_misses). "
+            "Provider avoided is estimate_only; Ohm invoice ≠ provider bill."
         ),
     }
 
