@@ -275,6 +275,11 @@ find the thread in one click.
 - **Amber** — a paused schedule, CI red on `master`, a stale `[observer]` Linear
   issue, a certificate inside 30 days, a deadline inside 120 days, a high or critical
   advisory, or the ingest pipe misbehaving. Report and track.
+- **Section 8 is red on sight.** A credential-shaped string in a recent commit means
+  rotate first and purge history second, in that order, because the value is already
+  public the moment it is pushed. Report the label and the count. Do not quote the
+  match, do not put it in the PR, and do not commit it into the log while reporting
+  that it was committed.
 - **Green** — say so in one line and stop.
 
 ## Definition of done

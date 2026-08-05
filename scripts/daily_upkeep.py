@@ -34,6 +34,7 @@ import argparse
 import io
 import json
 import os
+import re
 import socket
 import ssl
 import subprocess
@@ -72,6 +73,20 @@ DEADLINE_WARN_DAYS = 120
 # because observer_notify dedups on exact title. Stale ones are alert-blinding.
 LINEAR_GQL = "https://api.linear.app/graphql"
 BACKLOG_STALE_DAYS = 3
+
+# Credential shapes worth catching in a commit. Each needs a long random tail so
+# the prefixes quoted in docs (sk-at-dev, sk-at-obs-) do not trip it. Matches are
+# reported by label and length only — a leak detector must never echo the leak.
+SECRET_PATTERNS: list[tuple[str, str]] = [
+    ("Cursor API key", r"crsr_[A-Za-z0-9]{20,}"),
+    ("Stripe live key", r"[sr]k_live_[A-Za-z0-9]{20,}"),
+    ("Linear API key", r"lin_api_[A-Za-z0-9]{20,}"),
+    ("Slack token", r"xox[baprs]-[A-Za-z0-9-]{20,}"),
+    ("Slack webhook", r"hooks\.slack\.com/services/[A-Za-z0-9]+/[A-Za-z0-9]+/[A-Za-z0-9]{10,}"),
+    ("AWS access key id", r"AKIA[0-9A-Z]{16}"),
+    ("private key block", r"-----BEGIN [A-Z ]*PRIVATE KEY-----"),
+    ("withOhm API key", r"sk-at-[A-Za-z0-9_-]{20,}"),
+]
 
 
 class Report:
@@ -405,6 +420,53 @@ def section_observer_backlog(report: Report) -> None:
     report.add("7. Observer backlog (Linear)", "\n".join(lines))
 
 
+def section_secret_scan(report: Report) -> None:
+    """Catch a credential committed in the last day, without ever echoing one."""
+    lines: list[str] = []
+
+    tracked_env = subprocess.run(
+        ["git", "ls-files", "--error-unmatch", ".env"],
+        capture_output=True,
+        text=True,
+        timeout=20,
+    )
+    if tracked_env.returncode == 0:
+        lines.append("- `.env` is TRACKED by git")
+        report.finding(RED, ".env is tracked by git and will be committed.")
+    else:
+        lines.append("- `.env` is not tracked")
+
+    try:
+        recent = subprocess.run(
+            ["git", "log", "--since=24.hours", "-p", "--no-color"],
+            capture_output=True,
+            text=True,
+            timeout=90,
+            check=True,
+        ).stdout
+    except Exception as exc:  # noqa: BLE001
+        report.add("8. Secret scan", "\n".join(lines) + f"\n- history scan failed: {exc}")
+        report.finding(AMBER, f"Could not scan recent commits for secrets: {exc}")
+        return
+
+    for label, pattern in SECRET_PATTERNS:
+        matches = re.findall(pattern, recent)
+        if matches:
+            # Length only. Printing the match would put the secret in the report.
+            lengths = ", ".join(str(len(m)) for m in sorted(set(matches))[:5])
+            lines.append(f"- **{label}**: {len(matches)} match(es), length(s) {lengths}")
+            report.finding(
+                RED,
+                f"{label} appears in a commit from the last 24h — rotate it, then purge "
+                "it from history. Find it with: git log --since=24.hours -p | grep -n "
+                f"-E '{pattern}'",
+            )
+
+    if len(lines) == 1:
+        lines.append("- no credential-shaped strings in the last 24h of commits")
+    report.add("8. Secret scan", "\n".join(lines))
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Daily withOhm upkeep sweep")
     parser.add_argument(
@@ -433,6 +495,7 @@ def main() -> int:
     section_deadlines(report)
     section_public_stats(report)
     section_observer_backlog(report)
+    section_secret_scan(report)
 
     print(report.render(repo=repo or "unknown"))
 
