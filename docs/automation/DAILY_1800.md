@@ -1,26 +1,8 @@
-# Daily 18:00 automation — upkeep and community listening
+# Daily upkeep and community listening
 
-This file holds the instruction body for the daily Cursor automation. The trigger
-is configured in the Cursor dashboard; everything below the horizontal rule is the
-pasteable body.
-
-Three jobs, one pass, every evening:
-
-1. Run the **Observer meta chain by hand** instead of trusting the 06:45 UTC cron.
-   `observer-meta.yml` failed 3 of 5 scheduled runs in early August 2026 on schedule
-   jitter alone, so a second read on a different clock is worth having.
-2. **Upkeep** of the withOhm production surfaces and the repo around them — read-only
-   from outside, because `docs/OPERATIONS.md` keeps Terraform, secrets, DNS, and
-   Stripe as human-credentialed actions and this VM holds no AWS credentials.
-3. **Read one Hacker News / Y Combinator post** and draft a reply that responds to
-   the post and nothing else. Draft only. The automation never posts.
-
-The mechanical half lives in [`scripts/daily_upkeep.py`](../../scripts/daily_upkeep.py)
-so the sweep is reviewable code rather than prose the model re-derives each evening.
-Edit that script to change *what* is checked; edit this file to change *how the agent
-reasons* about the results.
-
----
+Every line of this file is the automation prompt. Select all, paste, done — there is
+no preamble to trim and no horizontal rule to trip over. Operator notes on configuring
+the trigger live in [README.md](README.md).
 
 ## Role
 
@@ -42,6 +24,53 @@ is the goal; finding nothing is a good outcome and must not be padded.
 - **Missing credentials are a SKIP, not a failure.** Note what could not be checked
   and carry on; the sweep already degrades this way.
 
+## Connected tools
+
+MCP servers are attached per automation, so only the ones enabled on this automation
+are available. Use whichever are present and skip the rest silently — never treat an
+absent server as a finding.
+
+**Neon** — read-only use only, and cheap to skip. The Postgres mirror is still
+unmerged scaffolding (PRs #8 and #9), so until it carries traffic the honest daily
+check is one `list_projects` call: note anything with compute time it should not have,
+or a project nobody remembers creating, and move on in a single line. Do not wake an
+idle compute to inspect an empty database.
+
+Once the mirror is live this becomes worth real attention: `list_slow_queries` for
+query regressions, `query_logs` for errors since yesterday, `get_database_tables` and
+`describe_table_schema` to confirm the schema still matches what `src/at_utility/`
+expects, and `list_branch_computes` for dev branches left running and billing.
+
+You must **never** call `delete_branch`, `delete_project`, `reset_from_parent`,
+`prepare_database_migration`, `complete_database_migration`, `complete_query_tuning`,
+`provision_neon_auth`, `configure_neon_auth`, or any writing `run_sql` /
+`run_sql_transaction`. Those tools say to ask the user first, and an unattended 18:00
+run has no user to ask. If the connector is in write mode the destructive tools will
+be visible to you anyway — visibility is not permission. Anything needing a write goes
+in the report as a recommendation.
+
+**Linear** — list open issues whose title starts with `[observer]`. This is the
+highest-value connector for this automation, because
+[`scripts/observer_notify.py`](../../scripts/observer_notify.py) dedups on exact
+title: one stale open issue silently swallows the next identical page, so a forgotten
+ticket quietly disables an alarm. Report any older than three days, and file findings
+here instead of just narrating them. Do not close an issue unless you have positively
+confirmed the underlying condition is resolved.
+
+**Stripe** — read-only. Open disputes first, since those carry hard evidence
+deadlines and nothing else in this system watches them; then past-due and unpaid
+invoices ahead of dunning, and whether live prices and meters still match
+`pricing/rate_card.v2.json`. Never create, modify, or refund anything.
+
+**Cursor Cloud** (always available) — check that the automation itself is healthy,
+since `observer-meta.yml` has no watcher of its own. `list-cloud-agents` shows whether
+recent 18:00 runs failed, and `list-environment-builds` with `environment-build-logs`
+catches the environment install rotting, which would otherwise degrade every future
+run quietly.
+
+**AWS Knowledge** — confirm lifecycle and end-of-support dates when the deadline
+section is close to one, rather than trusting the date hardcoded in the sweep.
+
 ## Step 1 — Observer meta chain
 
 ```bash
@@ -58,8 +87,8 @@ Read the result with the distinction the Observer is built around:
   roughly 60 days of repo inactivity, and credentials expire. It does **not** mean
   production is down. The age windows come from `EXPECTED` in
   [`scripts/observer_meta.py`](../../scripts/observer_meta.py) and are deliberately
-  wider than the nominal cron, because `*/15` routinely stretches to 2–3 hours on
-  hosted runners. Report a stale window as "schedule may be paused" and point at
+  wider than the nominal schedule, because a fifteen-minute cadence routinely
+  stretches to two or three hours on hosted runners. Report a stale window as "schedule may be paused" and point at
   Actions → the workflow → Enable. Do not try to re-enable it yourself.
 - **Section 2 red** means the live customer surface is failing right now. That is an
   outage, and it outranks everything else in this checklist.
@@ -261,8 +290,9 @@ section, and are added under Cursor Dashboard → Cloud Agents → Secrets:
   August 2026. Add `LINEAR_TEAM_ID` alongside it to let `--notify` file issues.
 - `SLACK_WEBHOOK_URL` — lets `--notify` reach a human out of band.
 
-The Linear MCP server is an alternative to the API key but currently reports
-`needsAuth`. AWS credentials are absent by design and should stay that way.
+The Linear MCP connector is an alternative to `LINEAR_API_KEY` and covers the same
+gap; either one is enough. AWS credentials are absent by design and should stay
+that way.
 
 ## Definition of done
 
