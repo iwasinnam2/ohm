@@ -147,7 +147,10 @@ robots, and redacts PII — and it doubles as a nightly self-test of the product
 
 ```bash
 redis-server --daemonize yes --port 6379 || true
-.venv/bin/python -m workers.ingest_worker &   # :8090, takes ~10s to bind
+# the worker is long-running, so give it a tmux session rather than backgrounding it
+tmux -f /exec-daemon/tmux.portal.conf new-session -d -s ingest-worker -c /workspace \
+  -- bash -lc '.venv/bin/python -m workers.ingest_worker'
+sleep 12   # :8090 takes about ten seconds to bind
 curl -s http://127.0.0.1:8090/v1/ingest -H 'Content-Type: application/json' -d '{
   "urls": ["<article url>"],
   "format": "markdown",
