@@ -4,6 +4,29 @@ Two related operations: (A) set the Ed25519 signing seeds in production, and
 (B) register OhmBot in Cloudflare's Verified Bots program via Web Bot Auth.
 Do (A) first — (B) verifies against the key directory that (A) makes live.
 
+## Production rollout order (trust architecture / PR #12)
+
+Images ship via GitHub Actions **Deploy API** on push to `master` (OIDC → ECR
+→ `kubectl set image`). No local Docker/ECR from the laptop. Secrets still
+need one operator `kubectl patch` (the deploy role cannot write secrets).
+
+1. **Merge** PR #12 into `master` (includes `gateway-rs` public passthrough for
+   `/.well-known/http-message-signatures-directory` — without that, GA/NLB
+   returns 401 on the JWKS directory).
+2. **Watch** Actions → *Deploy API* until green (`/health` check at the end).
+3. **Set seeds** (section A below) and `rollout restart` gateway (+ ingest-worker
+   if enabling OhmBot). Restart is required so pods pick up the new secret keys.
+4. **Verify**:
+   ```bash
+   curl -s https://api.withohm.dev/v1/public/honesty | python -m json.tool
+   # expect receipts.enabled true once AT_RECEIPT_ED25519_SEED_B64 is set
+   curl -si https://api.withohm.dev/.well-known/http-message-signatures-directory | head -12
+   # expect 200 + Signature / Signature-Input (not 401)
+   # HIT twice with the same body, then:
+   python scripts/verify_receipt.py "<X-Ohm-Receipt>" --base https://api.withohm.dev
+   ```
+5. **Optional:** Cloudflare Verified Bots form (section B).
+
 ## A. Set the signing seeds
 
 Two independent seeds (never reuse one for both — they rotate separately):

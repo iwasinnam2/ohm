@@ -509,7 +509,16 @@ async fn handle_inner(
     // Savings receipts / aggregate stats are unauthenticated by design —
     // Python applies its own per-IP token bucket on these routes.
     let is_public_read = path_only.starts_with("/v1/public/") && method == Method::GET;
-    let is_passthrough = is_stripe_webhook || is_ready || is_public_checkout || is_public_read;
+    // Web Bot Auth + receipt JWKS directory must be fetchable without a key
+    // (Cloudflare Verified Bots + scripts/verify_receipt.py).
+    let is_key_directory = path_only
+        == "/.well-known/http-message-signatures-directory"
+        && method == Method::GET;
+    let is_passthrough = is_stripe_webhook
+        || is_ready
+        || is_public_checkout
+        || is_public_read
+        || is_key_directory;
     let mut edge_verified = false;
     let token = if is_passthrough {
         None
@@ -543,6 +552,8 @@ async fn handle_inner(
             "ready"
         } else if is_public_checkout {
             "public checkout"
+        } else if is_key_directory {
+            "key directory"
         } else if is_public_read {
             "public read"
         } else {
