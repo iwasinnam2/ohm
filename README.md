@@ -1,5 +1,8 @@
 # Ohm (withOhm)
 
+[![CI](https://github.com/iwasinnam2/ohm/actions/workflows/ci.yml/badge.svg)](https://github.com/iwasinnam2/ohm/actions/workflows/ci.yml)
+[![Golden path (nightly, production)](https://github.com/iwasinnam2/ohm/actions/workflows/golden-path.yml/badge.svg)](https://github.com/iwasinnam2/ohm/actions/workflows/golden-path.yml)
+
 AI traffic control plane: OpenAI-compatible ingress, Redis prompt replay, compliant web ingest, SSO org tenancy, and a corporate clean ledger — the entropy organizer for enterprise AI chaos. Cursor/MCP are optional clients.
 
 > **Exact-replay hits that cost zero upstream tokens. Cross-provider consistency. Locality — Redis edge reads. Replay and audit value.**
@@ -8,6 +11,20 @@ AI traffic control plane: OpenAI-compatible ingress, Redis prompt replay, compli
 **Site:** https://www.withohm.dev · **API:** https://api.withohm.dev/v1 · **Workbench:** `/workbench` · **Vision:** [`docs/VISION.md`](docs/VISION.md) · **Enterprise:** [`docs/ENTERPRISE_CHAOS.md`](docs/ENTERPRISE_CHAOS.md) · **Gem:** [`docs/GEM_POSITION.md`](docs/GEM_POSITION.md)
 
 **License:** MIT (see [`LICENSE`](LICENSE) + [`NOTICE`](NOTICE)). Source is open; the hosted withOhm pipe remains a commercial metered service. Package/key names may still say `at-utility` / `sk-at-*` (legacy AT prefix); the product is **withOhm**.
+
+## Verify it yourself
+
+Prose is cheap; every load-bearing claim ships with the command that checks it.
+
+| Claim | Check |
+|-------|-------|
+| The pipe is up (both planes) | `curl -s https://api.withohm.dev/health && curl -s https://api.withohm.dev/ready` |
+| Hits replay and are billed as hits | Send the same body twice; second response has `X-AT-Cache: HIT` + `X-AT-Billed-USD` |
+| **A hit is cryptographic, not asserted** | Hit responses carry `X-Ohm-Receipt` (signed JWS) — verify: `python scripts/verify_receipt.py "<receipt>"` ([docs/RECEIPTS.md](docs/RECEIPTS.md)) |
+| Signing keys are public | `curl -s https://api.withohm.dev/.well-known/http-message-signatures-directory` |
+| Published limits and refusals | `curl -s https://api.withohm.dev/v1/public/honesty` — what we won't do, with the endpoint that proves each item |
+| Cross-tenant savings counter | `curl -s https://api.withohm.dev/v1/public/stats` (always `estimate_only: true`) |
+| The reviewer path works nightly against production | [Golden path workflow history](https://github.com/iwasinnam2/ohm/actions/workflows/golden-path.yml) |
 
 ## Local developer contract (stable)
 

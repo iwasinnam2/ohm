@@ -163,7 +163,7 @@ fn with_cors(mut res: Response<ProxyBody>, origin: Option<&str>) -> Response<Pro
         );
         headers.insert(
             hyper::header::HeaderName::from_static("access-control-expose-headers"),
-            "x-at-cache, x-at-billed-usd, x-at-plane, x-ohm-cost-center, x-ohm-path, x-ohm-spend-cap, x-ohm-spend-cap-usd"
+            "x-at-cache, x-at-billed-usd, x-at-plane, x-ohm-cost-center, x-ohm-path, x-ohm-spend-cap, x-ohm-spend-cap-usd, x-ohm-receipt"
                 .parse()
                 .unwrap(),
         );
@@ -403,6 +403,8 @@ async fn edge_hit_gate(
     app: &App,
     token: &str,
     total_tokens: i64,
+    model: &str,
+    request_sha256: &str,
 ) -> Option<(StatusCode, Bytes)> {
     let cfg = &app.cfg;
     let uri: Uri = format!(
@@ -411,7 +413,14 @@ async fn edge_hit_gate(
     )
     .parse()
     .ok()?;
-    let payload = serde_json::json!({ "total_tokens": total_tokens }).to_string();
+    // model + request digest let Python mint the signed X-Ohm-Receipt for
+    // edge-served HITs (same proof as control-plane HITs).
+    let payload = serde_json::json!({
+        "total_tokens": total_tokens,
+        "model": model,
+        "request_sha256": request_sha256,
+    })
+    .to_string();
     let req = Request::builder()
         .method(Method::POST)
         .uri(uri)
@@ -630,21 +639,35 @@ async fn handle_inner(
                             .and_then(|t| t.as_i64())
                     })
                     .unwrap_or(0);
-                match edge_hit_gate(&app, &token, total_tokens).await {
+                let model = body_json
+                    .as_ref()
+                    .and_then(|v| v.get("model").and_then(|m| m.as_str()))
+                    .unwrap_or("")
+                    .to_string();
+                let request_sha256 = key.rsplit(':').next().unwrap_or("").to_string();
+                match edge_hit_gate(&app, &token, total_tokens, &model, &request_sha256).await {
                     Some((status, gate_body)) if status.is_success() => {
                         info!("cache HIT {key} (metered)");
-                        let billed = serde_json::from_slice::<serde_json::Value>(&gate_body)
-                            .ok()
+                        let gate_json =
+                            serde_json::from_slice::<serde_json::Value>(&gate_body).ok();
+                        let billed = gate_json
+                            .as_ref()
                             .and_then(|v| v.get("billed_usd").and_then(|b| b.as_f64()))
                             .unwrap_or(0.0);
-                        return Ok(Response::builder()
+                        let mut builder = Response::builder()
                             .status(200)
                             .header("content-type", "application/json")
                             .header("x-at-cache", "HIT")
                             .header("x-at-plane", "rust")
-                            .header("x-at-billed-usd", format!("{billed:.6}"))
-                            .body(full_body(cached))
-                            .unwrap());
+                            .header("x-at-billed-usd", format!("{billed:.6}"));
+                        // Signed replay proof minted by the control plane
+                        if let Some(receipt) = gate_json
+                            .as_ref()
+                            .and_then(|v| v.get("receipt").and_then(|r| r.as_str()))
+                        {
+                            builder = builder.header("x-ohm-receipt", receipt);
+                        }
+                        return Ok(builder.body(full_body(cached)).unwrap());
                     }
                     Some((status, gate_body)) => {
                         // Tenant denied (401/402/403/429) — relay verbatim so

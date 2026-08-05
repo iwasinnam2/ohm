@@ -24,6 +24,7 @@ from starlette.responses import Response
 
 from at_utility.auth import extract_bearer
 from at_utility.cache import cache_key_for_request
+from at_utility import receipts
 from at_utility.compliance import web_bot_auth
 from at_utility.compliance.policy import ALLOWED_PURPOSES, BLOCKED_PURPOSES, PURPOSE_RISK
 from at_utility.compliance.terms import assert_cache_training_denied, terms_metadata
@@ -575,17 +576,24 @@ async def health() -> dict[str, Any]:
 
 @app.get("/.well-known/http-message-signatures-directory")
 async def http_message_signatures_directory() -> Response:
-    """Web Bot Auth key directory: OhmBot's public Ed25519 JWKS.
+    """Public Ed25519 JWKS: OhmBot's Web Bot Auth key + the receipt key.
 
     Origins verifying `Signature-Agent` fetch this to check OhmBot's RFC 9421
-    signatures. Public keys only — unauthenticated by design; 404 when the
-    signing seed is not configured.
+    signatures; customers verifying `X-Ohm-Receipt` JWS receipts resolve the
+    signing key by its `kid` (RFC 7638 thumbprint) here. Public keys only —
+    unauthenticated by design; 404 when no signing seed is configured.
     """
-    directory = web_bot_auth.key_directory()
-    if directory is None:
-        raise HTTPException(status_code=404, detail="web bot auth signing not configured")
+    keys: list[dict[str, str]] = []
+    bot_directory = web_bot_auth.key_directory()
+    if bot_directory:
+        keys.extend(bot_directory["keys"])
+    receipt_jwk = receipts.receipt_public_jwk()
+    if receipt_jwk and receipt_jwk not in keys:
+        keys.append(receipt_jwk)
+    if not keys:
+        raise HTTPException(status_code=404, detail="no signing keys configured")
     return Response(
-        content=json.dumps(directory),
+        content=json.dumps({"keys": keys}),
         media_type="application/http-message-signatures-directory+json",
         headers={"Cache-Control": "max-age=3600"},
     )
@@ -878,6 +886,69 @@ async def public_stats(request: Request) -> dict[str, Any]:
             "identical-request cache replay (blended list rate × hit tokens). "
             "Estimates only."
         ),
+    }
+
+
+@app.get("/v1/public/honesty")
+async def public_honesty(request: Request) -> dict[str, Any]:
+    """Published limits and non-goals — the claims we ask you NOT to take on faith.
+
+    Anonymous by design: every entry pairs a stated limit or refusal with the
+    surface that proves or enforces it, so the pipe's honesty is checkable
+    rather than asserted. Marketing may quote this endpoint; it may not
+    contradict it.
+    """
+    await _public_rate_limit(request, "honesty")
+    s = state.settings
+    return {
+        "service": "ohm",
+        "region": s.at_region,
+        "limits": [
+            {
+                "claim": "Mid-stream provider handoff after the first byte is NOT supported",
+                "verify": "GET /ready → mvp.mid_stream_failover=false (pre-first-byte retry IS shipped)",
+            },
+            {
+                "claim": "Caching is exact-match identical-request replay only — no semantic cache",
+                "verify": "GET /v1/compliance/policy → cache_purpose",
+            },
+            {
+                "claim": "Savings figures are estimates, never a guarantee",
+                "verify": "GET /v1/savings → estimate_only=true on every payload",
+            },
+        ],
+        "refusals": [
+            {
+                "claim": "HTTP 402 pay-per-crawl is honored — Ohm never auto-pays or evades",
+                "verify": "GET /v1/compliance/policy → pay_per_crawl=surface_402_no_autopay",
+            },
+            {
+                "claim": "robots.txt is respected fail-closed; 401/403 revocations end the fetch",
+                "verify": "GET /v1/compliance/policy → respect_robots, rules",
+            },
+            {
+                "claim": "The cache is never exported as a training corpus",
+                "verify": "GET /v1/compliance/policy → allow_cache_training=false",
+            },
+        ],
+        "proofs": {
+            "cache_hit_receipts": {
+                "enabled": receipts.receipts_enabled(),
+                "header": receipts.RECEIPT_HEADER,
+                "format": "compact JWS (EdDSA/Ed25519)",
+                "keys": "/.well-known/http-message-signatures-directory",
+                "docs": "docs/RECEIPTS.md",
+            },
+            "web_bot_auth": {
+                "enabled": web_bot_auth.signing_enabled(),
+                "protocol": "rfc9421-http-message-signatures",
+                "keys": "/.well-known/http-message-signatures-directory",
+            },
+            "nightly_golden_path": (
+                "https://github.com/iwasinnam2/ohm/actions/workflows/golden-path.yml"
+            ),
+        },
+        "note": "If a claim here stops being true, that is an incident, not a copy edit.",
     }
 
 
@@ -1596,6 +1667,10 @@ async def _open_stream_with_retry(
 
 class EdgeHitBody(BaseModel):
     total_tokens: int = 0
+    # Optional receipt context from the edge (model + cache-key digest) so
+    # edge-served HITs carry the same signed proof as control-plane HITs.
+    model: str = ""
+    request_sha256: str = ""
 
 
 @app.post("/internal/edge-hit")
@@ -1637,11 +1712,23 @@ async def edge_hit_meter(
         pipe_usd=event.billed_usd,
         cache_hit=True,
     )
-    return {
+    out: dict[str, Any] = {
         "ok": True,
         "billed_usd": event.billed_usd,
         "stripe_synced": event.stripe_synced,
     }
+    receipt_jws = receipts.mint_receipt(
+        tenant=tenant_rec.tenant_id,
+        model=body.model,
+        tokens_replayed=body.total_tokens,
+        pipe_usd=event.billed_usd,
+        request_sha256=body.request_sha256,
+        region=state.settings.at_region,
+        plane="rust-edge",
+    )
+    if receipt_jws:
+        out["receipt"] = receipt_jws
+    return out
 
 
 @app.post("/v1/chat/completions")
@@ -1823,6 +1910,19 @@ async def chat_completions(
                 "X-AT-Cache": "HIT",
                 "X-AT-Billed-USD": f"{event.billed_usd:.6f}",
             }
+            # Signed proof of the replay: verifiable against the public JWKS
+            # at /.well-known/http-message-signatures-directory.
+            receipt_jws = receipts.mint_receipt(
+                tenant=tenant,
+                model=body.model,
+                tokens_replayed=total,
+                pipe_usd=event.billed_usd,
+                request_sha256=receipts.request_digest_from_cache_key(ckey),
+                region=state.settings.at_region,
+                plane="python",
+            )
+            if receipt_jws:
+                hit_headers[receipts.RECEIPT_HEADER] = receipt_jws
             if body.stream:
                 # Streamed replay: same cache entry, delivered as SSE.
                 replay_lines = sse_lines_from_completion(payload)
