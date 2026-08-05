@@ -51,7 +51,7 @@ normal cloud agent setup. See the table below.
 | --- | --- | --- |
 | Linear | Attach | Finds stale open `[observer]` issues, which silently disable alerts. The highest-value connector here. |
 | Stripe | Attach, read-only | Open disputes have hard evidence deadlines nothing else watches; also past-due invoices and price/meter drift. |
-| Neon | Attached, use read-only | Little to do yet — see below. Becomes slow queries, error logs, and schema drift once the mirror is live. |
+| Neon | Attach read-only | Slow queries, error logs, mirror schema drift, and dev branches left running and billing. |
 | Cursor Cloud | Built in | Watches the automation itself: failed prior runs and a rotting environment build. |
 | AWS Knowledge | Optional | Confirms lifecycle and end-of-support dates instead of trusting hardcoded ones. |
 | AWS Pricing | Optional | The region-posture decision in `docs/OPERATIONS.md` is cost-gated, but that is a monthly question, not a daily one. |
@@ -64,14 +64,99 @@ nobody to ask. The prompt forbids them explicitly, but a read-only Neon connecti
 the stronger control if you can scope one — belt and braces on an unattended job that
 can reach production data.
 
-The connector currently holds one project, `REDIS REPLICA DIST HUBS`
-(`cold-band-78080621`), created 2026-07-30 with `cpu_used_sec: 0` and no compute
-activity since the day it was made. That is expected while the Postgres mirror in PRs
-#8 and #9 is unmerged, and it is why the prompt tells the agent to keep the nightly
-Neon check to a single line rather than waking an idle compute. Two things about it
-are worth a decision before it holds anything real: it sits in `aws-us-east-2` while
-production is deliberately single-region in `us-east-1`, and its IP allowlist is empty
-with `block_public_connections: false`, so it accepts connections from anywhere.
+Two things about the `REDIS REPLICA DIST HUBS` project (`cold-band-78080621`) want
+closing before it holds tenant or billing data. Its IP allowlist is empty with
+`block_public_connections: false`, so it accepts connections from anywhere with a
+valid password — set `allowed_ips` to the cluster egress addresses, or turn on
+`block_public_connections` and reach it over a VPC endpoint. And it sits in
+`aws-us-east-2` while production is deliberately single-region in `us-east-1`, which
+puts a cross-region hop on every mirror write.
+
+## Secrets
+
+Three secrets are read by the daily run. They live in Cursor Dashboard → Cloud Agents
+→ Secrets, are injected as environment variables into the agent VM, and are never
+committed. The prompt forbids echoing any of them, because the report and PR body the
+run produces are far more visible than the environment they came from.
+
+Give each one its own credential rather than reusing an existing key. A per-consumer
+credential can be revoked on its own, and when something does leak, the value tells
+you which consumer leaked it.
+
+### `OHM_ADMIN_KEY`
+
+This is a withOhm admin key, matched by `Settings.is_admin_api_key` against the
+comma-separated `AT_ADMIN_API_KEYS` on the cluster (which falls back to `AT_API_KEYS`
+when empty). It is not something you fetch from a provider — you mint it.
+
+**It is not a read-only credential, and that is the part worth pausing on.** The same
+`admin_dep` dependency in `src/at_utility/main.py` gates four endpoints: `/v1/admin/ops`,
+which is all the sweep needs, plus tenant minting, tenant status changes, and checkout
+creation. A key handed to an unattended nightly job can therefore create tenants.
+
+Because `AT_ADMIN_API_KEYS` is a list, the containment is straightforward: generate a
+distinct high-entropy key, append it to the existing list rather than replacing it,
+and use only that value for the automation.
+
+```bash
+python3 -c "import secrets; print('sk-at-obs-' + secrets.token_urlsafe(32))"
+```
+
+Append it to the `at-utility-secrets` Kubernetes secret's `AT_ADMIN_API_KEYS` (see
+`infra/README.md` for how that secret is created) and roll the gateway. Paste the
+value into Cursor Secrets and nowhere else. To revoke, drop that one entry from the
+list and roll — no other consumer is affected, and no other credential rotates.
+
+The stronger fix, if you want it later, is a separate read-only ops key set checked
+by a new dependency on `/v1/admin/ops` alone, so the observability path cannot mint
+anything. Until then, the dedicated-key approach limits blast radius and makes an
+incident attributable.
+
+### `LINEAR_API_KEY` and `LINEAR_TEAM_ID`
+
+In Linear, go to Settings → Security & access → Personal API keys → New API key. Name
+it for the consumer, for example `withohm-observer`, so it is obvious in the list and
+obvious in an audit. The key is shown once; copy it straight into Cursor Secrets.
+
+Scope it as narrowly as Linear allows — the observer only needs to read issues and
+create them. Prefer a workspace-level application or a service account over your own
+personal key if your plan offers one, since a personal key carries your full access
+and dies with your account.
+
+`LINEAR_TEAM_ID` is the UUID the new issues are filed against. Read it from the API
+rather than guessing:
+
+```bash
+curl -s https://api.linear.app/graphql \
+  -H "Authorization: $LINEAR_API_KEY" -H 'Content-Type: application/json' \
+  -d '{"query":"{ teams { nodes { id key name } } }"}'
+```
+
+The team ID is not a secret and can be stored as plain configuration; only the key
+needs protecting. Rotation is delete-then-create in the same settings page.
+
+### `SLACK_WEBHOOK_URL`
+
+Create a Slack app at [api.slack.com/apps](https://api.slack.com/apps) → From
+scratch, pick the workspace, then Incoming Webhooks → Activate → Add New Webhook to
+Workspace, and choose the single channel alerts should land in.
+
+**The URL is itself the credential.** Anyone holding it can post to that channel as
+the app, with no further authentication, so treat it exactly like a password: never
+in a commit, an issue, a screenshot, or a log line. Its blast radius is confined to
+posting in one channel, which is why a webhook is preferable here to a bot token with
+broader scopes.
+
+Point it at a dedicated alerts channel rather than a channel people converse in, so
+noise is separable and the audience is deliberate. Rotate by deleting the webhook in
+the app's Incoming Webhooks page and adding a new one; the old URL dies immediately.
+
+### Rotating anything
+
+Revoke first, then re-issue, then update Cursor Secrets, then run
+`python3 scripts/daily_upkeep.py` once by hand to confirm the affected section comes
+back green. If a value is ever exposed, revoking it is always cheaper than reasoning
+about whether anyone saw it.
 
 ## Why the prompt survives being pasted as plaintext
 

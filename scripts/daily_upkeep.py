@@ -63,7 +63,7 @@ DEADLINES: list[tuple[str, str]] = [
     (
         "2026-11-26",
         "EKS 1.31 extended support ends — the cluster must be on a newer "
-        "Kubernetes by this date (PR #10 bumps to 1.36)",
+        "Kubernetes by this date",
     ),
 ]
 DEADLINE_WARN_DAYS = 120
@@ -354,12 +354,10 @@ def section_observer_backlog(report: Report) -> None:
     if not key:
         report.add(
             "7. Observer backlog (Linear)",
-            "SKIP — `LINEAR_API_KEY` unset.\n\n"
-            "While this is unset the sweep cannot see whether a stale open "
-            "`[observer]` issue is suppressing new alerts: observer_notify dedups "
-            "on exact title, so an unresolved issue silently swallows the next "
-            "identical page.",
+            "SKIP — `LINEAR_API_KEY` unset, so a stale `[observer]` issue "
+            "suppressing title dedup would go unseen.",
         )
+        report.finding(AMBER, "Observer Linear backlog unchecked: no LINEAR_API_KEY.")
         return
     query = {
         "query": (

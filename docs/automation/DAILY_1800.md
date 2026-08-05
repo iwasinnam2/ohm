@@ -20,25 +20,27 @@ is the goal; finding nothing is a good outcome and must not be padded.
 - **Never merge, reopen, or close a pull request**, and never push to `master`.
 - **`gh` is read-only here**, so `gh workflow run` and any other write are
   unavailable. That is why the meta chain runs locally rather than by dispatch.
-- **Missing credentials are a SKIP, not a failure.** Note what could not be checked
-  and carry on; the sweep already degrades this way.
+- **Never reproduce a secret.** Credentials arrive as environment variables and must
+  stay there. Do not print `env`, do not echo a variable to check it is set, and never
+  paste an `Authorization` header, a webhook URL, or an API key into your report, a PR
+  body, a commit message, or the log. `git remote get-url origin` embeds a credential
+  — the sweep strips it before printing, so quote the sweep rather than the raw remote.
+  To show a check ran, quote its result, never its input.
+- **Never imply a check passed when it did not run.** If something is unreachable,
+  say which check and why, in one line, and mark it amber.
 
 ## Connected tools
 
-MCP servers are attached per automation, so only the ones enabled on this automation
-are available. Use whichever are present and skip the rest silently — never treat an
-absent server as a finding.
+These MCP connectors are attached to this automation. Each gets one focused pass —
+answer the question named below and move on, rather than exploring.
 
-**Neon** — read-only use only, and cheap to skip. The Postgres mirror is still
-unmerged scaffolding (PRs #8 and #9), so until it carries traffic the honest daily
-check is one `list_projects` call: note anything with compute time it should not have,
-or a project nobody remembers creating, and move on in a single line. Do not wake an
-idle compute to inspect an empty database.
-
-Once the mirror is live this becomes worth real attention: `list_slow_queries` for
-query regressions, `query_logs` for errors since yesterday, `get_database_tables` and
-`describe_table_schema` to confirm the schema still matches what `src/at_utility/`
-expects, and `list_branch_computes` for dev branches left running and billing.
+**Neon** — read-only use only. `list_slow_queries` for query regressions against
+yesterday, `query_logs` for errors in the same window, `get_database_tables` and
+`describe_table_schema` to confirm the mirror schema still matches what
+`src/at_utility/` expects, and `list_projects` with `list_branch_computes` for dev
+branches left running and billing. Schema drift between the mirror and the code that
+writes to it is the finding worth hunting here, because it surfaces as wrong data
+rather than as an error.
 
 You must **never** call `delete_branch`, `delete_project`, `reset_from_parent`,
 `prepare_database_migration`, `complete_database_migration`, `complete_query_tuning`,
@@ -51,10 +53,9 @@ in the report as a recommendation.
 **Linear** — list open issues whose title starts with `[observer]`. This is the
 highest-value connector for this automation, because `scripts/observer_notify.py`
 dedups on exact title: one stale open issue silently swallows the next identical
-page, so a forgotten
-ticket quietly disables an alarm. Report any older than three days, and file findings
-here instead of just narrating them. Do not close an issue unless you have positively
-confirmed the underlying condition is resolved.
+page, so a forgotten ticket quietly disables an alarm. Report any older than three
+days, and file findings here instead of just narrating them. Do not close an issue
+unless you have positively confirmed the underlying condition is resolved.
 
 **Stripe** — read-only. Open disputes first, since those carry hard evidence
 deadlines and nothing else in this system watches them; then past-due and unpaid
@@ -64,9 +65,8 @@ invoices ahead of dunning, and whether live prices and meters still match
 **Cursor Cloud** (always available) — check that the automation itself is healthy,
 since `.github/workflows/observer-meta.yml` has no watcher of its own.
 `list-cloud-agents` shows whether recent 18:00 runs failed, and
-`list-environment-builds` with `environment-build-logs`
-catches the environment install rotting, which would otherwise degrade every future
-run quietly.
+`list-environment-builds` with `environment-build-logs` catches the environment
+install rotting, which would otherwise degrade every future run quietly.
 
 **AWS Knowledge** — confirm lifecycle and end-of-support dates when the deadline
 section is close to one, rather than trusting the date hardcoded in the sweep.
@@ -95,9 +95,10 @@ Read the result with the distinction the Observer is built around:
 - A workflow whose last *success* is inside its window but whose most recent run
   failed is amber, not red. Say which of the two you are looking at.
 
-If `OHM_ADMIN_KEY` is unset, the `/v1/admin/ops` probe is skipped and the billing
-pipeline — Redis reachability and the Stripe meter DLQ depth — is unverified for the
-day. Say so rather than implying it passed.
+The `/v1/admin/ops` probe carries the billing pipeline: `redis_ok` and
+`stripe_meter_dlq_len`. A non-zero DLQ means metering events failed to reach Stripe
+and revenue is being under-billed while the backlog sits there — treat it as red, and
+quote the depth.
 
 ## Step 2 — Upkeep
 
@@ -265,34 +266,14 @@ find the thread in one click.
 
 ## Escalation
 
-- **Red** — a live probe failing, a TLS certificate inside 14 days, or a deadline
-  already passed. Lead your report with it, open the PR, and if `SLACK_WEBHOOK_URL`
-  is configured, fan it out with `python3 scripts/daily_upkeep.py --notify`. Do not
-  attempt infrastructure remediation.
+- **Red** — a live probe failing, a non-zero Stripe meter DLQ, a TLS certificate
+  inside 14 days, or a deadline already passed. Lead your report with it, open the PR,
+  and fan it out with `python3 scripts/daily_upkeep.py --notify`. Do not attempt
+  infrastructure remediation.
 - **Amber** — a paused schedule, CI red on `master`, a stale `[observer]` Linear
   issue, a certificate inside 30 days, a deadline inside 120 days, a high or critical
   advisory, or the ingest pipe misbehaving. Report and track.
 - **Green** — say so in one line and stop.
-
-## What is not wired up yet
-
-Everything here runs today with no secrets at all, because the sweep borrows the
-`gh` CLI's token for the `actions: read` calls. These additions would each unlock a
-section, and are added under Cursor Dashboard → Cloud Agents → Secrets:
-
-- `OHM_ADMIN_KEY` — turns on the `/v1/admin/ops` probe, the only check that sees
-  Redis health and the Stripe meter DLQ depth. Without it, an underbilling backlog
-  can grow unseen.
-- `LINEAR_API_KEY` — turns on section 7. This one matters more than it looks:
-  `scripts/observer_notify.py` dedups on exact issue title, so a single stale open
-  `[observer]` issue silently swallows the next identical page. One such issue was
-  already suppressing the heartbeat alert in August 2026. Add `LINEAR_TEAM_ID`
-  alongside it to let `--notify` file issues.
-- `SLACK_WEBHOOK_URL` — lets `--notify` reach a human out of band.
-
-The Linear MCP connector is an alternative to `LINEAR_API_KEY` and covers the same
-gap; either one is enough. AWS credentials are absent by design and should stay
-that way.
 
 ## Definition of done
 
