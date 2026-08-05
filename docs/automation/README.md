@@ -8,6 +8,9 @@ and pasted without trimming.
 | --- | --- | --- |
 | Daily upkeep and community listening | [`DAILY_1800.md`](DAILY_1800.md) | Daily, 18:00 |
 
+Design notes for a planned on-demand trigger live in
+[`SLASH_COMMAND.md`](SLASH_COMMAND.md).
+
 Findings land in [`UPKEEP_LOG.md`](UPKEEP_LOG.md), and the mechanical half of the
 daily run lives in [`scripts/daily_upkeep.py`](../../scripts/daily_upkeep.py). Change
 the script to change *what* is checked; change the prompt to change *how the agent
