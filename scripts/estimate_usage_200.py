@@ -1,11 +1,22 @@
 #!/usr/bin/env python3
-"""Estimate Intermediate meter revenue for a mixed 200-tenant cohort."""
+"""Estimate Intermediate meter revenue for a mixed 200-tenant cohort.
+
+Rates come from the canonical rate card so the forecast can never drift
+from what is actually charged.
+"""
 
 from __future__ import annotations
 
-HIT = 0.0005  # per 1k tokens
-MISS = 0.002
-FETCH = 0.001
+import json
+from pathlib import Path
+
+_CARD = json.loads(
+    (Path(__file__).resolve().parents[1] / "pricing" / "rate_card.v2.json")
+    .read_text(encoding="utf-8")
+)
+HIT = _CARD["meters"]["cache_hit"]["usd"]  # per 1k tokens
+MISS = _CARD["meters"]["cache_miss"]["usd"]
+FETCH = _CARD["meters"]["web_fetch"]["usd"]
 
 COHORTS = [
     # name, count, tokens, hit_ratio, fetches

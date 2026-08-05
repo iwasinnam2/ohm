@@ -1,26 +1,41 @@
-# Ohm vision (railgun thesis)
+# Ohm vision — enterprise chaos governor
 
-Ohm is an **AI traffic utility / model ingress** — invisible plumbing between builders (and Cursor/agent runtimes) and upstream models plus the public web.
+Ohm (withOhm) is an **AI traffic control plane** — the entropy organizer between
+enterprises (and builders) and upstream models plus the public web.
 
-## Dual gravity
+Cursor is an **optional client**. We do not depend on any single IDE for
+distribution or legitimacy. See [ENTERPRISE_CHAOS.md](ENTERPRISE_CHAOS.md).
 
-1. **Latency gravity** — Localised identical-request prompt cache and a cleaner pipe so builders stop sitting on clogged dynamic-model waits (rate limits, streaming delay, duplicate middleware).
-2. **Browse rocket** — Secure, purpose-bound, legally compliant public-web context (`fetch_web_context` / URL→markdown/JSON ingest). If agents stop hand-browsing, this becomes the majority of Ohm traffic and **primary variable revenue**.
+## Triple gravity
 
-## Ledger
+1. **Latency / waste gravity** — Exact-match prompt replay so mechanical agent
+   loops stop re-paying full prefill.
+2. **Browse / compliance gravity** — Purpose-bound, robots-aware public-web
+   ingest as governed context (primary variable revenue on Intermediate).
+3. **Governance gravity** — SSO tenancy, org policy, audit log, and a
+   **corporate clean ledger** (cost centers, path inventory, spend caps, FinOps
+   export) so abstracted enterprise AI spend becomes attributable.
+
+## Ledger (money paths)
 
 | Path | Who pays whom | Why |
 |------|---------------|-----|
-| Model tokens | Customer → OpenAI/Anthropic (**BYOK**) | Adoption gravity; Cursor-honest; no wholesale float |
-| Ohm pipe | Customer → Ohm (seat + meters) | Rent on cache hits/misses and the pipe gate |
-| Web ingest | Customer → Ohm (fetch meter) | Ohm owns compliance land and ingest COGS |
-| Enterprise managed pool | Customer → Ohm; Ohm → providers | Reserved capacity when they refuse to wait |
+| Model tokens | Customer → labs (**BYOK**) or Ohm managed pool | Adoption vs reserved capacity |
+| Ohm pipe | Customer → Ohm (seat + meters) | Rent on hits/misses and the gate |
+| Web ingest | Customer → Ohm (fetch meter) | Compliance land + ingest COGS |
+| Enterprise | Customer → Ohm (SKU + invoice) | SSO org, audit, managed pool, SLA path |
 
-**BYOK-first** on the model path. Env provider keys are **dev fallback + enterprise managed pool** only. Ingest always uses Ohm-owned network.
+**BYOK-first** on Intermediate. Env provider keys = dev fallback + enterprise
+managed pool only. Ingest always uses Ohm-owned network.
 
 ## Distribution endgame
 
-Ohm as a **Cursor / MCP / agent-runtime attach** — one config block, not a chat product. Cursor keeps model billing; Ohm rents cache + compliant browse.
+1. **Primary:** OpenAI-compatible ingress + org console + **Ohm Agent Shell**
+2. **Proof wedge:** Indie / design-partner meter hits (personal COGS pain)
+3. **Compatibility:** MCP attach for Cursor, VS Code, Claude, custom agents
+
+Gem (prefill waste): [GEM_POSITION.md](GEM_POSITION.md).  
+Enterprise thesis: [ENTERPRISE_CHAOS.md](ENTERPRISE_CHAOS.md).
 
 ## Promise
 
@@ -33,8 +48,13 @@ Ohm as a **Cursor / MCP / agent-runtime attach** — one config block, not a cha
 3. **Locality / latency** — cache GETs on the nearest Redis edge replica; pre-first-byte failover keeps the pipe honest.
 4. **Replay / audit value** — every hit is an auditable identical-request replay with a readable meter; never a training corpus.
 
-> Change one base URL (or one Cursor attach). Keep your keys and SDKs. Gain prompt replay, a clearer pipe, compliant web context — and a bill that rents the plumbing, not the model.
+> Point any OpenAI-compatible client (or the Ohm Agent Shell) at one base URL.
+> Keep your keys or use a managed pool. Gain prompt replay, compliant web
+> context, SSO tenancy, and a clean ledger — a bill that rents the plumbing
+> and governs the chaos, not a wholesale model invoice.
 
-## Non-goal
+## Non-goals
 
-Ohm as a PAYG wholesale reseller of OpenAI/Anthropic tokens for self-serve plans.
+- PAYG wholesale reseller of OpenAI/Anthropic tokens for Intermediate
+- Semantic / fuzzy cache
+- Treating Cursor Marketplace as existential distribution

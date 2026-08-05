@@ -51,8 +51,8 @@ Repo: https://github.com/iwasinnam2/ohm · Plugin: `ohm` / withOhm
 2. `.\scripts\external_smoke.ps1 -BaseUrl https://api.withohm.dev`
 3. Cold MCP: install from git, set `OHM_API_KEY`, call three tools
 4. Refresh https://cursor.com/marketplace/publish with [`MARKETPLACE.md`](MARKETPLACE.md)
-5. Update https://cursor.directory per [`CURSOR_DIRECTORY.md`](CURSOR_DIRECTORY.md)
-6. If silent >10 days: email marketplace@cursor.com
+5. cursor.directory submitted — verification packet: [`DIRECTORY_VERIFICATION.md`](DIRECTORY_VERIFICATION.md)
+6. If reviewer asks: point at SECURITY.md MCP section + partners@withohm.dev
 
 ## User DNS (outside repo)
 

@@ -22,7 +22,7 @@ try:
     from mcp.server.mcpserver import Context
 except ImportError as exc:  # pragma: no cover
     raise SystemExit(
-        "MCP support missing: pip install ohm-mcp "
+        "MCP support missing: pip install withohm-mcp "
         "(or, in the monorepo: pip install 'at-utility[mcp]')"
     ) from exc
 
@@ -61,10 +61,26 @@ def _cfg(ctx: Optional[Context] = None) -> tuple[str, str, str]:
             "at https://www.withohm.dev/billing/intermediate "
             "(do not use local bootstrap sk-at-dev in production)."
         )
+    # Never point the local bootstrap key at the public API (verification / misuse).
+    if key == "sk-at-dev" and "api.withohm.dev" in base:
+        raise RuntimeError(
+            "sk-at-dev is a local bootstrap key only. Issue a real seat key at "
+            "https://www.withohm.dev/billing/intermediate for api.withohm.dev."
+        )
     upstream = _header_lookup(ctx, UPSTREAM_HEADER) or os.environ.get(
         "OHM_UPSTREAM_KEY", ""
     )
     return base, key, upstream
+
+
+def _safe_error_body(text: str, status: int) -> str:
+    """Return upstream errors without echoing Authorization or raw secrets."""
+    snippet = (text or "")[:2000]
+    for needle in ("Bearer ", "sk-at-", "sk-proj-", "sk-ant-"):
+        if needle in snippet:
+            snippet = "[redacted upstream error body]"
+            break
+    return json.dumps({"error": snippet, "status": status})
 
 
 def _headers(upstream: str = "", ctx: Optional[Context] = None) -> dict[str, str]:
@@ -123,7 +139,7 @@ async def ohm_fetch_web(
             f"{base}/chat/completions", headers=_headers(ctx=ctx), json=body
         )
         if res.status_code >= 400:
-            return json.dumps({"error": res.text, "status": res.status_code})
+            return _safe_error_body(res.text, res.status_code)
         data = res.json()
         content = (
             ((data.get("choices") or [{}])[0].get("message") or {}).get("content")
@@ -132,13 +148,65 @@ async def ohm_fetch_web(
         return content or json.dumps(data)
 
 
+async def _get(path: str, ctx: Optional[Context] = None) -> str:
+    base, _, _ = _cfg(ctx)
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        res = await client.get(f"{base}{path}", headers=_headers(ctx=ctx))
+        return res.text
+
+
 @mcp.tool()
 async def ohm_usage(ctx: Optional[Context] = None) -> str:
     """Return Ohm usage snapshot: cache hit ratio, fetches, estimated pipe rent (GET /v1/usage)."""
+    return await _get("/usage", ctx)
+
+
+@mcp.tool()
+async def ohm_models(ctx: Optional[Context] = None) -> str:
+    """List the model ids the Ohm pipe routes to, including BYOK upstreams (GET /v1/models)."""
+    return await _get("/models", ctx)
+
+
+@mcp.tool()
+async def ohm_savings(ctx: Optional[Context] = None) -> str:
+    """Return the cache savings snapshot: replayed prompts and estimated spend avoided (GET /v1/savings). Use ohm_receipt to mint a shareable public receipt of these savings."""
+    return await _get("/savings", ctx)
+
+
+@mcp.tool()
+async def ohm_receipt(display_name: str = "", ctx: Optional[Context] = None) -> str:
+    """
+    Mint a public, shareable savings receipt (POST /v1/savings/receipt).
+
+    Returns a public page URL (withohm.dev/r/<token>) plus a shields.io
+    README badge snippet showing estimated upstream spend avoided. The
+    receipt is an immutable snapshot, live for 90 days, and exposes only
+    the display name — never the tenant id or API key.
+
+    Args:
+      display_name: Optional public name on the receipt (e.g. team or
+        project name). Defaults to "an anonymous workspace".
+    """
     base, _, _ = _cfg(ctx)
     async with httpx.AsyncClient(timeout=30.0) as client:
-        res = await client.get(f"{base}/usage", headers=_headers(ctx=ctx))
+        res = await client.post(
+            f"{base}/savings/receipt",
+            headers=_headers(ctx=ctx),
+            json={"display_name": display_name},
+        )
         return res.text
+
+
+@mcp.tool()
+async def ohm_providers(ctx: Optional[Context] = None) -> str:
+    """Return upstream provider and failover status for the Ohm pipe (GET /v1/providers)."""
+    return await _get("/providers", ctx)
+
+
+@mcp.tool()
+async def ohm_policy(ctx: Optional[Context] = None) -> str:
+    """Return the compliance policy: which web-fetch purposes are allowed and their limits (GET /v1/compliance/policy)."""
+    return await _get("/compliance/policy", ctx)
 
 
 @mcp.tool()
@@ -183,7 +251,7 @@ async def ohm_chat(
             json=body,
         )
         if res.status_code >= 400:
-            return json.dumps({"error": res.text, "status": res.status_code})
+            return _safe_error_body(res.text, res.status_code)
         data = res.json()
         return (
             ((data.get("choices") or [{}])[0].get("message") or {}).get("content")

@@ -33,7 +33,7 @@ export const revalidate = 300;
 const siteUrl = "https://www.withohm.dev";
 
 const description =
-  "Exact-replay hits that cost zero upstream tokens. Cross-provider consistency. Locality — Redis edge reads. Replay and audit value. One base URL in front of every model, plus compliant web context.";
+  "Interconnectedness and accessibility. Model switching, prompt caching and compliant web browsing — one OpenAI-compatible pipe. Connect Cursor, Claude Code, VS Code and more; bring your own provider keys (BYOK); pay metered rates on a $0 Intermediate seat.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
@@ -71,15 +71,20 @@ export default function RootLayout({
       className={`${spaceGrotesk.variable} ${sourceSans.variable} ${plexMono.variable}`}
     >
       <body>
+        <a href="#main-content" className="skip-link">
+          Skip to content
+        </a>
         <div className="atmosphere" aria-hidden="true">
           <div className="atmosphere__current" />
         </div>
         <div className="shell">
           <SiteHeader />
-          <main className="shell__main">{children}</main>
+          <main id="main-content" className="shell__main">
+            {children}
+          </main>
           <footer className="site-footer">
             <span>
-              <strong>withOhm</strong> — AI traffic utility
+              <strong>withOhm</strong> — interconnectedness and accessibility
             </span>
             <nav className="site-footer__legal" aria-label="Legal">
               <Link href="/docs/terms">Terms</Link>
@@ -87,7 +92,22 @@ export default function RootLayout({
               <Link href="/docs/dpa">DPA</Link>
               <Link href="/docs/security">Security</Link>
               <Link href="/docs/legal">Compliance</Link>
+              <Link href="/support">Support</Link>
               <Link href="/status">Status</Link>
+              <a
+                href="https://github.com/iwasinnam2/ohm"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                GitHub
+              </a>
+              <a
+                href="https://github.com/iwasinnam2/ohm/discussions"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Discussions
+              </a>
             </nav>
           </footer>
         </div>

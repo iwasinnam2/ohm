@@ -7,69 +7,130 @@ export type DocMeta = {
   description: string;
 };
 
-/** Curated docs surfaced on the marketing site (order = nav order). */
-export const DOC_INDEX: DocMeta[] = [
+export type DocGroup = {
+  id: string;
+  title: string;
+  docs: DocMeta[];
+};
+
+/** Curated docs — groups drive the docs index + sidebar. */
+export const DOC_GROUPS: DocGroup[] = [
   {
-    slug: "quickstart",
-    title: "Quickstart",
-    description: "Local edge, BYOK, billing, and subscription path.",
+    id: "start",
+    title: "Start",
+    docs: [
+      {
+        slug: "quickstart",
+        title: "Quickstart",
+        description: "One base URL, BYOK, seat — Agent Shell or any OpenAI client.",
+      },
+      {
+        slug: "examples",
+        title: "Drop-in examples",
+        description: "OpenAI-compatible API — no new protocol.",
+      },
+      {
+        slug: "pricing",
+        title: "Pricing",
+        description: "Seat + meters — pipe rent, not token wholesale.",
+      },
+    ],
   },
   {
-    slug: "cursor",
-    title: "Cursor / MCP",
-    description: "Compliant fetch for agents — attach withOhm in Cursor.",
+    id: "operative",
+    title: "Operative",
+    docs: [
+      {
+        slug: "optimized-usage",
+        title: "Optimized usage",
+        description: "Cache-first prompting, fetch with intent, read your meters.",
+      },
+      {
+        slug: "streaming",
+        title: "Streaming & failover",
+        description: "SSE pass-through, failover scope, mid-stream limits.",
+      },
+      {
+        slug: "commands",
+        title: "Command catalog",
+        description: "MCP tools and skills — what agents can call.",
+      },
+      {
+        slug: "status",
+        title: "Status & limits",
+        description: "Rate limits, hosts, and edge availability.",
+      },
+    ],
   },
   {
-    slug: "examples",
-    title: "Drop-in examples",
-    description: "OpenAI-compatible API — no new protocol.",
+    id: "connect",
+    title: "Connect",
+    docs: [
+      {
+        slug: "integrations",
+        title: "Integrations",
+        description:
+          "Brand board — Cursor, Claude, VS Code, Windsurf, Zed, and the pipe stack.",
+      },
+      {
+        slug: "cursor",
+        title: "Cursor / MCP",
+        description: "One-click MCP attach and manual mcp.json for Cursor.",
+      },
+    ],
   },
   {
-    slug: "streaming",
-    title: "Streaming & failover",
-    description: "SSE pass-through, failover scope, mid-stream limits.",
+    id: "admin",
+    title: "Admin",
+    docs: [
+      {
+        slug: "enterprise-chaos",
+        title: "Enterprise chaos",
+        description:
+          "How withOhm governs shadow AI, repeat spend, browse risk, and FinOps.",
+      },
+      {
+        slug: "security",
+        title: "Security",
+        description: "What is cached, retention, keys, and headers.",
+      },
+      {
+        slug: "brand",
+        title: "Brand",
+        description: "withOhm naming and deferred sk-at / X-AT rename.",
+      },
+    ],
   },
   {
-    slug: "pricing",
-    title: "Pricing",
-    description: "Seat + meters — pipe rent, not token wholesale.",
-  },
-  {
-    slug: "security",
-    title: "Security",
-    description: "What is cached, retention, keys, and headers.",
-  },
-  {
-    slug: "legal",
-    title: "Legal & compliance",
-    description: "Public-only web retrieval and ack requirements.",
-  },
-  {
-    slug: "terms",
-    title: "Terms of Service",
-    description: "tos-2026-07-26 — binds on terms_ack.",
-  },
-  {
-    slug: "privacy",
-    title: "Privacy Policy",
-    description: "Roles, cache, subprocessors, and contact.",
-  },
-  {
-    slug: "dpa",
-    title: "Data Processing Addendum",
-    description: "dpa-2026-07-26 — binds on dpa_ack.",
-  },
-  {
-    slug: "status",
-    title: "Status & limits",
-    description: "Rate limits, hosts, and edge availability.",
-  },
-  {
-    slug: "brand",
-    title: "Brand",
-    description: "withOhm naming and deferred sk-at / X-AT rename.",
+    id: "legal",
+    title: "Legal",
+    docs: [
+      {
+        slug: "legal",
+        title: "Legal & compliance",
+        description: "Public-only web retrieval and ack requirements.",
+      },
+      {
+        slug: "terms",
+        title: "Terms of Service",
+        description: "tos-2026-07-26 — binds on terms_ack.",
+      },
+      {
+        slug: "privacy",
+        title: "Privacy Policy",
+        description: "Roles, cache, subprocessors, and contact.",
+      },
+      {
+        slug: "dpa",
+        title: "Data Processing Addendum",
+        description: "dpa-2026-07-26 — binds on dpa_ack.",
+      },
+    ],
   },
 ];
+
+/** Flat index (order = group order, then within-group). */
+export const DOC_INDEX: DocMeta[] = DOC_GROUPS.flatMap((g) => g.docs);
 
 const CONTENT_DIR = path.join(process.cwd(), "content", "docs");
 

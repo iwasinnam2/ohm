@@ -33,7 +33,7 @@ cursor://anysphere.cursor-deeplink/mcp/install?name=ohm&config=<base64>
 Install once (slim client — no gateway stack):
 
 ```powershell
-pip install ohm-mcp
+pip install withohm-mcp
 # monorepo dev alternative: pip install -e ".[mcp]"
 ```
 
@@ -70,6 +70,12 @@ Auth is resolved per request: `Authorization: Bearer sk-at-*` (and optional `X-O
 | `ohm_fetch_web` | Compliant URL fetch → redacted **markdown** or **JSON** context |
 | `ohm_usage` | Usage snapshot (`GET /v1/usage`) |
 | `ohm_chat` | Chat through Ohm; optional `fetch_urls` for web context |
+| `ohm_savings` | Cache savings snapshot (`GET /v1/savings`) |
+| `ohm_models` | Routable model ids (`GET /v1/models`) |
+| `ohm_providers` | Upstream provider / failover status (`GET /v1/providers`) |
+| `ohm_policy` | Allowed web-fetch purposes (`GET /v1/compliance/policy`) |
+
+Other hosts (Claude Code, VS Code, Windsurf, Zed): see [INTEGRATIONS.md](INTEGRATIONS.md).
 
 ### `ohm_fetch_web`
 

@@ -3,10 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { OhmMark } from "@/components/OhmMark";
-import { CreditPackTopup } from "@/components/CreditPackTopup";
 import { cursorOhmInstallHref } from "@/lib/cursorMcp";
-
-const KEY_STORAGE = "ohm_api_key";
+import { persistKey, readStoredKey } from "@/lib/keyStorage";
 
 export default function BillingSuccessPage() {
   const [apiKey, setApiKey] = useState<string | null>(null);
@@ -14,11 +12,9 @@ export default function BillingSuccessPage() {
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    try {
-      setApiKey(sessionStorage.getItem(KEY_STORAGE));
-    } catch {
-      setApiKey(null);
-    }
+    const key = readStoredKey();
+    setApiKey(key);
+    if (key) persistKey(key);
   }, []);
 
   const installHref = useMemo(() => {
@@ -34,7 +30,7 @@ export default function BillingSuccessPage() {
     try {
       await navigator.clipboard.writeText(apiKey);
       setCopied(true);
-      window.setTimeout(() => setCopied(false), 2000);
+      window.setTimeout(() => setCopied(false), 2500);
     } catch {
       /* ignore */
     }
@@ -47,79 +43,71 @@ export default function BillingSuccessPage() {
         <p className="postpay__eyebrow">Seat active</p>
       </div>
 
-      <h1 className="postpay__title">Feel the difference in Cursor</h1>
+      <h1 className="postpay__title">Your withOhm key</h1>
       <p className="postpay__lede">
-        One click opens Cursor’s MCP installer with your withOhm seat already wired.
-        No JSON to paste. Confirm once — then work with cache replay and
-        compliant fetch for agents on the pipe.
+        Copy it now if you haven&apos;t already. Prove the pipe in Agent Shell,
+        or wire Cursor from the integrations board.
       </p>
 
-      <div className="postpay__contrast" aria-label="Before and after withOhm">
-        <p className="postpay__before">
-          <span className="postpay__label">Before</span>
-          Waiting on clogged model calls. Hand-browsing the public web for
-          agents.
+      {apiKey ? (
+        <div className="billing-form__key-panel postpay__key-hero">
+          <code className="billing-form__key-code">{apiKey}</code>
+          <button type="button" className="btn btn--primary" onClick={copyKey}>
+            {copied ? "Copied" : "Copy key"}
+          </button>
+        </div>
+      ) : (
+        <p className="billing-form__error" role="alert">
+          Key not found in this browser. Restore it on{" "}
+          <Link href="/keys">API keys</Link>, or mint a new one at{" "}
+          <Link href="/billing/intermediate">Intermediate checkout</Link>.
         </p>
-        <p className="postpay__after">
-          <span className="postpay__label">After</span>
-          Prompt replay from Redis. Legal public-web context as an MCP tool —
-          in the same Cursor workflow.
-        </p>
+      )}
+
+      <div className="cta-row postpay__next">
+        <Link href="/demo" className="btn btn--primary">
+          Run hit ratio demo
+        </Link>
+        <Link href="/workbench" className="btn">
+          Open Agent Shell
+        </Link>
       </div>
 
       {installHref ? (
-        <div className="postpay__cta-block">
+        <details className="postpay__key">
+          <summary>Optional — add MCP to Cursor</summary>
           <label className="postpay__upstream">
-            <span>Optional — provider key for BYOK model calls</span>
+            <span>Provider key for BYOK (optional)</span>
             <input
               type="password"
               autoComplete="off"
-              placeholder="sk-… or Anthropic key (stored only in this Cursor MCP env)"
+              placeholder="sk-… or Anthropic key"
               value={upstreamKey}
               onChange={(e) => setUpstreamKey(e.target.value)}
             />
           </label>
-          <a className="btn btn--primary postpay__cta" href={installHref}>
+          <a className="btn postpay__cta" href={installHref}>
             Add withOhm to Cursor
           </a>
           <p className="postpay__cta-note">
-            Opens Cursor → MCP install confirm. Your withOhm key is already in
-            the config.
+            Compatibility client — not required to use withOhm.
           </p>
-        </div>
-      ) : (
-        <div className="postpay__cta-block">
-          <p className="billing-form__error">
-            withOhm key missing from this browser session. Start again from{" "}
-            <Link href="/billing/intermediate">Intermediate checkout</Link> so we
-            can wire the one-click install.
-          </p>
-        </div>
-      )}
-
-      <details className="postpay__key">
-        <summary>Your withOhm API key</summary>
-        {apiKey ? (
-          <p>
-            <code>{apiKey}</code>{" "}
-            <button type="button" className="link-quiet" onClick={copyKey}>
-              {copied ? "Copied" : "Copy"}
-            </button>
-          </p>
-        ) : (
-          <p>Key was only shown at checkout in this browser.</p>
-        )}
-      </details>
-
-      <CreditPackTopup apiKey={apiKey} />
+        </details>
+      ) : null}
 
       <p className="postpay__cta-note">
-        Next: <Link href="/docs/quickstart">Quickstart</Link>
+        Once cache hits accrue, mint a public receipt via{" "}
+        <code>ohm_receipt</code> or the API — see{" "}
+        <Link href="/docs/quickstart">Quickstart</Link>. Sharing one qualifies
+        for the <Link href="/bounty">$35 artifact bounty</Link>.
+      </p>
+
+      <p className="postpay__cta-note">
+        <Link href="/org">Org console</Link>
         {" · "}
         <Link href="/docs/pricing">Metered rates</Link>
         {" · "}
-        Teammates can install from{" "}
-        <Link href="/i">withohm.dev/i</Link> with their own seat.
+        <Link href="/i">Install path</Link>
       </p>
     </section>
   );

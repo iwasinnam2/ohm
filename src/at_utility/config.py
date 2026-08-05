@@ -67,9 +67,15 @@ class Settings(BaseSettings):
         "OhmBot/0.1 (+https://www.withohm.dev/docs/legal; public-retrieval; respect-robots)"
     )
 
-    at_price_per_1k_tokens_miss: float = 0.002
-    at_price_per_1k_tokens_hit: float = 0.0005
-    at_price_per_fetch: float = 0.001
+    # Rate card v2 (pricing/rate_card.v2.json) — defaults asserted equal to the
+    # canonical JSON by tests/test_rate_card.py. Env-overridable per deployment.
+    at_price_per_1k_tokens_miss: float = 0.001
+    at_price_per_1k_tokens_hit: float = 0.002
+    at_price_per_fetch: float = 0.003
+    # Blended provider list estimate for dual savings ledger ($/1k tokens).
+    # Default $15/M ≈ mid-tier agent call (input+output avoided on full replay).
+    # Override per deploy; always surfaced as estimate_only.
+    at_provider_avoided_per_1k_tokens: float = 0.015
     at_enterprise_monthly_usd: float = 2500.0
     # When true, env OPENAI/ANTHROPIC keys may fill in if X-Ohm-Upstream-Key is
     # absent. Default OFF: silently burning operator keys for customer traffic
@@ -94,9 +100,21 @@ class Settings(BaseSettings):
     # Recurring seat Price IDs ($0 Intermediate membership recommended)
     stripe_price_payg: str = ""
     stripe_price_enterprise: str = ""
-    # Optional $29 prepaid credit pack — sold via POST /v1/billing/topup
-    # (one-time Checkout; webhook credits the Stripe customer balance)
+    # Retired $29 credit pack (rate card v1) — kept only so in-flight webhooks
+    # from old sessions can still resolve. New prepay is via commit tiers.
     stripe_price_credit_pack: str = ""
+    # Commit tiers (rate card v2): licensed monthly seat Price IDs. Each cycle's
+    # invoice.paid grants the included metered usage as a Stripe billing credit
+    # scoped to metered prices (never offsets the seat fee itself).
+    stripe_price_commit_c29: str = ""
+    stripe_price_commit_c99: str = ""
+    stripe_price_commit_c499: str = ""
+    at_commit_included_usd_c29: float = 35.0
+    at_commit_included_usd_c99: float = 125.0
+    at_commit_included_usd_c499: float = 700.0
+    # Stripe Tax: enable after activating Stripe Tax + origin address in the
+    # dashboard (session creation fails if enabled without dashboard setup).
+    stripe_automatic_tax: bool = False
     # Metered Prices attached to Billing Meters (required for Intermediate in production)
     stripe_price_meter_web_fetch: str = ""
     stripe_price_meter_cache_hit: str = ""
@@ -112,6 +130,26 @@ class Settings(BaseSettings):
     at_design_partner_days: int = 90
     at_design_partner_soft_quota_usd: float = 50.0
     at_design_partner_request_cap: int = 100_000
+
+    # OIDC SSO (org console). Leave blank to use AT_SSO_DEV_SECRET for local.
+    at_oidc_issuer: str = ""
+    at_oidc_client_id: str = ""
+    at_oidc_client_secret: str = ""
+    at_oidc_authorize_url: str = ""
+    at_oidc_token_url: str = ""
+    at_oidc_userinfo_url: str = ""
+    at_oidc_scopes: str = "openid profile email"
+    at_oidc_redirect_uri: str = "https://www.withohm.dev/org/callback"
+    at_oidc_allow_unverified_id_token: bool = False
+    # Local/dev SSO shared secret (never set in production).
+    at_sso_dev_secret: str = ""
+    # Enterprise SKU delivery flags (catalog promises made real).
+    at_enterprise_audit_logs: bool = True
+    at_enterprise_managed_keys: bool = True
+    at_enterprise_sla_note: str = (
+        "Target 99.9% monthly API availability; credits negotiated per MSA. "
+        "No contractual SLA until countersigned order form."
+    )
 
     @property
     def api_key_set(self) -> set[str]:

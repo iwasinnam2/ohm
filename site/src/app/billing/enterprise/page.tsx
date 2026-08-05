@@ -5,7 +5,7 @@ import { EnterpriseApplicationForm } from "@/components/EnterpriseApplicationFor
 export const metadata: Metadata = {
   title: "Enterprise at withOhm",
   description:
-    "Enterprise at withOhm — design-partner rank, negotiated transaction usage agreements, and personal admin contact.",
+    "Enterprise chaos governor — SSO, clean ledger, org policy, Agent Shell, managed keys from $2,500/month.",
 };
 
 export default function EnterpriseBillingPage() {
@@ -14,18 +14,26 @@ export default function EnterpriseBillingPage() {
       <header className="page-head">
         <h1>Enterprise at withOhm</h1>
         <p>
-          Everything in Intermediate, plus fixed-price transaction bundles for
-          cache hits, cache misses, and web fetches — the modern SMS / minutes /
-          data model: unlimited-feel usage for a salaried fee, from{" "}
-          <strong>$2,500/month</strong>. Built for large-scale operations with
-          heavy daily scraping.
+          The control plane for enterprise AI chaos: SSO tenancy, cost-center
+          ledger, compliance policy, audit logs, and the Ohm Agent Shell —
+          from <strong>$2,500/month</strong>. Connect the agents your teams
+          already use; govern the entropy; rent the plumbing.
         </p>
         <ul className="tier__pros">
-          <li>Negotiated fixed monthly bundles with substantial volume discounts</li>
-          <li>Weekly live stats: dedicated usage budgets and utilisation</li>
-          <li>Personal admin contact and design-partner forum access</li>
-          <li>Managed provider key pools and single-tenant options</li>
+          <li>OIDC SSO + SCIM user provisioning</li>
+          <li>Corporate clean ledger with FinOps CSV/JSON export</li>
+          <li>Org policy: model allowlist, fetch purposes, managed keys</li>
+          <li>Audit log of API access and policy denials</li>
+          <li>Agent Shell workbench — no IDE lock-in</li>
         </ul>
+        <p className="cta-row">
+          <Link className="btn" href="/org">
+            Org console
+          </Link>
+          <Link className="btn" href="/workbench">
+            Agent Shell
+          </Link>
+        </p>
       </header>
       <EnterpriseApplicationForm />
       <p className="billing-form__alt">

@@ -37,3 +37,29 @@ Web-context payloads are built only after compliance gates (purpose, acks, URL p
 - Customer keys are stored hashed (SHA-256) at rest.
 - Bootstrap env keys (`AT_API_KEYS`) are for local/dev only.
 - Suspended tenants receive HTTP 403 with a clear message.
+
+## Cursor Directory / MCP plugin surface
+
+Listing: Open Plugins package under `.cursor-plugin/` (stdio MCP + skills).
+
+| Rule | Behavior |
+|------|----------|
+| Transport | **Local stdio only** — no remote MCP URL, no always-on reverse shell |
+| Secrets | `OHM_API_KEY` / `OHM_UPSTREAM_KEY` via env variable placeholders only — never hardcoded in `mcp.json` |
+| Bootstrap | `sk-at-dev` is rejected when `OHM_BASE_URL` points at `api.withohm.dev` |
+| BYOK | Upstream provider key rides `X-Ohm-Upstream-Key` per request; not persisted by Ohm |
+| Legal acks | Bound at Checkout / tenant mint — MCP tools do **not** forge `terms_ack` / `dpa_ack` |
+| Web fetch | Public http(s) only; robots fail-closed; PII redaction; purpose gate |
+| Error bodies | MCP client redacts responses that look like they contain key material |
+| Install | `pip install withohm-mcp` then `ohm-mcp` on PATH |
+
+Reviewer packet: [listings/DIRECTORY_VERIFICATION.md](listings/DIRECTORY_VERIFICATION.md).
+
+## Amendments (2026-08) — path, spend caps, receipts
+
+| Surface | Behavior |
+|---------|----------|
+| `X-Ohm-Path` | Optional frequency-farm label (normalized `[a-z0-9_-]{1,64}`); echoed on responses; stored on ledger events |
+| Spend-cap headers | Soft mode: `X-Ohm-Spend-Cap: soft` + `X-Ohm-Spend-Cap-Usd` on allowed MISS; hard mode: `402` `spend_cap_exceeded` |
+| Clean ledger | Events include `path` (default `default` if absent); hit-ratio APIs group by cost center or path |
+| Public receipts | Threat model unchanged — unguessable token, no prompts, display name + aggregates only |

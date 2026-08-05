@@ -51,23 +51,35 @@ function Get-Page([string]$Url) {
 Step "homepage 200 + grounded hero copy" {
   $r = Get-Page $SiteUrl
   if ($r.StatusCode -ne 200) { throw "status $($r.StatusCode)" }
-  foreach ($phrase in @("model switching", "prompt caching", "BYOK", "MCP")) {
+  # Hero leads with pipe + interconnectedness; MCP lives on Connections.
+  foreach ($phrase in @("model switching", "prompt caching", "BYOK", "Interconnectedness", "Agent Shell")) {
     if ($r.Content -notmatch [regex]::Escape($phrase)) { throw "missing phrase '$phrase'" }
   }
 }
 
-Step "subscriptions 200 + published pricing" {
+Step "subscriptions 200 + published pricing (rate card v2)" {
   $r = Get-Page "$SiteUrl/subscriptions"
   if ($r.StatusCode -ne 200) { throw "status $($r.StatusCode)" }
-  foreach ($phrase in @("2,500", "29", "`$0")) {
+  # Commit amounts render as "$29.00" + "/mo" (React may insert <!-- --> between).
+  foreach ($phrase in @("2,500", "`$0", "Commit tiers", "`$29.00", "`$99.00", "`$499.00")) {
     if ($r.Content -notmatch [regex]::Escape($phrase)) { throw "missing pricing '$phrase'" }
   }
+  if ($r.Content -notmatch "/mo") { throw "missing pricing '/mo' suffix" }
+  if ($r.Content -match "credit pack") { throw "retired credit pack still advertised" }
 }
 
 Step "status page 200 (single-region truth)" {
   $r = Get-Page "$SiteUrl/status"
   if ($r.StatusCode -ne 200) { throw "status $($r.StatusCode)" }
   if ($r.Content -match "Global Accelerator") { throw "stale multi-region claim on status page" }
+}
+
+Step "demo page 200 + mint receipt claim" {
+  $r = Get-Page "$SiteUrl/demo"
+  if ($r.StatusCode -ne 200) { throw "status $($r.StatusCode)" }
+  foreach ($phrase in @("Mint public receipt", "Prove miss")) {
+    if ($r.Content -notmatch [regex]::Escape($phrase)) { throw "missing phrase '$phrase'" }
+  }
 }
 
 Step "api health (Rust plane)" {

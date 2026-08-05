@@ -1,0 +1,59 @@
+name: Pricing pulse
+
+# Weekly pricing telemetry (rate card v2). Pulls checkout funnel, tier mix,
+# committed MRR, and collected revenue from Stripe into the job summary so the
+# pre-committed adjustment rules in docs/PRICING.md run on data, not moods.
+#
+# Secret: STRIPE_PULSE_KEY — a *restricted* Stripe key with read-only access
+# to Checkout Sessions, Subscriptions, Prices, and Invoices. The job is a
+# no-op (still green) until the secret is added.
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 7 * * 1" # Mondays 07:00 UTC
+
+permissions:
+  contents: read
+
+jobs:
+  pulse:
+    name: stripe pricing telemetry
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install stripe SDK
+        run: pip install --quiet stripe
+
+      - name: Run pricing pulse
+        env:
+          STRIPE_PULSE_KEY: ${{ secrets.STRIPE_PULSE_KEY }}
+        run: |
+          python scripts/pricing_pulse.py | tee pulse.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Fan out to Observer sinks (Slack + Linear weekly review)
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY }}
+          LINEAR_TEAM_ID: ${{ secrets.LINEAR_TEAM_ID }}
+        run: |
+          WEEK="$(date -u +%G-W%V)"
+          python scripts/observer_notify.py \
+            --title "weekly pricing review $WEEK" \
+            --body "$(cat pulse.md)"
+
+      - name: Notify Observer sinks on failure
+        if: failure()
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY }}
+          LINEAR_TEAM_ID: ${{ secrets.LINEAR_TEAM_ID }}
+        run: >
+          python scripts/observer_notify.py
+          --title "pricing pulse failed"
+          --body "Weekly Stripe telemetry went red: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"

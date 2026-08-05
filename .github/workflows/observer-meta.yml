@@ -1,0 +1,31 @@
+name: Observer meta
+
+# Meta layer of the Observer: once a day, verify every scheduled Observer
+# workflow (pulse, golden path, pricing pulse, admin digest) had a recent
+# *success* within a jitter-tolerant window. Catches paused schedules and
+# broken workflows — not GitHub's */15 delivery delay (often 2–3h).
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "45 6 * * *" # daily 06:45 UTC — after golden-path, before pricing-pulse
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  heartbeat:
+    name: verify observer cadence
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check last run of every Observer workflow
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY }}
+          LINEAR_TEAM_ID: ${{ secrets.LINEAR_TEAM_ID }}
+        run: python3 scripts/observer_meta.py

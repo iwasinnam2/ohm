@@ -12,7 +12,51 @@ def test_cache_key_stable():
         tenant="t", model="mock", messages=[{"role": "user", "content": "x"}]
     )
     assert a == b
-    assert a.startswith("at:t:cache:")
+    assert a.startswith("at:t:cache:v2:")
+
+
+def test_cache_key_v2_normalizes_transport_noise():
+    """CRLF vs LF and outer whitespace are transport noise, not semantics."""
+    base = cache_key_for_request(
+        tenant="t", model="mock", messages=[{"role": "user", "content": "a\nb"}]
+    )
+    crlf = cache_key_for_request(
+        tenant="t", model="mock", messages=[{"role": "user", "content": "a\r\nb"}]
+    )
+    padded = cache_key_for_request(
+        tenant="t", model="mock", messages=[{"role": "user", "content": "  a\nb  "}]
+    )
+    assert base == crlf == padded
+    # Interior whitespace stays significant (code blocks).
+    indented = cache_key_for_request(
+        tenant="t", model="mock", messages=[{"role": "user", "content": "a\n    b"}]
+    )
+    assert indented != base
+
+
+def test_cache_key_v2_parity():
+    """Pinned digest shared with the Rust edge test
+    (gateway-rs cache_key_v2_parity_with_python). If this drifts on either
+    side, edge HITs silently vanish."""
+    key = cache_key_for_request(
+        tenant="parity",
+        model="mock",
+        messages=[{"role": "user", "content": "  hello\r\nworld  "}],
+        extras={
+            "fetch_web_context": False,
+            "web_query": None,
+            "web_urls": [],
+            "web_purpose": None,
+            "web_format": None,
+            "temperature": None,
+            "max_tokens": None,
+            "cache_control": None,
+        },
+    )
+    assert key == (
+        "at:parity:cache:v2:"
+        "ea9e2e59350222baec8ed5fc7f85078ea788c48526f389bb6264ef251052db4d"
+    )
 
 
 def test_inject_context():

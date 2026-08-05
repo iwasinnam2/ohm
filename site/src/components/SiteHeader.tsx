@@ -21,6 +21,10 @@ export function SiteHeader() {
   const pathname = usePathname() || "/";
 
   const links = [
+    { href: "/workbench", label: "Shell" },
+    { href: "/keys", label: "Keys" },
+    { href: "/org", label: "Org" },
+    { href: "/connections", label: "Connections" },
     { href: "/docs", label: "Docs" },
     { href: "/subscriptions", label: "Billing" },
     { href: "/", label: "Home" },

@@ -5,26 +5,12 @@ from httpx import ASGITransport, AsyncClient
 
 from at_utility.config import get_settings
 from at_utility.main import app
-from at_utility.redis_store import MemoryStore
-from at_utility.metering import Meter
-from at_utility.providers import MockProvider, build_compat_shells
-from at_utility.tenants import TenantRegistry
-import at_utility.main as main_mod
+from tests.app_state import wire_memory_app_state
 
 
 @pytest.fixture(autouse=True)
 async def _mem_state():
-    get_settings.cache_clear()
-    store = MemoryStore()
-    settings = get_settings()
-    main_mod.state.settings = settings
-    main_mod.state.store = store
-    main_mod.state.meter = Meter(store, settings)
-    main_mod.state.tenants = TenantRegistry(store, settings)
-    main_mod.state.mock = MockProvider()
-    main_mod.state.openai = None
-    main_mod.state.anthropic = None
-    main_mod.state.compat = build_compat_shells(settings)
+    store = await wire_memory_app_state()
     yield
     await store.close()
     get_settings.cache_clear()
@@ -160,8 +146,15 @@ async def test_savings_dashboard():
         assert sav.status_code == 200
         body = sav.json()
         assert "estimated_upstream_avoided_usd" in body
+        assert "estimated_provider_avoided_usd" in body
+        assert "pipe_rent_usd" in body
+        assert "roi_ratio" in body
         assert body.get("estimate_only") is True
         assert body["cache_hit_ratio"] >= 0
+        # Provider estimate uses blended list rate (≥ pipe-proxy miss rent).
+        assert body["estimated_provider_avoided_usd"] >= body.get(
+            "estimated_pipe_proxy_avoided_usd", 0
+        )
 
 
 @pytest.mark.asyncio
@@ -195,6 +188,24 @@ async def test_compliance_policy_shape():
         assert body["max_chars_per_source"] == 4000
         assert body["terms"]["terms_version"]
         assert "copyright_excerpt_caps" in body["adjacent_frameworks"]
+
+
+@pytest.mark.asyncio
+async def test_admin_ops_snapshot():
+    transport = ASGITransport(app=app)
+    admin = {"Authorization": "Bearer sk-at-dev"}
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        res = await client.get("/v1/admin/ops", headers=admin)
+        assert res.status_code == 200
+        body = res.json()
+        assert body["ok"] is True
+        assert body["redis_ok"] is True
+        assert body["stripe_meter_dlq_len"] == 0
+        assert "global" in body
+        denied = await client.get(
+            "/v1/admin/ops", headers={"Authorization": "Bearer sk-not-admin"}
+        )
+        assert denied.status_code == 403
 
 
 @pytest.mark.asyncio

@@ -19,3 +19,14 @@ jobs:
           # public surfaces are still verified.
           OHM_API_KEY: ${{ secrets.OHM_GOLDEN_PATH_KEY }}
         run: ./scripts/golden_path.ps1
+
+      - name: Notify Observer sinks on failure
+        if: failure()
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY }}
+          LINEAR_TEAM_ID: ${{ secrets.LINEAR_TEAM_ID }}
+        run: >
+          python3 scripts/observer_notify.py
+          --title "golden path failed"
+          --body "Nightly reviewer-path smoke went red: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"

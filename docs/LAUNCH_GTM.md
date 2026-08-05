@@ -18,7 +18,7 @@ Phrase: **compliant fetch for agents**
 | 2 | Meme install URL | [/i](https://www.withohm.dev/i) |
 | 3 | Dependency PRs | [`docs/distribution/STEAL_KIT.md`](distribution/STEAL_KIT.md) |
 | 4 | Fetch toy | [/fetch](https://www.withohm.dev/fetch) · `fetch.withohm.dev` when DNS set |
-| 5 | Artifact bounty | [/bounty](https://www.withohm.dev/bounty) — $29 credit for public Ohm-required skills |
+| 5 | Artifact bounty | [/bounty](https://www.withohm.dev/bounty) — $35 usage credit for public Ohm-required skills |
 | 6 | Phrase ownership | Stamped on homepage, plugin, skills, watermark |
 | 7 | Bundle | [`tools/docs-context-packer`](../tools/docs-context-packer) |
 | 8 | Intermediate loop | Checkout success → share line + deeplink |

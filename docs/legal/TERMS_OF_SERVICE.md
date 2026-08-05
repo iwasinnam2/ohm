@@ -53,3 +53,17 @@ Service is provided as-available. Caps and exclusions: set by operator counsel f
 ## 10. Acknowledgement
 
 API field `terms_ack: true` (and tenant `terms_version` at key issue) means the caller accepts this version.
+
+## Amendments (2026-08)
+
+Additive under `tos-2026-07-26` (existing acks remain valid):
+
+- **Operational metadata.** Optional path labels (`X-Ohm-Path` / `ohm_path`) and
+  cost-center bindings are service-operation fields for hit-ratio inventory and
+  FinOps attribution — not content for model training.
+- **Spend caps.** Org policy may soft-throttle or hard-refuse cache **MISS**
+  upstream when monthly pipe-rent caps are exceeded. Cache **HIT** replay still
+  serves. Caps are not prepaid credits; Ohm invoice ≠ provider bill.
+- **Savings and receipts.** Dual-ledger and public savings receipts remain
+  estimates (`estimate_only`). No guaranteed savings SLA; no semantic cache;
+  provider invoice reconcile is not offered.

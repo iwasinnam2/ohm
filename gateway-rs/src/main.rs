@@ -109,6 +109,69 @@ fn unauthorized() -> Response<ProxyBody> {
         .unwrap()
 }
 
+/// Browser Shell / org console call api.withohm.dev from withohm.dev — need CORS.
+fn allowed_cors_origin(origin: Option<&str>) -> Option<&str> {
+    let origin = origin?;
+    const ALLOWED: &[&str] = &[
+        "https://www.withohm.dev",
+        "https://withohm.dev",
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://localhost:3001",
+        "http://127.0.0.1:3001",
+    ];
+    if ALLOWED.contains(&origin) {
+        return Some(origin);
+    }
+    // Amplify preview deploys of the marketing site
+    if origin.starts_with("https://") && origin.ends_with(".amplifyapp.com") {
+        return Some(origin);
+    }
+    None
+}
+
+fn cors_preflight(origin: Option<&str>) -> Response<ProxyBody> {
+    let mut builder = Response::builder().status(StatusCode::NO_CONTENT);
+    if let Some(o) = allowed_cors_origin(origin) {
+        builder = builder
+            .header("access-control-allow-origin", o)
+            .header(
+                "access-control-allow-methods",
+                "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+            )
+            .header(
+                "access-control-allow-headers",
+                "authorization, content-type, x-ohm-upstream-key, x-ohm-session, x-ohm-path, x-ohm-cost-center",
+            )
+            .header("access-control-max-age", "86400")
+            .header("access-control-allow-credentials", "true")
+            .header("vary", "Origin");
+    }
+    builder.body(full_body("")).unwrap()
+}
+
+fn with_cors(mut res: Response<ProxyBody>, origin: Option<&str>) -> Response<ProxyBody> {
+    if let Some(o) = allowed_cors_origin(origin) {
+        let headers = res.headers_mut();
+        headers.insert(
+            hyper::header::HeaderName::from_static("access-control-allow-origin"),
+            o.parse().unwrap(),
+        );
+        headers.insert(
+            hyper::header::HeaderName::from_static("access-control-allow-credentials"),
+            "true".parse().unwrap(),
+        );
+        headers.insert(
+            hyper::header::HeaderName::from_static("access-control-expose-headers"),
+            "x-at-cache, x-at-billed-usd, x-at-plane, x-ohm-cost-center, x-ohm-path, x-ohm-spend-cap, x-ohm-spend-cap-usd"
+                .parse()
+                .unwrap(),
+        );
+        headers.insert(hyper::header::VARY, "Origin".parse().unwrap());
+    }
+    res
+}
+
 fn extract_bearer(req: &Request<Incoming>) -> Option<String> {
     req.headers()
         .get(hyper::header::AUTHORIZATION)
@@ -162,13 +225,47 @@ fn canonical_json(value: &serde_json::Value) -> String {
     }
 }
 
-/// Match Python `cache_key_for_request` (docs/REDIS_MESH.md).
+/// Key-v2 content normalization matching Python `cache.normalize_content`:
+/// CRLF/CR -> LF, then trim outer whitespace. Interior whitespace untouched.
+fn normalize_content(text: &str) -> String {
+    text.replace("\r\n", "\n").replace('\r', "\n").trim().to_string()
+}
+
+fn normalized_messages(messages: serde_json::Value) -> serde_json::Value {
+    match messages {
+        serde_json::Value::Array(items) => serde_json::Value::Array(
+            items
+                .into_iter()
+                .map(|mut msg| {
+                    if let Some(obj) = msg.as_object_mut() {
+                        if let Some(serde_json::Value::String(content)) = obj.get("content") {
+                            let normalized = normalize_content(content);
+                            if normalized != *content {
+                                obj.insert(
+                                    "content".into(),
+                                    serde_json::Value::String(normalized),
+                                );
+                            }
+                        }
+                    }
+                    msg
+                })
+                .collect(),
+        ),
+        other => other,
+    }
+}
+
+/// Match Python `cache_key_for_request` (docs/REDIS_MESH.md) — key namespace
+/// v2 with normalized message content. Must stay byte-identical to Python or
+/// edge HITs silently vanish (parity: tests/test_units.py, tests below).
 fn cache_key_structured(tenant: &str, body: &serde_json::Value) -> String {
     let model = body.get("model").cloned().unwrap_or(serde_json::Value::Null);
-    let messages = body
-        .get("messages")
-        .cloned()
-        .unwrap_or_else(|| serde_json::json!([]));
+    let messages = normalized_messages(
+        body.get("messages")
+            .cloned()
+            .unwrap_or_else(|| serde_json::json!([])),
+    );
     let mut extras = serde_json::Map::new();
     extras.insert(
         "fetch_web_context".into(),
@@ -224,7 +321,7 @@ fn cache_key_structured(tenant: &str, body: &serde_json::Value) -> String {
         "extras": serde_json::Value::Object(extras),
     });
     let digest = sha256_hex(canonical_json(&payload).as_bytes());
-    format!("at:{tenant}:cache:{digest}")
+    format!("at:{tenant}:cache:v2:{digest}")
 }
 
 async fn ensure_client(slot: &Mutex<Option<RespClient>>, addr: &str) -> bool {
@@ -241,31 +338,42 @@ async fn ensure_client(slot: &Mutex<Option<RespClient>>, addr: &str) -> bool {
     true
 }
 
-async fn authorize(app: &App, token: &str) -> bool {
+#[derive(PartialEq)]
+enum EdgeAuth {
+    /// Bootstrap key or Redis-confirmed tenant key: edge may serve cache HITs.
+    Allowed,
+    /// Redis reachable and the key is definitively absent: reject at the edge.
+    Denied,
+    /// Redis unreachable/unconfigured: proxy to Python, which authenticates
+    /// every request itself. The edge must NEVER deny on its own outage —
+    /// that turns a degraded cache tier into a total API outage for every
+    /// issued key (bootstrap keys skip Redis and mask it in CI).
+    Unverified,
+}
+
+async fn authorize(app: &App, token: &str) -> EdgeAuth {
     if token.is_empty() {
-        return false;
+        return EdgeAuth::Denied;
     }
     if app.cfg.api_keys.iter().any(|k| k == token) {
-        return true;
+        return EdgeAuth::Allowed;
     }
     let idx = format!("at:global:apikey:{}", sha256_hex(token.as_bytes()));
     if ensure_client(&app.redis_read, &app.cfg.redis_addr).await {
         let mut guard = app.redis_read.lock().await;
         if let Some(client) = guard.as_mut() {
             match client.get(&idx).await {
-                Ok(Some(_)) => return true,
-                Ok(None) => return false,
+                Ok(Some(_)) => return EdgeAuth::Allowed,
+                Ok(None) => return EdgeAuth::Denied,
                 Err(e) => {
-                    // Fail-closed: do not proxy with a forged identity when Redis is broken.
-                    warn!("redis GET apikey failed: {e}; denying at edge");
+                    warn!("redis GET apikey failed: {e}; passing through to Python auth");
                     *guard = None;
-                    return false;
+                    return EdgeAuth::Unverified;
                 }
             }
         }
     }
-    // Redis unreachable — fail closed at the edge (Python still authoritative when reachable).
-    false
+    EdgeAuth::Unverified
 }
 
 async fn resolve_tenant(app: &App, token: &str) -> String {
@@ -349,6 +457,22 @@ async fn proxy_once(
 }
 
 async fn handle(app: Arc<App>, req: Request<Incoming>) -> Result<Response<ProxyBody>, Infallible> {
+    let origin = req
+        .headers()
+        .get(hyper::header::ORIGIN)
+        .and_then(|v| v.to_str().ok())
+        .map(|s| s.to_string());
+    if req.method() == Method::OPTIONS {
+        return Ok(cors_preflight(origin.as_deref()));
+    }
+    let res = handle_inner(app, req).await?;
+    Ok(with_cors(res, origin.as_deref()))
+}
+
+async fn handle_inner(
+    app: Arc<App>,
+    req: Request<Incoming>,
+) -> Result<Response<ProxyBody>, Infallible> {
     let cfg = &app.cfg;
     let path_only = req.uri().path();
     // Liveness is answered at the edge; readiness is proxied without auth so
@@ -370,14 +494,25 @@ async fn handle(app: Arc<App>, req: Request<Incoming>) -> Result<Response<ProxyB
     let is_stripe_webhook =
         path_q.starts_with("/v1/billing/webhook") && method == Method::POST;
     let is_ready = path_only == "/ready" && method == Method::GET;
-    let token = if is_stripe_webhook || is_ready {
+    // Self-serve checkout mints the tenant key, so callers cannot have one yet.
+    // Python applies its own per-IP token bucket on this route.
+    let is_public_checkout = path_only == "/v1/billing/checkout" && method == Method::POST;
+    // Savings receipts / aggregate stats are unauthenticated by design —
+    // Python applies its own per-IP token bucket on these routes.
+    let is_public_read = path_only.starts_with("/v1/public/") && method == Method::GET;
+    let is_passthrough = is_stripe_webhook || is_ready || is_public_checkout || is_public_read;
+    let mut edge_verified = false;
+    let token = if is_passthrough {
         None
     } else {
         let Some(token) = extract_bearer(&req) else {
             return Ok(unauthorized());
         };
-        if !authorize(&app, &token).await {
-            return Ok(unauthorized());
+        match authorize(&app, &token).await {
+            EdgeAuth::Denied => return Ok(unauthorized()),
+            EdgeAuth::Allowed => edge_verified = true,
+            // Unverified: full-proxy; Python re-authenticates every request.
+            EdgeAuth::Unverified => {}
         }
         Some(token)
     };
@@ -394,8 +529,16 @@ async fn handle(app: Arc<App>, req: Request<Incoming>) -> Result<Response<ProxyB
         }
     };
 
-    if is_stripe_webhook || is_ready {
-        let label = if is_ready { "ready" } else { "stripe webhook" };
+    if is_passthrough {
+        let label = if is_ready {
+            "ready"
+        } else if is_public_checkout {
+            "public checkout"
+        } else if is_public_read {
+            "public read"
+        } else {
+            "stripe webhook"
+        };
         let proxied = match proxy_once(
             &app,
             &cfg.primary_upstream,
@@ -454,12 +597,14 @@ async fn handle(app: Arc<App>, req: Request<Incoming>) -> Result<Response<ProxyB
         .and_then(|v| v.get("fetch_web_context").and_then(|s| s.as_bool()))
         .unwrap_or(false);
 
-    if is_chat && !wants_stream && !wants_web {
+    // Edge cache serving requires verified identity (Redis-confirmed key);
+    // unverified requests full-proxy so Python owns both auth and caching.
+    if edge_verified && is_chat && !wants_stream && !wants_web {
         let key = match body_json.as_ref() {
             Some(v) => cache_key_structured(&tenant, v),
             None => {
                 let digest = sha256_hex(&body);
-                format!("at:{tenant}:cache:{digest}")
+                format!("at:{tenant}:cache:v2:{digest}")
             }
         };
         let cached: Option<String> = if ensure_client(&app.redis_read, &cfg.redis_addr).await {
@@ -703,8 +848,33 @@ mod tests {
         });
         // sk-at-dev last 8 → k-at-dev (matches Python tenant_bootstrap_{key[-8:]})
         let key = cache_key_structured("tenant_bootstrap_k-at-dev", &body);
-        assert!(key.starts_with("at:tenant_bootstrap_k-at-dev:cache:"));
-        assert_eq!(key.len(), "at:tenant_bootstrap_k-at-dev:cache:".len() + 64);
+        assert!(key.starts_with("at:tenant_bootstrap_k-at-dev:cache:v2:"));
+        assert_eq!(
+            key.len(),
+            "at:tenant_bootstrap_k-at-dev:cache:v2:".len() + 64
+        );
+    }
+
+    #[test]
+    fn cache_key_v2_parity_with_python() {
+        // Pinned against Python cache_key_for_request for the same fixture
+        // (tests/test_units.py::test_cache_key_v2_parity). If this drifts,
+        // edge HITs silently vanish.
+        let body = serde_json::json!({
+            "model": "mock",
+            "messages": [{"role": "user", "content": "  hello\r\nworld  "}],
+        });
+        assert_eq!(
+            cache_key_structured("parity", &body),
+            "at:parity:cache:v2:ea9e2e59350222baec8ed5fc7f85078ea788c48526f389bb6264ef251052db4d"
+        );
+    }
+
+    #[test]
+    fn normalize_content_strips_outer_noise_only() {
+        assert_eq!(normalize_content("  a\r\nb  "), "a\nb");
+        // Interior whitespace (code indentation) is significant and kept.
+        assert_eq!(normalize_content("def f():\n    pass"), "def f():\n    pass");
     }
 
     #[test]

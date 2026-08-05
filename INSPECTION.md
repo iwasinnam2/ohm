@@ -18,6 +18,8 @@ round.**
 | Edge HIT path enforces tenant status (suspension / caps) | `test_money_path.py::test_edge_hit_denies_suspended_tenant`, `::test_edge_hit_enforces_request_cap` |
 | Edge HIT path fails safe without the shared secret | `test_money_path.py::test_edge_hit_disabled_without_secret`, `::test_edge_hit_rejects_wrong_secret` |
 | SSE streaming end-to-end (progressive, not buffered) | `test_gateway.py::test_stream_meters_usage_chunk`, `test_anthropic_sse.py` (5 tests); golden step "SSE streaming pass-through" |
+| Streamed responses replay from cache (miss populates, hit replays as SSE, shared entry with JSON path) | `test_stream_replay.py` (6 tests: stream→stream, stream→JSON, JSON→stream, hit metering, truncated-stream guard, round-trip) |
+| Cache key v2: transport noise normalized (CRLF, outer whitespace), Python/Rust byte parity | `test_units.py::test_cache_key_v2_normalizes_transport_noise`, `::test_cache_key_v2_parity`; gateway-rs `cache_key_v2_parity_with_python` |
 | Mid-stream failover | **Not claimed** — docs/STREAMING.md says unsupported |
 | Compliant web browsing (purpose gates, robots fail-closed, PII redaction) | `test_compliance.py` (18 tests); golden step "compliant web fetch" |
 | SSRF: DNS re-check, private-IP deny, connect-time IP pin | `test_compliance.py::test_url_gate_dns_literal_skip_ok`, `::test_url_gate_blocks_credentials_and_login`; pin: `workers/ingest_worker.py::_pinned_get` |
@@ -38,7 +40,11 @@ round.**
 | Delinquent tenants suspend after grace | `test_money_path.py::test_delinquency_sweep_suspends_expired_tenants`, `::test_delinquency_sweep_spares_recent_delinquents` |
 | Request caps enforced on chat + fetch | `test_money_path.py::test_request_cap_enforced_on_chat`, `::test_fetch_cap_429_despite_metered_spend` |
 | Checkout mint is rate-limited | `test_money_path.py::test_checkout_rate_limited_after_burst` |
-| Published pricing ($0 Intermediate seat, $29 credit pack, Enterprise from $2,500/mo) | golden step "subscriptions 200 + published pricing" |
+| Published pricing ($0 Intermediate seat, commit tiers $29/$99/$499 with included usage, Enterprise from $2,500/mo) | golden step "subscriptions 200 + published pricing (rate card v2)" |
+| Site, API config, and docs all quote the same rates (single canonical source) | `test_rate_card.py` (site imports `pricing/rate_card.v2.json` directly; config defaults asserted equal) |
+| Commit tiers: checkout accepts tier, invoice.paid grants included usage scoped to meters | `test_money_path.py::test_checkout_passes_commit_to_session`, `::test_commit_tier_detected_from_invoice_lines`, `::test_commit_included_usd_matches_rate_card` |
+| $29 one-off credit pack is retired (410 + guidance) | `test_money_path.py::test_topup_is_retired_with_commit_guidance` |
+| Pricing changes follow pre-committed rules, not moods | `docs/PRICING.md` rules + weekly `.github/workflows/pricing-pulse.yml` telemetry |
 
 ## Infra claims
 

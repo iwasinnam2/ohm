@@ -76,6 +76,7 @@ export function FetchToyClient() {
         <input
           type="url"
           required
+          aria-label="Public URL to fetch"
           placeholder="https://docs.example.com/…"
           value={url}
           onChange={(e) => setUrl(e.target.value)}
@@ -86,17 +87,31 @@ export function FetchToyClient() {
         </button>
       </form>
 
-      {error ? <p className="billing-form__error">{error}</p> : null}
+      {error ? (
+        <p className="billing-form__error" role="alert">
+          {error}
+        </p>
+      ) : null}
 
       {markdown ? (
         <div className="steal__out">
           <div className="steal__out-bar">
             <span>Shareable output</span>
-            <button type="button" className="link-quiet" onClick={copyOut}>
+            <button
+              type="button"
+              className="link-quiet"
+              aria-label="Copy fetched markdown"
+              onClick={copyOut}
+            >
               {copied ? "Copied" : "Copy markdown"}
             </button>
+            <span role="status" className="visually-hidden">
+              {copied ? "Markdown copied to clipboard" : ""}
+            </span>
           </div>
-          <pre className="steal__markdown">{markdown}</pre>
+          <pre className="steal__markdown" tabIndex={0} aria-label="Fetched markdown">
+            {markdown}
+          </pre>
           <p className="steal__hint">
             Want this inside Cursor?{" "}
             <Link href="/i">Add withOhm MCP from https://www.withohm.dev/i</Link>

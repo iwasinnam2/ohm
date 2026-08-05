@@ -59,3 +59,7 @@ Documented via API: purposes, acks, `cache_control`, and this DPA version.
 ## Acknowledgement
 
 `dpa_ack: true` binds `dpa-2026-07-26`.
+
+## Amendments (2026-08)
+
+Additive under `dpa-2026-07-26`: categories of processor operations include path labels, cost-center attribution, spend-cap enforcement state, and opt-in public receipt snapshots (display name + aggregates). Customer instructs path labels via API headers / body fields. No training on Customer Content.

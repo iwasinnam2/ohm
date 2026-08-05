@@ -1,0 +1,21 @@
+company_or_handle,pain_observed,source_link,person,channel,research_urls,personalization_hook,status,date_touched,replied,key_issued,quote_captured,notes
+"[fill] warm commenter — r/mcp",,,,"reddit_dm",,,queued,,,,,"From your r/mcp thread — real problem preferred"
+"[fill] warm commenter — r/LLMDevs",,,,"reddit_dm",,,queued,,,,,"From your r/LLMDevs thread"
+"[fill] warm commenter — r/AI_Agents",,,,"reddit_dm",,,queued,,,,,"From your r/AI_Agents thread"
+"[fill] warm commenter — r/cursor (after post)",,,,"reddit_dm",,,queued,,,,,"After GAP_SURFACES r/cursor goes live"
+"[fill] Cursor Forum pain thread 1",,,,"forum_dm",,,queued,,,,,"Reply then DM — OUTREACH §2"
+"[fill] Cursor Forum pain thread 2",,,,"forum_dm",,,queued,,,,,
+"[fill] Cursor Forum pain thread 3",,,,"forum_dm",,,queued,,,,,
+"[fill] X / agent-cost complaint",,,,"x_dm",,,queued,,,,,"Public post about LLM bills or re-fetch"
+"[fill] X / MCP browse pain",,,,"x_dm",,,queued,,,,,
+"[fill] Discord MCP / Cursor room",,,,"discord",,,queued,,,,,"Only after they stated a problem"
+"[fill] agent startup eng (product-shaped)",,,,"email",,,queued,,,,,"Find eng who posts; research_urls = about|careers"
+"[fill] research-copilot / agent SaaS eng",,,,"email",,,queued,,,,,"JSON research: public_company_info"
+"[fill] Cursor-heavy indie hacker",,,,"x_dm",,,queued,,,,,"Solo — fast yes"
+"[fill] Cursor-heavy indie hacker 2",,,,"forum_dm",,,queued,,,,,
+"[fill] compliance-aware scrape/fetch builder",,,,"email",,,queued,,,,,"Fetch pipe angle — robots/PII"
+"[fill] HN Who's Hiring — agent infra",,,,"email",,,queued,,,,,"After Show HN or from monthly thread"
+"[fill] Show HN commenter (warm)",,,,"email",,,queued,,,,,"Log during HN 2h window"
+"[fill] Show HN commenter (warm) 2",,,,"email",,,queued,,,,,
+"[fill] awesome-mcp / framework issue author",,,,"email",,,queued,,,,,"GitHub issue about browse/cache"
+"[fill] cold email — cited public pain only",,,,"email",,,queued,,,,,"OUTREACH §5 — only with public work email + cite"

@@ -9,6 +9,7 @@ from __future__ import annotations
 import logging
 import secrets
 import string
+import time
 from typing import Any, Optional
 
 from at_utility.config import Settings
@@ -52,6 +53,35 @@ def _meter_line_items(settings: Settings) -> list[dict[str, Any]]:
     return items
 
 
+def commit_tier_prices(settings: Settings) -> dict[str, str]:
+    """Configured commit tiers (rate card v2) → Stripe seat Price IDs."""
+    tiers = {
+        "c29": settings.stripe_price_commit_c29,
+        "c99": settings.stripe_price_commit_c99,
+        "c499": settings.stripe_price_commit_c499,
+    }
+    return {tier: price for tier, price in tiers.items() if price}
+
+
+def commit_included_usd(settings: Settings, tier: str) -> float:
+    return {
+        "c29": settings.at_commit_included_usd_c29,
+        "c99": settings.at_commit_included_usd_c99,
+        "c499": settings.at_commit_included_usd_c499,
+    }.get(tier, 0.0)
+
+
+def _apply_tax_params(settings: Settings, params: dict[str, Any]) -> None:
+    """Stripe Tax on Checkout — gated on STRIPE_AUTOMATIC_TAX because session
+    creation fails if the dashboard has no origin address / active Stripe Tax.
+    Prices are created tax_behavior=exclusive, so tax adds on top of list."""
+    if not settings.stripe_automatic_tax:
+        return
+    params["automatic_tax"] = {"enabled": True}
+    params["billing_address_collection"] = "required"
+    params["tax_id_collection"] = {"enabled": True}
+
+
 def meter_prices_configured(settings: Settings) -> bool:
     return bool(
         settings.stripe_price_meter_web_fetch
@@ -85,10 +115,13 @@ def create_checkout_session(
     success_url: str,
     cancel_url: str,
     customer_email: str = "",
+    commit: str = "",
 ) -> dict[str, Any]:
     """
     Create a Stripe Checkout Session (subscription seat + meters)
-    for payg or enterprise.
+    for payg or enterprise. ``commit`` (c29/c99/c499) swaps the $0 membership
+    seat for a commit-tier seat; meters are always attached. Included usage is
+    granted per cycle by the invoice.paid webhook.
     """
     if not settings.stripe_secret_key:
         raise RuntimeError("STRIPE_SECRET_KEY is not configured")
@@ -99,11 +132,19 @@ def create_checkout_session(
         raise RuntimeError("Install stripe: pip install 'at-utility[billing]'") from exc
 
     stripe.api_key = settings.stripe_secret_key
-    price = (
-        settings.stripe_price_enterprise
-        if plan == "enterprise"
-        else settings.stripe_price_payg
-    )
+    commit = commit.strip().lower()
+    if plan == "enterprise":
+        price = settings.stripe_price_enterprise
+        commit = ""
+    elif commit:
+        price = commit_tier_prices(settings).get(commit, "")
+        if not price:
+            raise RuntimeError(
+                f"Commit tier {commit!r} is not configured — create prices "
+                "with scripts/stripe_create_prices_v2.sh"
+            )
+    else:
+        price = settings.stripe_price_payg
     if not price:
         raise RuntimeError(f"Stripe price id missing for plan={plan}")
 
@@ -115,26 +156,24 @@ def create_checkout_session(
         log.warning(
             "checkout plan=payg without meter Prices — seat-only subscription"
         )
+    shared_meta = {
+        "tenant_id": tenant_id,
+        "plan": plan,
+        "billing_model": BILLING_MODEL,
+    }
+    if commit:
+        shared_meta["commit_tier"] = commit
     params: dict[str, Any] = {
         "mode": "subscription",
         "success_url": success_url,
         "cancel_url": cancel_url,
         "line_items": line_items,
         "client_reference_id": tenant_id,
-        "metadata": {
-            "tenant_id": tenant_id,
-            "plan": plan,
-            "billing_model": BILLING_MODEL,
-        },
-        "subscription_data": {
-            "metadata": {
-                "tenant_id": tenant_id,
-                "plan": plan,
-                "billing_model": BILLING_MODEL,
-            }
-        },
+        "metadata": dict(shared_meta),
+        "subscription_data": {"metadata": dict(shared_meta)},
         "integration_identifier": _integration_identifier(),
     }
+    _apply_tax_params(settings, params)
     if customer_email.strip():
         params["customer_email"] = customer_email.strip()
 
@@ -150,13 +189,105 @@ def create_checkout_session(
             session = stripe.checkout.Session.create(**params)
         else:
             raise
-    return {
+    result = {
         "id": session.id,
         "url": session.url,
         "tenant_id": tenant_id,
         "plan": plan,
         "billing_model": BILLING_MODEL,
     }
+    if commit:
+        result["commit_tier"] = commit
+    return result
+
+
+def grant_commit_included_credit(
+    settings: Settings,
+    *,
+    stripe_customer_id: str,
+    tier: str,
+    invoice_id: str,
+) -> float:
+    """Grant a commit tier's included metered usage for one billing cycle.
+
+    Uses a Billing Credit Grant scoped to metered prices so the credit can
+    never offset the seat fee itself (a raw customer-balance credit would eat
+    the next cycle's commit, making the tier self-cancelling). Idempotent per
+    invoice via Stripe idempotency keys, so webhook redelivery cannot
+    double-grant. Returns the granted USD (0.0 if skipped/failed).
+    """
+    amount_usd = commit_included_usd(settings, tier)
+    if (
+        not settings.stripe_secret_key
+        or not stripe_customer_id
+        or not invoice_id
+        or amount_usd <= 0
+    ):
+        return 0.0
+    try:
+        import stripe
+    except ImportError:
+        return 0.0
+    try:
+        stripe.api_key = settings.stripe_secret_key
+        stripe.billing.CreditGrant.create(
+            customer=stripe_customer_id,
+            name=f"withOhm {tier} included usage",
+            category="paid",
+            amount={
+                "type": "monetary",
+                "monetary": {
+                    "currency": "usd",
+                    "value": int(round(amount_usd * 100)),
+                },
+            },
+            applicability_config={"scope": {"price_type": "metered"}},
+            # Cycle + slack: unused included usage does not stockpile forever.
+            expires_at=int(time.time()) + 40 * 86400,
+            metadata={"commit_tier": tier, "invoice_id": invoice_id},
+            idempotency_key=f"ohm-commit-credit-{invoice_id}"[:255],
+        )
+        return amount_usd
+    except Exception as exc:  # noqa: BLE001 — webhook must still 200
+        log.warning(
+            "commit credit grant failed cus=%s tier=%s invoice=%s err=%s",
+            stripe_customer_id,
+            tier,
+            invoice_id,
+            exc,
+        )
+        return 0.0
+
+
+def commit_tier_for_invoice(settings: Settings, invoice_obj: Any) -> str:
+    """Identify the commit tier on a paid invoice by scanning line-item price
+    IDs against the configured commit Prices. Returns "" when none match."""
+    prices = commit_tier_prices(settings)
+    if not prices:
+        return ""
+    by_price = {price_id: tier for tier, price_id in prices.items()}
+
+    def _get(obj: Any, key: str) -> Any:
+        if isinstance(obj, dict):
+            return obj.get(key)
+        try:
+            return obj[key]
+        except Exception:  # noqa: BLE001
+            return getattr(obj, key, None)
+
+    lines = _get(invoice_obj, "lines")
+    data = _get(lines, "data") if lines is not None else None
+    for line in data or []:
+        price = _get(line, "price")
+        price_id = _get(price, "id") if price is not None else None
+        # Newer API shapes carry pricing.price_details.price instead of price
+        if not price_id:
+            pricing = _get(line, "pricing")
+            details = _get(pricing, "price_details") if pricing is not None else None
+            price_id = _get(details, "price") if details is not None else None
+        if price_id and str(price_id) in by_price:
+            return by_price[str(price_id)]
+    return ""
 
 
 def create_credit_pack_session(
@@ -168,10 +299,10 @@ def create_credit_pack_session(
     stripe_customer_id: str = "",
     customer_email: str = "",
 ) -> dict[str, Any]:
-    """One-time $29 credit pack Checkout (mode=payment).
+    """RETIRED (rate card v2): one-time credit pack Checkout (mode=payment).
 
-    The webhook applies the paid amount as a negative customer balance so it
-    offsets future metered invoices (prepaid allowance, not a seat).
+    Superseded by commit tiers — kept only so any in-flight v1 sessions and
+    their webhooks resolve cleanly. Do not wire new surfaces to this.
     """
     if not settings.stripe_secret_key:
         raise RuntimeError("STRIPE_SECRET_KEY is not configured")

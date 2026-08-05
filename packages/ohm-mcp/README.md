@@ -1,4 +1,4 @@
-# ohm-mcp
+# withohm-mcp
 
 Slim MCP server for [withOhm](https://www.withohm.dev): prompt cache
 replay, dynamic model switching (BYOK), and compliant public-web fetch as
@@ -8,7 +8,7 @@ Cursor tools — without installing the full gateway stack. Runs over stdio
 ## Install
 
 ```bash
-pip install ohm-mcp
+pip install withohm-mcp
 ```
 
 ## Cursor attach
@@ -35,6 +35,10 @@ Get a key from the $0 Intermediate seat at
 - `ohm_chat` — chat through the pipe; identical prompts replay from Redis cache.
 - `ohm_fetch_web` — compliant public URL fetch (robots-gated, PII-redacted, metered).
 - `ohm_usage` — usage snapshot: cache hit ratio, fetches, estimated pipe rent.
+- `ohm_models` — model ids the pipe routes to, including BYOK upstreams.
+- `ohm_savings` — cache savings snapshot: replayed prompts, estimated spend avoided.
+- `ohm_providers` — upstream provider and failover status.
+- `ohm_policy` — compliance policy: allowed web-fetch purposes and limits.
 
 ## Remote (stateless streamable HTTP)
 

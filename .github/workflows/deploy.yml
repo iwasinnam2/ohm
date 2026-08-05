@@ -1,0 +1,90 @@
+name: Deploy API
+
+# Ships the three API images to EKS with zero local tooling. Authenticates to
+# AWS via OIDC (role ohm-github-deployer, master-only trust); images are tagged
+# with the immutable git SHA; the rollout is verified and the live /health
+# endpoint is checked before the run goes green.
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [master]
+    paths:
+      - "src/**"
+      - "workers/**"
+      - "gateway-rs/**"
+      - "Dockerfile"
+      - "pyproject.toml"
+      - ".github/workflows/deploy.yml"
+
+permissions:
+  id-token: write
+  contents: read
+
+concurrency:
+  group: deploy-api
+  cancel-in-progress: false
+
+env:
+  AWS_REGION: us-east-1
+  ECR_REGISTRY: 594161136574.dkr.ecr.us-east-1.amazonaws.com
+  CLUSTER: at-utility-eks
+  NAMESPACE: at-utility
+
+jobs:
+  deploy:
+    name: build, push, roll
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::594161136574:role/ohm-github-deployer
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Log in to ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and push images (tag = git SHA)
+        run: |
+          TAG="${GITHUB_SHA::12}"
+          echo "TAG=$TAG" >> "$GITHUB_ENV"
+          docker build -f Dockerfile -t "$ECR_REGISTRY/at-utility/gateway:$TAG" .
+          docker build -f gateway-rs/Dockerfile -t "$ECR_REGISTRY/at-utility/gateway-rs:$TAG" gateway-rs
+          docker build -f workers/Dockerfile -t "$ECR_REGISTRY/at-utility/ingest-worker:$TAG" .
+          docker push "$ECR_REGISTRY/at-utility/gateway:$TAG"
+          docker push "$ECR_REGISTRY/at-utility/gateway-rs:$TAG"
+          docker push "$ECR_REGISTRY/at-utility/ingest-worker:$TAG"
+
+      - name: Roll deployments
+        run: |
+          aws eks update-kubeconfig --region "$AWS_REGION" --name "$CLUSTER"
+          kubectl -n "$NAMESPACE" set image deploy/gateway gateway="$ECR_REGISTRY/at-utility/gateway:$TAG"
+          kubectl -n "$NAMESPACE" set image deploy/gateway-rs gateway-rs="$ECR_REGISTRY/at-utility/gateway-rs:$TAG"
+          kubectl -n "$NAMESPACE" set image deploy/ingest-worker ingest="$ECR_REGISTRY/at-utility/ingest-worker:$TAG"
+          # CronJob image roll is best-effort: ohm-github-deployer may lack batch/cronjobs RBAC.
+          # Deployments above are the live API path; allotment job can lag until IAM is widened.
+          if ! kubectl -n "$NAMESPACE" set image cronjob/quota-allotment allot="$ECR_REGISTRY/at-utility/gateway:$TAG"; then
+            echo "::warning::quota-allotment CronJob image not updated (RBAC or missing object) — continuing"
+          fi
+          kubectl -n "$NAMESPACE" rollout status deploy/gateway --timeout=5m
+          kubectl -n "$NAMESPACE" rollout status deploy/gateway-rs --timeout=5m
+          kubectl -n "$NAMESPACE" rollout status deploy/ingest-worker --timeout=5m
+
+      - name: Verify live health
+        run: |
+          sleep 10
+          curl -fsS --max-time 15 https://api.withohm.dev/health
+
+      - name: Notify Observer sinks on failure
+        if: failure()
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY }}
+          LINEAR_TEAM_ID: ${{ secrets.LINEAR_TEAM_ID }}
+        run: >
+          python3 scripts/observer_notify.py
+          --title "API deploy failed"
+          --body "Deploy run went red — live API may be on the previous image: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"

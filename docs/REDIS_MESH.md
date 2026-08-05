@@ -15,7 +15,7 @@ Source of truth for leader/replica/global distribution. Consistency rules: [CONS
 | 1 | Local primary+replica split + lag smoke | Compose + `scripts/redis_replica_smoke.ps1` | Local only |
 | 2 | Leader `REDIS_URL`=reader, `REDIS_WRITE_URL`=primary | Secrets + outputs | Leader live |
 | 3 | Global Datastore secondaries + edge env | Terraform when `enable_edges=true` | **Live** `ldgnf-ohm`; edges us-west-2 + eu-west-2 |
-| 4 | `AT_RS_REDIS_WRITE` on gateway-rs | Implemented | Edges wired; Rust still fail-fast until TLS RESP |
+| 4 | `AT_RS_REDIS_WRITE` on gateway-rs | Implemented | TLS RESP in `resp.rs`; point secrets at `rediss://` to activate edge HITs |
 | 5 | Anycast | GA Terraform + DNS | **Charged** — `api` → `a8d1c391c281079a4.awsglobalaccelerator.com` (`v0.1.1-mesh`) |
 
 Lag drill (us-west-2 in-cluster): **PASS (~0–1000ms budget)**. Edge NLBs + all three GA endpoint groups **HEALTHY**. Railgun Phase 3–5 charge complete (merge + tag + region-drain).
@@ -32,13 +32,18 @@ Lag drill (us-west-2 in-cluster): **PASS (~0–1000ms budget)**. Edge NLBs + all
 
 ## Cache key (Python = Rust)
 
-Digest = SHA-256 of canonical JSON:
+Key = `at:{tenant}:cache:v2:{digest}`. Digest = SHA-256 of canonical JSON:
 
 ```json
 {"extras":{...},"messages":[...],"model":"..."}
 ```
 
 `sort_keys=true`, separators `,` `:`. Extras keys match Python chat path (`fetch_web_context`, `web_*`, `temperature`, `max_tokens`, `cache_control`).
+
+Key v2: message `content` strings are normalized before hashing — CRLF/CR to
+LF, outer whitespace stripped; interior whitespace untouched. Both sides must
+apply identical normalization (parity pinned by `tests/test_units.py::test_cache_key_v2_parity`
+and gateway-rs `cache_key_v2_parity_with_python`).
 
 Tenant prefix:
 
@@ -81,4 +86,7 @@ Set `REDIS_URL` / `AT_RS_REDIS` to ElastiCache **reader_endpoint**; keep writes 
 
 Rust never SETs on a replica when `AT_RS_REDIS_WRITE` is set. Anycast: `anycast_enabled=true` + `ga_nlb_endpoint_arns` after lag drill; then undeffer claims in [READINESS.md](READINESS.md).
 
-**TLS note:** ElastiCache leader uses `transit_encryption_enabled`. Python `rediss://` is fine; gateway-rs RESP is plain TCP today — use fail-fast `AT_RS_REDIS=127.0.0.1:9` until TLS RESP lands (edge still proxies to Python for HIT/MISS).
+**TLS note:** ElastiCache leader uses `transit_encryption_enabled`. Python and
+gateway-rs both speak `rediss://` (rustls). Until cluster secrets use real
+reader/primary endpoints, `AT_RS_REDIS=127.0.0.1:9` keeps the edge full-proxying
+to Python (see [OPERATIONS.md](OPERATIONS.md) edge cache tier).

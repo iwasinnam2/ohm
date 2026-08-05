@@ -41,6 +41,10 @@ class TenantRecord:
     expires_at: int = 0  # unix; 0 = no expiry
     soft_quota_usd: float = 0.0  # 0 = no soft USD cap
     request_cap: int = 0  # 0 = no request cap (metered via Redis separately)
+    # Chaos governor: org attribution
+    org_id: str = ""
+    cost_center: str = "default"
+    label: str = ""
 
     def to_json(self) -> str:
         return json.dumps(asdict(self))
@@ -70,6 +74,13 @@ class TenantRegistry:
         return tenant_key(tenant_id, "meta", "record")
 
     async def resolve(self, raw_key: str) -> Optional[TenantRecord]:
+        key_hash = hash_api_key(raw_key)
+        # Prefer persisted record (bootstrap keys may be upgraded with org_id).
+        tenant_id = await self._store.get(self._key_index(key_hash))
+        if tenant_id:
+            raw = await self._store.get(self._tenant_meta(tenant_id))
+            if raw:
+                return TenantRecord.from_json(raw)
         if raw_key in self._settings.api_key_set:
             return TenantRecord(
                 tenant_id=f"tenant_bootstrap_{raw_key[-8:]}",
@@ -77,19 +88,12 @@ class TenantRegistry:
                 status="active",
                 key_prefix=raw_key[:8],
                 created_at=0,
-                key_hash=hash_api_key(raw_key),
+                key_hash=key_hash,
                 # Local bootstrap inherits current ToS/DPA so MCP need not forge acks.
                 terms_version=self._settings.at_compliance_terms_version,
                 dpa_version=self._settings.at_compliance_dpa_version,
             )
-        key_hash = hash_api_key(raw_key)
-        tenant_id = await self._store.get(self._key_index(key_hash))
-        if not tenant_id:
-            return None
-        raw = await self._store.get(self._tenant_meta(tenant_id))
-        if not raw:
-            return None
-        return TenantRecord.from_json(raw)
+        return None
 
     async def issue(
         self,
@@ -102,6 +106,8 @@ class TenantRegistry:
         soft_quota_usd: float = 0.0,
         request_cap: int = 0,
         partner_days: int = DEFAULT_DESIGN_PARTNER_DAYS,
+        org_id: str = "",
+        cost_center: str = "default",
     ) -> tuple[str, TenantRecord]:
         tenant_id = f"tenant_{uuid.uuid4().hex[:12]}"
         raw_key = f"sk-at-{secrets.token_urlsafe(24)}"
@@ -123,6 +129,9 @@ class TenantRegistry:
             expires_at=exp,
             soft_quota_usd=float(soft_quota_usd or 0),
             request_cap=int(request_cap or 0),
+            org_id=org_id or "",
+            cost_center=(cost_center or "default").strip() or "default",
+            label=label or "",
         )
         payload = record.to_json()
         await self._store.set(self._key_index(key_hash), tenant_id, ttl_seconds=0)
@@ -130,6 +139,10 @@ class TenantRegistry:
         if label:
             await self._store.set(
                 tenant_key(tenant_id, "meta", "label"), label, ttl_seconds=0
+            )
+        if org_id:
+            await self._store.list_push(
+                f"at:org:{org_id}:tenant_ids", tenant_id
             )
         return raw_key, record
 
@@ -230,6 +243,39 @@ class TenantRegistry:
                 suspended += 1
         return suspended
 
+    async def set_cost_center(
+        self, tenant_id: str, cost_center: str
+    ) -> Optional[TenantRecord]:
+        raw = await self._store.get(self._tenant_meta(tenant_id))
+        if not raw:
+            return None
+        record = TenantRecord.from_json(raw)
+        record.cost_center = (cost_center or "default").strip() or "default"
+        return await self._save(record)
+
+    async def persist(self, record: TenantRecord) -> TenantRecord:
+        """Write a (possibly bootstrap/ephemeral) record into Redis."""
+        if record.key_hash:
+            await self._store.set(
+                self._key_index(record.key_hash), record.tenant_id, ttl_seconds=0
+            )
+        return await self._save(record)
+
+    async def attach_org(
+        self, tenant_id: str, org_id: str, *, seed: TenantRecord | None = None
+    ) -> Optional[TenantRecord]:
+        raw = await self._store.get(self._tenant_meta(tenant_id))
+        if not raw:
+            if seed is None or seed.tenant_id != tenant_id:
+                return None
+            record = seed
+        else:
+            record = TenantRecord.from_json(raw)
+        record.org_id = org_id
+        await self.persist(record)
+        await self._store.list_push(f"at:org:{org_id}:tenant_ids", tenant_id)
+        return record
+
     async def public_view(self, record: TenantRecord) -> dict[str, Any]:
         return {
             "tenant_id": record.tenant_id,
@@ -245,4 +291,7 @@ class TenantRegistry:
             "billing_delinquent_since": record.billing_delinquent_since or None,
             "terms_version": record.terms_version or None,
             "dpa_version": record.dpa_version or None,
+            "org_id": record.org_id or None,
+            "cost_center": record.cost_center or "default",
+            "label": record.label or None,
         }

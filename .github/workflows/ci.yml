@@ -16,6 +16,8 @@ jobs:
           python-version: "3.11"
           cache: pip
       - name: Install
+        # mcp extra: directory-verification tests import ohm_mcp + mcp SDK
+        # workers extra: ingest worker tests import bs4/playwright
         run: pip install -e ".[dev,billing,workers,mcp]"
       - name: Test
         run: pytest -q

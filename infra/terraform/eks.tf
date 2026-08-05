@@ -105,6 +105,15 @@ resource "aws_eks_cluster" "leader" {
   role_arn  = aws_iam_role.eks_cluster[0].arn
   version   = "1.31"
 
+  # API_AND_CONFIG_MAP enables EKS access entries (GitHub Actions deployer)
+  # while keeping the existing aws-auth ConfigMap mappings working.
+  # bootstrap_cluster_creator_admin_permissions must stay true (creation-time
+  # value); changing it forces cluster replacement.
+  access_config {
+    authentication_mode                         = "API_AND_CONFIG_MAP"
+    bootstrap_cluster_creator_admin_permissions = true
+  }
+
   vpc_config {
     subnet_ids              = concat(aws_subnet.private[*].id, aws_subnet.public[*].id)
     endpoint_private_access = true
@@ -141,6 +150,9 @@ resource "aws_eks_node_group" "leader" {
   ]
 
   tags = { Project = var.project }
+  # Cluster-autoscaler discovery tags live on the managed ASG via
+  # aws_autoscaling_group_tag in autoscaler.tf (node-group tags do not
+  # propagate to the ASG).
 }
 
 # Broader: allow Redis from entire VPC (EKS pods use CNI ENIs in VPC CIDR)
