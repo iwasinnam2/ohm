@@ -1,9 +1,9 @@
-# `/observer` slash command — execution plan
+# `/observer` slash command
 
-Status: **design, not built.** This is the execution method for adding a Slack
-slash command that runs the daily sweep on demand. It is separated from the rest of
-the automation work because it is the first piece that requires a new inbound HTTP
-endpoint on production, and that raises the security bar accordingly.
+Status: **built.** The gateway route, edge passthrough, and tests are in the repo; what
+remains is operator configuration (the Slack app, two secrets, and a webhook trigger on
+the automation). This is the first piece with a new inbound HTTP endpoint on
+production, so the security bar is set accordingly.
 
 ## What the user gets
 
@@ -35,23 +35,22 @@ flowchart LR
   run -->|"observer_notify"| chan["alerts channel"]
 ```
 
-## The gotcha to plan for first
+## The edge passthrough (the load-bearing detail)
 
 `/v1/slack/*` is a new path, and the Rust edge sits in front of every request. Its
-`authorize()` runs on anything not explicitly on the passthrough list and will reject a
-Slack request — which carries no `Bearer` token — with a **401** before Python ever
-sees it. This is the exact class of bug that made `/v1/admin/*` unreachable. The fix is
-the same: add Slack commands to the passthrough set next to the existing
-`is_stripe_webhook`, `is_ready`, `is_public_checkout`, `is_public_read` in
-[`gateway-rs/src/main.rs`](../../gateway-rs/src/main.rs):
+`authorize()` runs on anything not on the passthrough list and would reject a Slack
+request — which carries no `Bearer` token — with a **401** before Python ever saw it.
+That is the exact class of bug that made `/v1/admin/*` unreachable. So Slack commands
+join the passthrough set next to `is_stripe_webhook`, `is_ready`, `is_public_checkout`,
+`is_public_read` in [`gateway-rs/src/main.rs`](../../gateway-rs/src/main.rs):
 
 ```rust
 let is_slack_command =
     path_only.starts_with("/v1/slack/") && method == Method::POST;
 ```
 
-Fold it into `is_passthrough`. Verify it the same way the admin fix was verified: a
-signed request returns 200, everything else is untouched.
+Verified the same way the admin fix was: a signed request proxies through to Python and
+returns 200, while every non-Slack path is still guarded.
 
 ## Signature verification (the security core)
 
@@ -90,37 +89,47 @@ No bot token and no OAuth: slash command + signed request URL + the existing inc
 webhook for the reply covers the whole flow, which keeps the app single-workspace and
 undistributed.
 
-## Execution checklist
+## What is built vs what you configure
+
+The code is done and tested:
+
+- `POST /v1/slack/observer` in [`src/at_utility/main.py`](../../src/at_utility/main.py),
+  with the verification and allowlist helpers in
+  [`src/at_utility/slack.py`](../../src/at_utility/slack.py).
+- The edge passthrough in [`gateway-rs/src/main.rs`](../../gateway-rs/src/main.rs).
+- Settings in [`src/at_utility/config.py`](../../src/at_utility/config.py):
+  `slack_signing_secret`, `cursor_observer_webhook`, `slack_allow_team_ids`,
+  `slack_allow_user_ids`, `slack_command_cooldown_seconds` (default 60).
+- Tests in [`tests/test_slack.py`](../../tests/test_slack.py).
+
+What remains is operator configuration:
 
 1. **Automation:** add a webhook trigger to the daily automation alongside its
-   schedule; capture the generated URL (and its key, if the trigger issues one).
-2. **Edge:** add `is_slack_command` to the passthrough set; build and verify a signed
-   request proxies through while a Bearer-less non-Slack request is unaffected.
-3. **Gateway:** add `POST /v1/slack/observer` — raw-body read, timestamp + HMAC
-   verification, caller allowlist, 3-second ephemeral ack, background trigger of
-   `CURSOR_OBSERVER_WEBHOOK`.
-4. **Secrets:** add `SLACK_SIGNING_SECRET` and `CURSOR_OBSERVER_WEBHOOK` to
-   `at-utility-secrets`; roll `gateway` and `gateway-rs`.
-5. **Tests:** unit-cover signature verification (valid, tampered, stale timestamp) and
-   the allowlist; these run without network. Locally, curl a correctly-signed request
-   and confirm the 200 ack.
-6. **Slack app:** create the `/observer` command with request URL
-   `https://api.withohm.dev/v1/slack/observer`, add the `commands` scope. Do this
-   **last** — Slack pings the URL on save, so the endpoint must be deployed first.
-7. **Deploy order:** merge so `deploy.yml` ships both planes, confirm the edge and
-   gateway are live, then point the Slack command at the URL.
+   schedule; capture the generated URL.
+2. **Secrets:** add `SLACK_SIGNING_SECRET`, `CURSOR_OBSERVER_WEBHOOK`,
+   `SLACK_ALLOW_TEAM_IDS`, `SLACK_ALLOW_USER_IDS` to `at-utility-secrets`. The Python
+   gateway reads the whole secret via `envFrom`, so no manifest change is needed. Roll
+   `deploy/gateway` and `deploy/gateway-rs`.
+3. **Slack app:** create the `/observer` command with request URL
+   `https://api.withohm.dev/v1/slack/observer` and the `commands` scope. Do this
+   **last** — Slack pings the URL on save, so the endpoint must be live first.
 
-## Cost and abuse notes
+Until `SLACK_SIGNING_SECRET` is set the route returns `503`, so it is inert on the
+current deployment and nothing is exposed by merging ahead of configuration. Likewise,
+because the allowlist is fail-closed, leaving `SLACK_ALLOW_*` unset denies everyone
+rather than opening the endpoint.
+
+## Cost and abuse controls
 
 Each invocation starts a cloud-agent run that costs model tokens and does real work, so
-the allowlist is not optional and a light per-user cooldown (for example, ignore a
-repeat within 60 seconds) is worth adding. Keep the app undistributed; there is no
-reason for another workspace to reach this endpoint, and undistributed keeps the attack
-surface to a single install.
+two controls are built in and not optional: the fail-closed allowlist above, and a
+per-user cooldown (`slack_command_cooldown_seconds`, default 60) that returns a "just
+ran" ephemeral instead of firing a second trigger. Keep the Slack app undistributed —
+no other workspace has any reason to reach this endpoint.
 
 ## What this deliberately does not add
 
 No buttons, no Events API, no bot user. Each of those needs a persistent interaction
 handler and a broader-scoped token, which is a larger commitment than an on-demand
 trigger justifies. If an "acknowledge / snooze" workflow is ever wanted, it builds on
-the same request-URL plumbing this plan establishes.
+the same request-URL plumbing this establishes.

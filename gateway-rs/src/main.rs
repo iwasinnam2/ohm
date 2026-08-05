@@ -516,7 +516,13 @@ async fn handle_inner(
     // Savings receipts / aggregate stats are unauthenticated by design —
     // Python applies its own per-IP token bucket on these routes.
     let is_public_read = path_only.starts_with("/v1/public/") && method == Method::GET;
-    let is_passthrough = is_stripe_webhook || is_ready || is_public_checkout || is_public_read;
+    // Slack slash commands carry a Slack signature, not a Bearer key; Python
+    // verifies the signature. Without this the edge would 401 them like it did
+    // /v1/admin/* before AT_ADMIN_API_KEYS was wired in.
+    let is_slack_command =
+        path_only.starts_with("/v1/slack/") && method == Method::POST;
+    let is_passthrough =
+        is_stripe_webhook || is_ready || is_public_checkout || is_public_read || is_slack_command;
     let mut edge_verified = false;
     let token = if is_passthrough {
         None
@@ -552,6 +558,8 @@ async fn handle_inner(
             "public checkout"
         } else if is_public_read {
             "public read"
+        } else if is_slack_command {
+            "slack command"
         } else {
             "stripe webhook"
         };

@@ -80,6 +80,15 @@ class Settings(BaseSettings):
     at_edge_shared_secret: str = ""
 
     at_admin_api_keys: str = ""
+    # Slack /observer slash command. slack_signing_secret verifies inbound
+    # requests; cursor_observer_webhook is the automation's webhook trigger URL
+    # fired on a valid command. The allowlists are fail-closed — an unset
+    # allowlist denies everyone, because a command starts a billable run.
+    slack_signing_secret: str = ""
+    cursor_observer_webhook: str = ""
+    slack_allow_team_ids: str = ""
+    slack_allow_user_ids: str = ""
+    slack_command_cooldown_seconds: int = 60
     stripe_secret_key: str = ""
     stripe_webhook_secret: str = ""
     # Recurring seat Price IDs ($0 Intermediate membership recommended)

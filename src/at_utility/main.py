@@ -49,6 +49,7 @@ from at_utility.ledger import CleanLedger, normalize_path
 from at_utility.org_api import month_utc_bounds, router as org_router
 from at_utility.orgs import OrgRegistry
 from at_utility.savings import SAVINGS_DISCLAIMER, dual_ledger
+from at_utility import slack
 from at_utility.sso import SsoService
 from at_utility.tenants import TenantRecord, TenantRegistry
 
@@ -1473,6 +1474,81 @@ async def stripe_webhook(request: Request) -> dict[str, Any]:
             subscription_status,
         )
     return {"received": True, "type": event_type}
+
+
+async def _trigger_observer_run(settings: Settings) -> None:
+    """Fire the automation's webhook trigger. Best-effort: a failure here is
+    logged, never surfaced to Slack, because the ack already went out."""
+    url = (settings.cursor_observer_webhook or "").strip()
+    if not url:
+        log.warning("slack /observer: CURSOR_OBSERVER_WEBHOOK unset; nothing to trigger")
+        return
+    import httpx
+
+    try:
+        async with httpx.AsyncClient(timeout=15) as client:
+            await client.post(url, json={"source": "slack:/observer"})
+        log.info("slack /observer: automation trigger fired")
+    except Exception as exc:  # noqa: BLE001 — trigger failure must not crash the task
+        log.warning("slack /observer: trigger failed: %s", exc)
+
+
+@app.post("/v1/slack/observer")
+async def slack_observer(request: Request) -> Response:
+    """Slack slash command to run the daily sweep on demand.
+
+    Verifies Slack's signature over the raw body, enforces a fail-closed caller
+    allowlist and a per-user cooldown, acks within Slack's 3-second deadline,
+    and triggers the sweep asynchronously. Results post to the channel through
+    the normal observer_notify path, not from here.
+    """
+    raw = await request.body()
+    settings = state.settings
+    if not settings.slack_signing_secret:
+        raise HTTPException(status_code=503, detail="slack command not configured")
+
+    timestamp = request.headers.get("x-slack-request-timestamp", "")
+    signature = request.headers.get("x-slack-signature", "")
+    if not slack.verify_slack_signature(
+        settings.slack_signing_secret, timestamp, raw, signature
+    ):
+        raise HTTPException(status_code=401, detail="invalid slack signature")
+
+    form = slack.parse_command(raw)
+    team_id = form.get("team_id", "")
+    user_id = form.get("user_id", "")
+    if not slack.caller_allowed(
+        settings.slack_allow_team_ids,
+        settings.slack_allow_user_ids,
+        team_id,
+        user_id,
+    ):
+        return JSONResponse(
+            {
+                "response_type": "ephemeral",
+                "text": "You are not on the allowlist for /observer.",
+            }
+        )
+
+    cooldown = settings.slack_command_cooldown_seconds
+    if cooldown > 0 and user_id:
+        cd_key = tenant_key("slack", f"observer:cooldown:{user_id}", state.settings.at_region)
+        if await state.store.get(cd_key):
+            return JSONResponse(
+                {
+                    "response_type": "ephemeral",
+                    "text": f"Just ran — give it {cooldown}s before triggering again.",
+                }
+            )
+        await state.store.set(cd_key, "1", cooldown)
+
+    asyncio.create_task(_trigger_observer_run(settings))
+    return JSONResponse(
+        {
+            "response_type": "ephemeral",
+            "text": "Running the daily sweep — results will post to the channel.",
+        }
+    )
 
 
 class EdgeHitBody(BaseModel):
