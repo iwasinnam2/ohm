@@ -4,6 +4,7 @@
 **Logo:** Ω  
 **Category:** AI traffic utility / model ingress — not a wrapper.
 
+> **Exact-replay hits that cost zero upstream tokens. Cross-provider consistency. Locality — Redis edge reads. Replay and audit value.**
 > Change one base URL (or one Cursor attach). Keep your keys and SDKs. Gain prompt replay, a clearer pipe, compliant web context — and a bill that rents the plumbing, not the model.
 
 ## Hosts

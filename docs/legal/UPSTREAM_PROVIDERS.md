@@ -20,6 +20,18 @@ Operator runbook before enabling a provider in production. Re-check when provide
 | Safety / prohibited uses | Customer ToS + purpose gates | Align refusals with Anthropic usage policy |
 | Logging | Same cache rules as OpenAI path | Disclose subprocessors |
 
+## OpenAI-compatible vendors (Gemini, DeepSeek, Moonshot/Kimi, Z.ai/GLM, Qwen, xAI/Grok)
+
+Routed by model prefix to each vendor's documented OpenAI-compatible endpoint
+(`gemini-*`, `deepseek-*`, `kimi-*`/`moonshot-*`, `glm-*`, `qwen*`, `grok-*`).
+
+| Topic | Ohm posture | Operator action |
+|-------|-------------|-----------------|
+| BYOK-first | Customer sends their vendor key via `X-Ohm-Upstream-Key`; env keys are dev fallback / enterprise managed pool only | Confirm each vendor's ToS permits proxy/BYOK use before enabling env keys in production |
+| Endpoint drift | Base URLs configurable per vendor (`{VENDOR}_BASE_URL`) | Re-verify OpenAI-compat endpoints when vendors ship API changes |
+| Data residency / export | Some vendors (Moonshot, Z.ai, Qwen) operate non-US/UK regions | Check customer data-routing obligations before enabling for regulated tenants |
+| Logging / retention | Same identical-request Redis cache rules as OpenAI path | Disclose subprocessors; honor `no_store` |
+
 ## Cache training hard-deny
 
 `AT_COMPLIANCE_ALLOW_CACHE_TRAINING=false`. Any code path that bulk-exports Redis chat payloads for training must refuse when this flag is false (enforced in gateway helpers).

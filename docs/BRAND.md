@@ -19,6 +19,10 @@ Launch GTM (from zero partners): [LAUNCH_GTM.md](LAUNCH_GTM.md).
 Contextual Cursor install chips: [CURSOR_DISCOVERY.md](CURSOR_DISCOVERY.md).  
 Site on Amplify: [AMPLIFY_SITE.md](../infra/runbooks/AMPLIFY_SITE.md).
 
+**Core slogan (four pillars):**
+
+> Exact-replay hits that cost zero upstream tokens. Cross-provider consistency. Locality — Redis edge reads. Replay and audit value.
+
 **Promise (one sentence):**
 
 > Change one base URL (or one Cursor attach). Keep your keys and SDKs. Gain prompt replay, a clearer pipe, compliant web context — and a bill that rents the plumbing, not the model.
