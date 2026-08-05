@@ -7,7 +7,15 @@ providers. See `README.md` and `docs/` for product/architecture details; standar
 live in `README.md`, `pyproject.toml`, `docker-compose.yml`, and `site/package.json`. The
 notes below are the non-obvious things for running it in this cloud environment.
 
-### Services (local dev runs them natively, not via Docker)
+### Cloud Agent Builds
+
+Repo-managed env config lives in [`.cursor/environment.json`](.cursor/environment.json)
+(Dockerfile base + `install` + `start`). Cursor **Builds** clone the repo and run `install`
+ahead of agent starts (formerly the dashboard “update script”). Redis is started via
+`start` (disk-only Builds do not keep processes). Do not put `uvicorn` / `npm run dev` /
+gateway binaries in `install` — start those when testing (see table below).
+
+### Services (local / cloud agents run them natively, not via Docker Compose)
 
 | Service | Dir | Dev command | Port | Notes |
 |---------|-----|-------------|------|-------|
