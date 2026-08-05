@@ -113,10 +113,26 @@ whole sequence with the same no-history discipline as `rotate_stripe_key.ps1`:
 powershell -File scripts/issue_admin_key.ps1
 ```
 
-It reads the current list, generates a 256-bit key, appends it, rolls
-`deploy/gateway`, polls `/v1/admin/ops` until the key is accepted, and prints the
-value exactly once at the end for pasting into Cursor Secrets. To take one out of
-circulation:
+It reads the current list, generates a 256-bit key, appends it, rolls both planes,
+polls `/v1/admin/ops` until the key is accepted, and prints the value exactly once at
+the end for pasting into Cursor Secrets.
+
+Nothing validates the shape of a key — `is_admin_api_key` is set membership, and there
+is no prefix check anywhere in the auth path — so the readable part is yours to choose
+and exists only to make the key recognisable in an audit:
+
+```powershell
+powershell -File scripts/issue_admin_key.ps1 -Prefix "ohm-observer-"
+```
+
+The random tail is the part not to hand-write. This key can mint tenants and is
+reachable on a public endpoint, so it is generated from 32 bytes of CSPRNG output —
+a notch above the 24 the product uses for its own tenant keys in `tenants.py`. The
+script rejects a prefix containing a comma or surrounding whitespace, because
+`AT_ADMIN_API_KEYS` is comma-separated and both planes trim each entry, so either
+would corrupt the key silently.
+
+To take one out of circulation:
 
 ```powershell
 powershell -File scripts/issue_admin_key.ps1 -Revoke

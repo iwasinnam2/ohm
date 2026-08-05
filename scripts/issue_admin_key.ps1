@@ -103,6 +103,11 @@ function Wait-ForStatus {
 }
 
 function Get-NewKey {
+    # AT_ADMIN_API_KEYS is comma-separated and both planes trim each entry, so a
+    # comma would split the key in two and surrounding space would vanish
+    # silently. The generated tail is url-safe base64 and can contain neither.
+    if ($Prefix -match ',') { throw "Prefix must not contain a comma: AT_ADMIN_API_KEYS is a comma-separated list." }
+    if ($Prefix -ne $Prefix.Trim()) { throw "Prefix must not start or end with whitespace: both planes trim it away." }
     $bytes = New-Object 'System.Byte[]' 32
     $rng = [System.Security.Cryptography.RandomNumberGenerator]::Create()
     try { $rng.GetBytes($bytes) } finally { $rng.Dispose() }
