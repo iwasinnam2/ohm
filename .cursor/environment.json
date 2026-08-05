@@ -1,0 +1,15 @@
+{
+  "name": "ohm",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": ".."
+  },
+  "install": "python3 -m venv .venv\n.venv/bin/pip install -U pip\n.venv/bin/pip install -e \".[dev,billing,workers,mcp]\"\n.venv/bin/playwright install chromium\nnpm install --prefix site\ncargo build --manifest-path gateway-rs/Cargo.toml",
+  "start": "redis-server --daemonize yes --port 6379 || true",
+  "ports": [
+    { "name": "python-gateway", "port": 8080 },
+    { "name": "rust-edge", "port": 8081 },
+    { "name": "ingest", "port": 8090 },
+    { "name": "site", "port": 3000 }
+  ]
+}
