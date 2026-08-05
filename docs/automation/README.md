@@ -73,6 +73,22 @@ are worth a decision before it holds anything real: it sits in `aws-us-east-2` w
 production is deliberately single-region in `us-east-1`, and its IP allowlist is empty
 with `block_public_connections: false`, so it accepts connections from anywhere.
 
+## Why the prompt survives being pasted as plaintext
+
+The automation prompt box strips markdown: backticks, code fences, and bullet markers
+all disappear, and lists collapse into blank-line-separated paragraphs. That is fine —
+the model reads the content the same either way, and every command in the prompt sits
+on its own line, so losing the fences never joins two commands together.
+
+Two consequences shaped how the prompt is written. It contains **no markdown links**,
+because a link's target is dropped on paste and only its text survives. And **every
+path is relative to the repository root**, not to this directory, because the prompt
+executes from `/workspace`. An earlier draft used `../../scripts/observer_notify.py`
+and a bare `UPKEEP_LOG.md`, which are correct for a file living in `docs/automation/`
+and wrong for a prompt: the first is a dead path from the root, and the second would
+have had the agent create a new log at the repo root every night instead of appending
+to the real one.
+
 ## Why the prompt file has no preamble
 
 The prompt is the entire file, deliberately. An earlier draft opened with explanatory

@@ -1,8 +1,7 @@
 # Daily upkeep and community listening
 
-Every line of this file is the automation prompt. Select all, paste, done — there is
-no preamble to trim and no horizontal rule to trip over. Operator notes on configuring
-the trigger live in [README.md](README.md).
+Your working directory is the repository root, `/workspace`. Every path below is
+written relative to that root, so they can be used verbatim.
 
 ## Role
 
@@ -51,7 +50,7 @@ in the report as a recommendation.
 
 **Linear** — list open issues whose title starts with `[observer]`. This is the
 highest-value connector for this automation, because
-[`scripts/observer_notify.py`](../../scripts/observer_notify.py) dedups on exact
+`scripts/observer_notify.py` dedups on exact
 title: one stale open issue silently swallows the next identical page, so a forgotten
 ticket quietly disables an alarm. Report any older than three days, and file findings
 here instead of just narrating them. Do not close an issue unless you have positively
@@ -63,7 +62,8 @@ invoices ahead of dunning, and whether live prices and meters still match
 `pricing/rate_card.v2.json`. Never create, modify, or refund anything.
 
 **Cursor Cloud** (always available) — check that the automation itself is healthy,
-since `observer-meta.yml` has no watcher of its own. `list-cloud-agents` shows whether
+since `.github/workflows/observer-meta.yml` has no watcher of its own.
+`list-cloud-agents` shows whether
 recent 18:00 runs failed, and `list-environment-builds` with `environment-build-logs`
 catches the environment install rotting, which would otherwise degrade every future
 run quietly.
@@ -86,7 +86,7 @@ Read the result with the distinction the Observer is built around:
 - **Section 1 stale** means a *schedule* looks paused — GitHub disables crons after
   roughly 60 days of repo inactivity, and credentials expire. It does **not** mean
   production is down. The age windows come from `EXPECTED` in
-  [`scripts/observer_meta.py`](../../scripts/observer_meta.py) and are deliberately
+  `scripts/observer_meta.py` and are deliberately
   wider than the nominal schedule, because a fifteen-minute cadence routinely
   stretches to two or three hours on hosted runners. Report a stale window as "schedule may be paused" and point at
   Actions → the workflow → Enable. Do not try to re-enable it yourself.
@@ -222,12 +222,12 @@ Voice, taken from the repo's own documented register rather than invented:
 > Register: builder sharing an interesting system. Factual, specific, a little
 > understated. No urgency, no "please try", no exclamation marks. We describe what
 > the thing does; the reader decides.
-> — [`docs/distribution/LAUNCH_POSTS.md`](../distribution/LAUNCH_POSTS.md)
+> — `docs/distribution/LAUNCH_POSTS.md`
 
 > concede what is true immediately, correct what is false precisely, never get
 > defensive, never argue tone. A concession delivered fast and plainly earns more
 > than any rebuttal.
-> — [`docs/distribution/SIEGE_DEFENSE.md`](../distribution/SIEGE_DEFENSE.md)
+> — `docs/distribution/SIEGE_DEFENSE.md`
 
 Shape:
 
@@ -261,7 +261,7 @@ find the thread in one click.
   noise that trains people to stop reading them.
 - When you do open one: branch `cursor/daily-upkeep-<YYYY-MM-DD>-aa67`, title
   `Daily upkeep <YYYY-MM-DD>`, body containing the report and the HN draft. Prepend a
-  matching entry to [`UPKEEP_LOG.md`](UPKEEP_LOG.md) and trim it to the newest 30.
+  matching entry to `docs/automation/UPKEEP_LOG.md` and trim it to the newest 30.
 
 ## Escalation
 
@@ -284,7 +284,7 @@ section, and are added under Cursor Dashboard → Cloud Agents → Secrets:
   Redis health and the Stripe meter DLQ depth. Without it, an underbilling backlog
   can grow unseen.
 - `LINEAR_API_KEY` — turns on section 7. This one matters more than it looks:
-  [`scripts/observer_notify.py`](../../scripts/observer_notify.py) dedups on exact
+  `scripts/observer_notify.py` dedups on exact
   issue title, so a single stale open `[observer]` issue silently swallows the next
   identical page. One such issue was already suppressing the heartbeat alert in
   August 2026. Add `LINEAR_TEAM_ID` alongside it to let `--notify` file issues.
