@@ -49,9 +49,9 @@ be visible to you anyway — visibility is not permission. Anything needing a wr
 in the report as a recommendation.
 
 **Linear** — list open issues whose title starts with `[observer]`. This is the
-highest-value connector for this automation, because
-`scripts/observer_notify.py` dedups on exact
-title: one stale open issue silently swallows the next identical page, so a forgotten
+highest-value connector for this automation, because `scripts/observer_notify.py`
+dedups on exact title: one stale open issue silently swallows the next identical
+page, so a forgotten
 ticket quietly disables an alarm. Report any older than three days, and file findings
 here instead of just narrating them. Do not close an issue unless you have positively
 confirmed the underlying condition is resolved.
@@ -63,8 +63,8 @@ invoices ahead of dunning, and whether live prices and meters still match
 
 **Cursor Cloud** (always available) — check that the automation itself is healthy,
 since `.github/workflows/observer-meta.yml` has no watcher of its own.
-`list-cloud-agents` shows whether
-recent 18:00 runs failed, and `list-environment-builds` with `environment-build-logs`
+`list-cloud-agents` shows whether recent 18:00 runs failed, and
+`list-environment-builds` with `environment-build-logs`
 catches the environment install rotting, which would otherwise degrade every future
 run quietly.
 
@@ -86,9 +86,9 @@ Read the result with the distinction the Observer is built around:
 - **Section 1 stale** means a *schedule* looks paused — GitHub disables crons after
   roughly 60 days of repo inactivity, and credentials expire. It does **not** mean
   production is down. The age windows come from `EXPECTED` in
-  `scripts/observer_meta.py` and are deliberately
-  wider than the nominal schedule, because a fifteen-minute cadence routinely
-  stretches to two or three hours on hosted runners. Report a stale window as "schedule may be paused" and point at
+  `scripts/observer_meta.py` and are deliberately wider than the nominal schedule,
+  because a fifteen-minute cadence routinely stretches to two or three hours on
+  hosted runners. Report a stale window as "schedule may be paused" and point at
   Actions → the workflow → Enable. Do not try to re-enable it yourself.
 - **Section 2 red** means the live customer surface is failing right now. That is an
   outage, and it outranks everything else in this checklist.
@@ -284,10 +284,10 @@ section, and are added under Cursor Dashboard → Cloud Agents → Secrets:
   Redis health and the Stripe meter DLQ depth. Without it, an underbilling backlog
   can grow unseen.
 - `LINEAR_API_KEY` — turns on section 7. This one matters more than it looks:
-  `scripts/observer_notify.py` dedups on exact
-  issue title, so a single stale open `[observer]` issue silently swallows the next
-  identical page. One such issue was already suppressing the heartbeat alert in
-  August 2026. Add `LINEAR_TEAM_ID` alongside it to let `--notify` file issues.
+  `scripts/observer_notify.py` dedups on exact issue title, so a single stale open
+  `[observer]` issue silently swallows the next identical page. One such issue was
+  already suppressing the heartbeat alert in August 2026. Add `LINEAR_TEAM_ID`
+  alongside it to let `--notify` file issues.
 - `SLACK_WEBHOOK_URL` — lets `--notify` reach a human out of band.
 
 The Linear MCP connector is an alternative to `LINEAR_API_KEY` and covers the same
