@@ -19,6 +19,8 @@ node_modules/
 site/.next/
 .cursor/*
 !.cursor/mcp.json.example
+!.cursor/environment.json
+!.cursor/Dockerfile
 !.cursor/skills/
 !.cursor/skills/**/
 .terraform/
