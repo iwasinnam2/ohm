@@ -144,8 +144,9 @@ if ($Revoke) {
 
     Set-AdminKeyList -Keys $remaining
     Write-Host "Patched. Admin key count is now $($remaining.Count). Rolling gateway..."
-    Invoke-Kubectl @('-n', $Namespace, 'rollout', 'restart', 'deploy/gateway') | Out-Null
+    Invoke-Kubectl @('-n', $Namespace, 'rollout', 'restart', 'deploy/gateway', 'deploy/gateway-rs') | Out-Null
     Invoke-Kubectl @('-n', $Namespace, 'rollout', 'status', 'deploy/gateway', '--timeout=180s') | Out-Null
+    Invoke-Kubectl @('-n', $Namespace, 'rollout', 'status', 'deploy/gateway-rs', '--timeout=180s') | Out-Null
 
     if (Wait-ForStatus -Key $target -Expected 403) {
         Write-Host "Revoked - /v1/admin/ops now rejects that key."
@@ -162,13 +163,18 @@ $newKey = Get-NewKey
 Set-AdminKeyList -Keys (@($keys) + $newKey)
 Write-Host "Patched. Admin key count is now $($keys.Count + 1). Rolling gateway..."
 
-# Only the Python control plane pulls the whole secret through envFrom, and it is
-# the one serving /v1/admin/*. gateway-rs takes named keys and is unaffected.
-Invoke-Kubectl @('-n', $Namespace, 'rollout', 'restart', 'deploy/gateway') | Out-Null
+# Both planes need the new key. The Python control plane serves /v1/admin/* and
+# authorizes with admin_dep; the Rust edge reads AT_ADMIN_API_KEYS purely so it
+# stops denying admin keys with a 401 before Python ever sees them.
+Invoke-Kubectl @('-n', $Namespace, 'rollout', 'restart', 'deploy/gateway', 'deploy/gateway-rs') | Out-Null
 Invoke-Kubectl @('-n', $Namespace, 'rollout', 'status', 'deploy/gateway', '--timeout=180s') | Out-Null
+Invoke-Kubectl @('-n', $Namespace, 'rollout', 'status', 'deploy/gateway-rs', '--timeout=180s') | Out-Null
 
 if (-not (Wait-ForStatus -Key $newKey -Expected 200)) {
-    throw "Key was patched but /v1/admin/ops never accepted it. Check the secret and the rollout before retrying."
+    throw ("Key was patched but /v1/admin/ops never accepted it. A 403 means the Python " +
+        "control plane has not picked up the secret; a 401 means the Rust edge is still " +
+        "denying the key before Python sees it, which also happens if the edge is running " +
+        "a build from before it read AT_ADMIN_API_KEYS.")
 }
 
 Write-Host ""

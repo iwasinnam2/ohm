@@ -143,6 +143,16 @@ spec:
                 secretKeyRef:
                   name: at-utility-secrets
                   key: AT_API_KEYS
+            # Admin keys are absent from the Redis tenant index, so the edge
+            # needs to know them to stop denying /v1/admin/* with a 401 before
+            # Python's admin_dep sees the request. Optional: unset means the
+            # admin plane is unreachable through the edge, not that it is open.
+            - name: AT_ADMIN_API_KEYS
+              valueFrom:
+                secretKeyRef:
+                  name: at-utility-secrets
+                  key: AT_ADMIN_API_KEYS
+                  optional: true
             # Shared secret for metered cache HITs (/internal/edge-hit).
             # Empty/missing => edge full-proxies and Python meters the hit.
             - name: AT_RS_EDGE_SECRET

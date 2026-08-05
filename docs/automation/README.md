@@ -138,13 +138,22 @@ access.
 every tenant key at once, so the script refuses to write one and refuses to revoke
 the last remaining key.
 
-**Which deployment to roll.** Only the Python control plane pulls the whole secret
-through `envFrom`, and it is the one serving the admin endpoints. `gateway-rs` takes
-named keys and is unaffected.
+**Rolling both planes.** The Python control plane serves `/v1/admin/*` and authorizes
+with `admin_dep`. The Rust edge also needs the key, for a reason that is not obvious
+and cost an afternoon to find: `/v1/admin/*` is not on the edge's passthrough list, so
+every request runs through `authorize`, which knows only `AT_API_KEYS` and the Redis
+index of issued *tenant* keys. An admin-only key is in neither, so with Redis
+reachable the edge returned `EdgeAuth::Denied` and answered **401** before Python ever
+saw the request. The edge now reads `AT_ADMIN_API_KEYS` and returns `Unverified` for
+those keys — it stops denying them, vouches for nothing, and leaves the decision to
+`admin_dep`. Unknown keys are still denied at the edge exactly as before.
 
-**Verifying before you trust it.** A `403` after the rollout almost always means an
-unpatched secret or an un-rolled pod rather than a bad key, so the script polls
-rather than assuming, and fails loudly if the key never becomes valid.
+**Reading the failure.** After the rollout, `403` and `401` mean different things and
+point at different planes. A `403` is Python: the key reached `admin_dep` and was not
+in its set, so the secret or the `deploy/gateway` rollout is behind. A `401` is the
+edge: it rejected the key before Python, which also happens when `gateway-rs` is
+running a build from before it read `AT_ADMIN_API_KEYS`. The script polls rather than
+assuming, and says which of the two it saw.
 
 Afterwards, run `python3 scripts/daily_upkeep.py` and confirm section 2 shows an
 `admin ops` line instead of a `SKIP` — that is the same code path the automation
