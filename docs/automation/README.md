@@ -37,7 +37,13 @@ is 18:00 UTC. For a local 6pm year-round, prefix the timezone: `CRON_TZ=Europe/L
 
 **Repository.** Set it explicitly to `iwasinnam2/ohm`. For schedule and Slack triggers
 Cursor defaults to *no repository*, and a no-repo run never clones the code, so every
-step in the prompt would fail on a missing `/workspace` and it could not open a PR.
+step in the prompt would fail and it could not open a PR.
+
+Note that `ohm` is the repository *name*, not a filesystem path — the checkout lands
+at `/workspace`, not `/ohm`. The prompt does not depend on either: it opens with
+`cd "$(git rev-parse --show-toplevel)"`, which lands at the repository root wherever
+the environment happens to put it, including a multi-repo layout where each repo gets
+its own subdirectory.
 
 **Prompt.** Paste the whole of `DAILY_1800.md`. Do not add a heading, a wrapper, or
 `---` delimiters around it.
@@ -85,32 +91,81 @@ you which consumer leaked it.
 
 ### `OHM_ADMIN_KEY`
 
-This is a withOhm admin key, matched by `Settings.is_admin_api_key` against the
-comma-separated `AT_ADMIN_API_KEYS` on the cluster (which falls back to `AT_API_KEYS`
-when empty). It is not something you fetch from a provider — you mint it.
+Unlike the other two, this is not issued by a provider — you mint it yourself. There
+is no signature, no derivation, and no required format: `Settings.is_admin_api_key`
+in `src/at_utility/config.py` does a plain set-membership test against the
+comma-separated `AT_ADMIN_API_KEYS` environment variable. A key is "valid" precisely
+because it appears in that list on the cluster, which means minting one is three
+steps — generate a strong random string, register it, roll the pods that read it.
 
 **It is not a read-only credential, and that is the part worth pausing on.** The same
 `admin_dep` dependency in `src/at_utility/main.py` gates four endpoints: `/v1/admin/ops`,
 which is all the sweep needs, plus tenant minting, tenant status changes, and checkout
 creation. A key handed to an unattended nightly job can therefore create tenants.
+Because the variable is a list, mint a *dedicated* key and append it rather than
+reusing an existing one — revocation then stays surgical and an incident stays
+attributable.
 
-Because `AT_ADMIN_API_KEYS` is a list, the containment is straightforward: generate a
-distinct high-entropy key, append it to the existing list rather than replacing it,
-and use only that value for the automation.
+**1. Generate.** The prefix does nothing for validation; it exists so the key is
+recognisable in an audit and greppable if it ever turns up somewhere it should not.
+Keep the value in a shell variable rather than printing it yet.
 
 ```bash
-python3 -c "import secrets; print('sk-at-obs-' + secrets.token_urlsafe(32))"
+NEW_KEY=$(python3 -c "import secrets; print('sk-at-obs-' + secrets.token_urlsafe(32))")
 ```
 
-Append it to the `at-utility-secrets` Kubernetes secret's `AT_ADMIN_API_KEYS` (see
-`infra/README.md` for how that secret is created) and roll the gateway. Paste the
-value into Cursor Secrets and nowhere else. To revoke, drop that one entry from the
-list and roll — no other consumer is affected, and no other credential rotates.
+**2. Register it, appending to what is already there.** Read the current list, add to
+it, and patch:
+
+```bash
+CURRENT=$(kubectl -n at-utility get secret at-utility-secrets \
+  -o jsonpath='{.data.AT_ADMIN_API_KEYS}' | base64 -d)
+kubectl -n at-utility patch secret at-utility-secrets --type merge \
+  -p "{\"stringData\":{\"AT_ADMIN_API_KEYS\":\"${CURRENT},${NEW_KEY}\"}}"
+```
+
+There is a trap here worth reading twice. `admin_api_key_set` resolves
+`self.at_admin_api_keys or self.at_api_keys`, so when `AT_ADMIN_API_KEYS` is empty the
+whole of `AT_API_KEYS` is admin-capable by fallback. If `CURRENT` comes back empty and
+you patch in only the new key, every key that was previously admin through that
+fallback loses access the moment the pods roll. Check what `CURRENT` holds first, and
+if it is empty, write the existing `AT_API_KEYS` values into the list explicitly
+alongside the new one.
+
+**3. Roll the pods that read it.** The Python control plane is the only deployment
+that pulls the whole secret through `envFrom`, and it is the one serving the admin
+endpoints. `gateway-rs` takes named keys only and does not need this.
+
+```bash
+kubectl -n at-utility rollout restart deployment/gateway
+kubectl -n at-utility rollout status deployment/gateway
+```
+
+**4. Verify before you store it.** A `200` means the key is live; a `403` means it is
+not in the set, which is almost always an un-rolled pod or an unpatched secret.
+
+```bash
+curl -s -o /dev/null -w '%{http_code}\n' https://api.withohm.dev/v1/admin/ops \
+  -H "Authorization: Bearer $NEW_KEY"
+```
+
+**5. Store it once.** Reveal the value only now, paste it into Cursor Secrets as
+`OHM_ADMIN_KEY`, then clear it from the shell.
+
+```bash
+printf '%s\n' "$NEW_KEY"
+unset NEW_KEY CURRENT
+```
+
+Then run `python3 scripts/daily_upkeep.py` and confirm section 2 shows an `admin ops`
+line instead of the `SKIP` — that is the end-to-end proof the automation will get.
+
+To revoke, drop that one entry from `AT_ADMIN_API_KEYS` and roll the gateway again.
+No other consumer is affected and no other credential rotates.
 
 The stronger fix, if you want it later, is a separate read-only ops key set checked
 by a new dependency on `/v1/admin/ops` alone, so the observability path cannot mint
-anything. Until then, the dedicated-key approach limits blast radius and makes an
-incident attributable.
+anything. Until then, the dedicated-key approach limits blast radius.
 
 ### `LINEAR_API_KEY` and `LINEAR_TEAM_ID`
 

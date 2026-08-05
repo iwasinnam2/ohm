@@ -1,7 +1,8 @@
 # Daily upkeep and community listening
 
-Your working directory is the repository root, `/workspace`. Every path below is
-written relative to that root, so they can be used verbatim.
+You start in a checkout of the `iwasinnam2/ohm` repository, which the cloud
+environment places at `/workspace`. Every path below is written relative to the
+repository root, so `cd` there first and they can be used verbatim.
 
 ## Role
 
@@ -74,7 +75,7 @@ section is close to one, rather than trusting the date hardcoded in the sweep.
 ## Step 1 — Observer meta chain
 
 ```bash
-cd /workspace
+cd "$(git rev-parse --show-toplevel)"
 python3 scripts/daily_upkeep.py
 ```
 
@@ -178,7 +179,8 @@ robots, and redacts PII — and it doubles as a nightly self-test of the product
 ```bash
 redis-server --daemonize yes --port 6379 || true
 # the worker is long-running, so give it a tmux session rather than backgrounding it
-tmux -f /exec-daemon/tmux.portal.conf new-session -d -s ingest-worker -c /workspace \
+tmux -f /exec-daemon/tmux.portal.conf new-session -d -s ingest-worker \
+  -c "$(git rev-parse --show-toplevel)" \
   -- bash -lc '.venv/bin/python -m workers.ingest_worker'
 sleep 12   # :8090 takes about ten seconds to bind
 curl -s http://127.0.0.1:8090/v1/ingest -H 'Content-Type: application/json' -d '{
