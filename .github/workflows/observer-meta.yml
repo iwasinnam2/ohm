@@ -1,9 +1,9 @@
 name: Observer meta
 
 # Meta layer of the Observer: once a day, verify every scheduled Observer
-# workflow (pulse, golden path, pricing pulse, admin digest) actually ran on
-# cadence and concluded green. Catches paused schedules, broken workflows,
-# and dead credentials — Observer watches Observer.
+# workflow (pulse, golden path, pricing pulse, admin digest) had a recent
+# *success* within a jitter-tolerant window. Catches paused schedules and
+# broken workflows — not GitHub's */15 delivery delay (often 2–3h).
 
 on:
   workflow_dispatch:
