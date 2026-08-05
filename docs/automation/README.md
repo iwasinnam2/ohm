@@ -106,62 +106,49 @@ Because the variable is a list, mint a *dedicated* key and append it rather than
 reusing an existing one — revocation then stays surgical and an incident stays
 attributable.
 
-**1. Generate.** The prefix does nothing for validation; it exists so the key is
-recognisable in an audit and greppable if it ever turns up somewhere it should not.
-Keep the value in a shell variable rather than printing it yet.
+Use [`scripts/issue_admin_key.ps1`](../../scripts/issue_admin_key.ps1), which does the
+whole sequence with the same no-history discipline as `rotate_stripe_key.ps1`:
 
-```bash
-NEW_KEY=$(python3 -c "import secrets; print('sk-at-obs-' + secrets.token_urlsafe(32))")
+```powershell
+powershell -File scripts/issue_admin_key.ps1
 ```
 
-**2. Register it, appending to what is already there.** Read the current list, add to
-it, and patch:
+It reads the current list, generates a 256-bit key, appends it, rolls
+`deploy/gateway`, polls `/v1/admin/ops` until the key is accepted, and prints the
+value exactly once at the end for pasting into Cursor Secrets. To take one out of
+circulation:
 
-```bash
-CURRENT=$(kubectl -n at-utility get secret at-utility-secrets \
-  -o jsonpath='{.data.AT_ADMIN_API_KEYS}' | base64 -d)
-kubectl -n at-utility patch secret at-utility-secrets --type merge \
-  -p "{\"stringData\":{\"AT_ADMIN_API_KEYS\":\"${CURRENT},${NEW_KEY}\"}}"
+```powershell
+powershell -File scripts/issue_admin_key.ps1 -Revoke
 ```
 
-There is a trap here worth reading twice. `admin_api_key_set` resolves
-`self.at_admin_api_keys or self.at_api_keys`, so when `AT_ADMIN_API_KEYS` is empty the
-whole of `AT_API_KEYS` is admin-capable by fallback. If `CURRENT` comes back empty and
-you patch in only the new key, every key that was previously admin through that
-fallback loses access the moment the pods roll. Check what `CURRENT` holds first, and
-if it is empty, write the existing `AT_API_KEYS` values into the list explicitly
-alongside the new one.
+which prompts for the key at a hidden prompt, removes just that entry, rolls, and
+confirms the key now gets a 403.
 
-**3. Roll the pods that read it.** The Python control plane is the only deployment
-that pulls the whole secret through `envFrom`, and it is the one serving the admin
-endpoints. `gateway-rs` takes named keys only and does not need this.
+Four details it handles that are easy to get wrong by hand:
 
-```bash
-kubectl -n at-utility rollout restart deployment/gateway
-kubectl -n at-utility rollout status deployment/gateway
-```
+**The fallback trap.** `admin_api_key_set` resolves
+`self.at_admin_api_keys or self.at_api_keys`, so while `AT_ADMIN_API_KEYS` is empty
+every `AT_API_KEYS` value is admin-capable by fallback. Patching a lone new key into
+that field silently revokes all of them the moment the pods roll. The script detects
+the empty field, warns, and seeds the list with the fallback values so nothing loses
+access.
 
-**4. Verify before you store it.** A `200` means the key is live; a `403` means it is
-not in the set, which is almost always an un-rolled pod or an unpatched secret.
+**Never emptying the list.** An empty `AT_ADMIN_API_KEYS` hands admin rights back to
+every tenant key at once, so the script refuses to write one and refuses to revoke
+the last remaining key.
 
-```bash
-curl -s -o /dev/null -w '%{http_code}\n' https://api.withohm.dev/v1/admin/ops \
-  -H "Authorization: Bearer $NEW_KEY"
-```
+**Which deployment to roll.** Only the Python control plane pulls the whole secret
+through `envFrom`, and it is the one serving the admin endpoints. `gateway-rs` takes
+named keys and is unaffected.
 
-**5. Store it once.** Reveal the value only now, paste it into Cursor Secrets as
-`OHM_ADMIN_KEY`, then clear it from the shell.
+**Verifying before you trust it.** A `403` after the rollout almost always means an
+unpatched secret or an un-rolled pod rather than a bad key, so the script polls
+rather than assuming, and fails loudly if the key never becomes valid.
 
-```bash
-printf '%s\n' "$NEW_KEY"
-unset NEW_KEY CURRENT
-```
-
-Then run `python3 scripts/daily_upkeep.py` and confirm section 2 shows an `admin ops`
-line instead of the `SKIP` — that is the end-to-end proof the automation will get.
-
-To revoke, drop that one entry from `AT_ADMIN_API_KEYS` and roll the gateway again.
-No other consumer is affected and no other credential rotates.
+Afterwards, run `python3 scripts/daily_upkeep.py` and confirm section 2 shows an
+`admin ops` line instead of a `SKIP` — that is the same code path the automation
+takes, so it is end-to-end proof rather than a proxy for it.
 
 The stronger fix, if you want it later, is a separate read-only ops key set checked
 by a new dependency on `/v1/admin/ops` alone, so the observability path cannot mint
