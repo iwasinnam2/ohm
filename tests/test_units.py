@@ -136,6 +136,144 @@ def test_provider_byok_resolve():
     assert m is mock
 
 
+def test_openai_compat_vendor_routing():
+    from at_utility.providers import (
+        OPENAI_COMPAT_VENDORS,
+        MockProvider,
+        build_compat_shells,
+        compat_vendor_for_model,
+        provider_key_available,
+        resolve_provider,
+    )
+
+    mock = MockProvider()
+
+    # Prefix → vendor mapping
+    assert compat_vendor_for_model("gemini-3.1-pro") == "gemini"
+    assert compat_vendor_for_model("deepseek-v4") == "deepseek"
+    assert compat_vendor_for_model("kimi-k3") == "moonshot"
+    assert compat_vendor_for_model("moonshot-v1-8k") == "moonshot"
+    assert compat_vendor_for_model("glm-5.2") == "zai"
+    assert compat_vendor_for_model("qwen3-max") == "qwen"
+    assert compat_vendor_for_model("grok-4") == "xai"
+    assert compat_vendor_for_model("gpt-4o-mini") is None
+    assert compat_vendor_for_model("claude-3-5-sonnet-latest") is None
+
+    class VendorSettings:
+        deepseek_api_key = "sk-env-deepseek"
+
+    compat = build_compat_shells(VendorSettings())
+    assert set(compat) == {v for v, _p, _b in OPENAI_COMPAT_VENDORS}
+    assert compat["deepseek"]._base_url == "https://api.deepseek.com/v1"
+    assert compat["xai"]._base_url == "https://api.x.ai/v1"
+
+    # BYOK routes to the vendor base URL with the customer key
+    p, model = resolve_provider(
+        "kimi-k3",
+        openai=None,
+        anthropic=None,
+        mock=mock,
+        fallback="mock",
+        upstream_key="sk-customer-moonshot",
+        allow_env_fallback=False,
+        compat=compat,
+    )
+    assert model == "kimi-k3"
+    assert p.name == "moonshot"
+    assert p._api_key == "sk-customer-moonshot"  # type: ignore[attr-defined]
+    assert p._base_url == "https://api.moonshot.ai/v1"  # type: ignore[attr-defined]
+
+    # Env fallback only when the vendor shell has a key
+    p, model = resolve_provider(
+        "deepseek-v4",
+        openai=None,
+        anthropic=None,
+        mock=mock,
+        fallback="mock",
+        upstream_key="",
+        allow_env_fallback=True,
+        compat=compat,
+    )
+    assert p.name == "deepseek"
+    assert p._api_key == "sk-env-deepseek"  # type: ignore[attr-defined]
+
+    # No key at all → mock (never leak to the wrong vendor)
+    p, model = resolve_provider(
+        "grok-4",
+        openai=None,
+        anthropic=None,
+        mock=mock,
+        fallback="mock",
+        upstream_key="",
+        allow_env_fallback=True,
+        compat=compat,
+    )
+    assert p is mock and model == "mock"
+
+    # provider_key_available honors per-vendor env keys
+    assert provider_key_available(
+        "deepseek-v4",
+        upstream_key="",
+        openai=None,
+        anthropic=None,
+        allow_env_fallback=True,
+        compat=compat,
+    )
+    assert not provider_key_available(
+        "gemini-3.1-pro",
+        upstream_key="",
+        openai=None,
+        anthropic=None,
+        allow_env_fallback=True,
+        compat=compat,
+    )
+
+
+async def test_open_stream_with_retry_pre_first_byte():
+    from at_utility.main import _open_stream_with_retry
+    from at_utility.providers import ProviderUpstreamError
+
+    class FlakyProvider:
+        name = "flaky"
+
+        def __init__(self, failures: int):
+            self.failures = failures
+            self.calls = 0
+
+        async def chat_completion(self, *, model, messages, stream=True, **kwargs):
+            self.calls += 1
+            fail = self.calls <= self.failures
+
+            async def gen():
+                if fail:
+                    raise ProviderUpstreamError(
+                        "flaky", 503, {"error": {"message": "boom"}}
+                    )
+                yield 'data: {"choices":[]}\n\n'
+                yield "data: [DONE]\n\n"
+
+            return gen()
+
+    # One pre-first-byte failure → retried once, stream proceeds
+    p = FlakyProvider(failures=1)
+    stream, first = await _open_stream_with_retry(
+        p, model="m", messages=[], kwargs={}
+    )
+    assert p.calls == 2
+    assert first is not None and first.startswith("data:")
+    rest = [line async for line in stream]
+    assert rest[-1] == "data: [DONE]\n\n"
+
+    # Failure on both attempts → honest upstream error (no 200 error-frame stream)
+    p2 = FlakyProvider(failures=2)
+    try:
+        await _open_stream_with_retry(p2, model="m", messages=[], kwargs={})
+        raise AssertionError("expected ProviderUpstreamError")
+    except ProviderUpstreamError as exc:
+        assert exc.status_code == 503
+    assert p2.calls == 2
+
+
 def test_stripe_resolve_checkout_urls():
     from at_utility.config import Settings
     from at_utility.stripe_billing import resolve_checkout_urls

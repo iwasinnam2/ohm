@@ -2,9 +2,10 @@
 //!
 //! Maintains Redis RESP cache lookups and reverse-proxies to the Python
 //! control-plane (or directly to provider base URLs) with connection reuse.
-//! Failover is pre-commit only: if the primary upstream fails on connect (or,
-//! for cacheable requests, returns a non-success status), the fallback base
-//! URL is retried. Mid-stream handoff after first byte is NOT supported.
+//! Failover is pre-commit only: if the primary upstream fails on connect (or
+//! returns a non-success status for cacheable requests / a 5xx before the
+//! first body byte for pass-through streams), the fallback base URL is
+//! retried. Mid-stream handoff after first byte is NOT supported.
 //!
 //! Cache HITs are only served after Python accepts them via
 //! `/internal/edge-hit` (metering + tenant enforcement). Without the shared
@@ -162,7 +163,7 @@ fn with_cors(mut res: Response<ProxyBody>, origin: Option<&str>) -> Response<Pro
         );
         headers.insert(
             hyper::header::HeaderName::from_static("access-control-expose-headers"),
-            "x-at-cache, x-at-billed-usd, x-at-plane, x-ohm-cost-center, x-ohm-path, x-ohm-spend-cap, x-ohm-spend-cap-usd"
+            "x-at-cache, x-at-billed-usd, x-at-plane, x-ohm-cost-center, x-ohm-path, x-ohm-spend-cap, x-ohm-spend-cap-usd, x-ohm-receipt"
                 .parse()
                 .unwrap(),
         );
@@ -402,6 +403,8 @@ async fn edge_hit_gate(
     app: &App,
     token: &str,
     total_tokens: i64,
+    model: &str,
+    request_sha256: &str,
 ) -> Option<(StatusCode, Bytes)> {
     let cfg = &app.cfg;
     let uri: Uri = format!(
@@ -410,7 +413,14 @@ async fn edge_hit_gate(
     )
     .parse()
     .ok()?;
-    let payload = serde_json::json!({ "total_tokens": total_tokens }).to_string();
+    // model + request digest let Python mint the signed X-Ohm-Receipt for
+    // edge-served HITs (same proof as control-plane HITs).
+    let payload = serde_json::json!({
+        "total_tokens": total_tokens,
+        "model": model,
+        "request_sha256": request_sha256,
+    })
+    .to_string();
     let req = Request::builder()
         .method(Method::POST)
         .uri(uri)
@@ -499,7 +509,16 @@ async fn handle_inner(
     // Savings receipts / aggregate stats are unauthenticated by design —
     // Python applies its own per-IP token bucket on these routes.
     let is_public_read = path_only.starts_with("/v1/public/") && method == Method::GET;
-    let is_passthrough = is_stripe_webhook || is_ready || is_public_checkout || is_public_read;
+    // Web Bot Auth + receipt JWKS directory must be fetchable without a key
+    // (Cloudflare Verified Bots + scripts/verify_receipt.py).
+    let is_key_directory = path_only
+        == "/.well-known/http-message-signatures-directory"
+        && method == Method::GET;
+    let is_passthrough = is_stripe_webhook
+        || is_ready
+        || is_public_checkout
+        || is_public_read
+        || is_key_directory;
     let mut edge_verified = false;
     let token = if is_passthrough {
         None
@@ -533,6 +552,8 @@ async fn handle_inner(
             "ready"
         } else if is_public_checkout {
             "public checkout"
+        } else if is_key_directory {
+            "key directory"
         } else if is_public_read {
             "public read"
         } else {
@@ -629,21 +650,35 @@ async fn handle_inner(
                             .and_then(|t| t.as_i64())
                     })
                     .unwrap_or(0);
-                match edge_hit_gate(&app, &token, total_tokens).await {
+                let model = body_json
+                    .as_ref()
+                    .and_then(|v| v.get("model").and_then(|m| m.as_str()))
+                    .unwrap_or("")
+                    .to_string();
+                let request_sha256 = key.rsplit(':').next().unwrap_or("").to_string();
+                match edge_hit_gate(&app, &token, total_tokens, &model, &request_sha256).await {
                     Some((status, gate_body)) if status.is_success() => {
                         info!("cache HIT {key} (metered)");
-                        let billed = serde_json::from_slice::<serde_json::Value>(&gate_body)
-                            .ok()
+                        let gate_json =
+                            serde_json::from_slice::<serde_json::Value>(&gate_body).ok();
+                        let billed = gate_json
+                            .as_ref()
                             .and_then(|v| v.get("billed_usd").and_then(|b| b.as_f64()))
                             .unwrap_or(0.0);
-                        return Ok(Response::builder()
+                        let mut builder = Response::builder()
                             .status(200)
                             .header("content-type", "application/json")
                             .header("x-at-cache", "HIT")
                             .header("x-at-plane", "rust")
-                            .header("x-at-billed-usd", format!("{billed:.6}"))
-                            .body(full_body(cached))
-                            .unwrap());
+                            .header("x-at-billed-usd", format!("{billed:.6}"));
+                        // Signed replay proof minted by the control plane
+                        if let Some(receipt) = gate_json
+                            .as_ref()
+                            .and_then(|v| v.get("receipt").and_then(|r| r.as_str()))
+                        {
+                            builder = builder.header("x-ohm-receipt", receipt);
+                        }
+                        return Ok(builder.body(full_body(cached)).unwrap());
                     }
                     Some((status, gate_body)) => {
                         // Tenant denied (401/402/403/429) — relay verbatim so
@@ -746,8 +781,9 @@ async fn handle_inner(
                 .unwrap()),
         }
     } else {
-        // Pass-through with failover on connect error. Bodies (including SSE
-        // streams) are forwarded chunk-by-chunk — never buffered at the edge.
+        // Pass-through with pre-first-byte failover: connect error *or* a 5xx
+        // status read before any body byte is forwarded. Bodies (including
+        // SSE streams) are forwarded chunk-by-chunk — never buffered at the edge.
         let result = match proxy_once(
             &app,
             &cfg.primary_upstream,
@@ -758,6 +794,13 @@ async fn handle_inner(
         )
         .await
         {
+            Ok(r) if r.status().is_server_error() => {
+                warn!(
+                    "stream/primary status {} pre-first-byte; fallback",
+                    r.status()
+                );
+                proxy_once(&app, &cfg.fallback_upstream, method, &path_q, headers, body).await
+            }
             Ok(r) => Ok(r),
             Err(e) => {
                 warn!("stream/primary fail {e}; fallback");
@@ -778,6 +821,7 @@ async fn handle_inner(
                 }
                 Ok(builder
                     .header("x-at-plane", "rust")
+                    .header("x-ohm-stream-failover", "pre-first-byte")
                     .body(upstream_body.boxed())
                     .unwrap())
             }

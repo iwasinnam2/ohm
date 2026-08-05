@@ -29,6 +29,21 @@ class Settings(BaseSettings):
     openai_api_key: str = ""
     openai_base_url: str = "https://api.openai.com/v1"
     anthropic_api_key: str = ""
+    # OpenAI-compatible vendors (BYOK-first; env keys are dev fallback /
+    # enterprise managed pool only). Base URLs are the vendors' documented
+    # OpenAI-compatible endpoints.
+    gemini_api_key: str = ""
+    gemini_base_url: str = "https://generativelanguage.googleapis.com/v1beta/openai"
+    deepseek_api_key: str = ""
+    deepseek_base_url: str = "https://api.deepseek.com/v1"
+    moonshot_api_key: str = ""
+    moonshot_base_url: str = "https://api.moonshot.ai/v1"
+    zai_api_key: str = ""
+    zai_base_url: str = "https://api.z.ai/api/paas/v4"
+    qwen_api_key: str = ""
+    qwen_base_url: str = "https://dashscope-intl.aliyuncs.com/compatible-mode/v1"
+    xai_api_key: str = ""
+    xai_base_url: str = "https://api.x.ai/v1"
     at_default_model: str = "mock"
     at_fallback_model: str = "mock"
 

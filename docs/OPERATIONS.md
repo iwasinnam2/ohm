@@ -77,7 +77,10 @@ design, not by accident:
    Kubernetes secret. For the live Stripe key specifically: roll it in the
    dashboard, then run `scripts/rotate_stripe_key.ps1` (hidden prompt — the
    key never touches chat, shell history, or disk; verifies against Stripe,
-   patches the cluster, restarts, and smoke-tests live checkout).
+   patches the cluster, restarts, and smoke-tests live checkout). Trust
+   seeds (`AT_RECEIPT_ED25519_SEED_B64`, `AT_WEB_BOT_AUTH_ED25519_SEED_B64`)
+   follow `infra/runbooks/VERIFIED_BOT.md` — patch `at-utility-secrets`, then
+   restart; Deploy API does not write secrets.
 3. **GoDaddy DNS flip** — pointing `api.withohm.dev` CNAME directly at the
    us-east-1 NLB (then final Global Accelerator teardown). See
    `infra/runbooks/SINGLE_REGION.md`.

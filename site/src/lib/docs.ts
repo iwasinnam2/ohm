@@ -60,6 +60,12 @@ export const DOC_GROUPS: DocGroup[] = [
         title: "Status & limits",
         description: "Rate limits, hosts, and edge availability.",
       },
+      {
+        slug: "trust",
+        title: "Trust — verify it yourself",
+        description:
+          "Signed cache-hit receipts, the honesty endpoint, and public keys.",
+      },
     ],
   },
   {
