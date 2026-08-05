@@ -42,12 +42,25 @@ def _post_json(url: str, payload: dict, headers: dict[str, str]) -> dict:
         return {"raw": raw}
 
 
-def notify_slack(text: str) -> bool:
+def _slack_blocks(title: str, body: str) -> list[dict]:
+    """Header + body. Slack caps header plain_text at 150 and section mrkdwn at 3000."""
+    text = body.strip() or "_(no detail)_"
+    if len(text) > 2900:
+        text = text[:2900] + "\n…(truncated — see the run)"
+    return [
+        {"type": "header", "text": {"type": "plain_text", "text": title[:150], "emoji": True}},
+        {"type": "section", "text": {"type": "mrkdwn", "text": text}},
+    ]
+
+
+def notify_slack(title: str, body: str) -> bool:
     url = os.environ.get("SLACK_WEBHOOK_URL", "").strip()
     if not url:
         print("observer_notify: SLACK_WEBHOOK_URL unset — skipping Slack")
         return False
-    _post_json(url, {"text": text}, {})
+    # `text` is the notification/screen-reader fallback shown when blocks can't
+    # render; `blocks` is the rich body. Incoming webhooks accept both.
+    _post_json(url, {"text": title, "blocks": _slack_blocks(title, body)}, {})
     print("observer_notify: Slack posted")
     return True
 
@@ -119,7 +132,7 @@ def notify(title: str, body: str, *, slack: bool = True, linear: bool = True) ->
         title = f"{OBSERVER_PREFIX} {title}"
     if slack:
         try:
-            notify_slack(f"*{title}*\n{body}")
+            notify_slack(title, body)
         except Exception as exc:  # noqa: BLE001 — one sink down must not kill the other
             print(f"observer_notify: Slack failed: {exc}", file=sys.stderr)
     if linear:
