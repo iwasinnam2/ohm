@@ -575,27 +575,39 @@ async def health() -> dict[str, Any]:
 
 
 @app.get("/.well-known/http-message-signatures-directory")
-async def http_message_signatures_directory() -> Response:
+async def http_message_signatures_directory(request: Request) -> Response:
     """Public Ed25519 JWKS: OhmBot's Web Bot Auth key + the receipt key.
 
     Origins verifying `Signature-Agent` fetch this to check OhmBot's RFC 9421
     signatures; customers verifying `X-Ohm-Receipt` JWS receipts resolve the
-    signing key by its `kid` (RFC 7638 thumbprint) here. Public keys only —
-    unauthenticated by design; 404 when no signing seed is configured.
+    signing key by its `kid` (RFC 7638 thumbprint) here. The response is
+    self-signed (one directory binding per key, tag
+    `http-message-signatures-directory`) as required for Cloudflare Verified
+    Bots enrollment. Public keys only — unauthenticated by design; 404 when
+    no signing seed is configured.
     """
     keys: list[dict[str, str]] = []
-    bot_directory = web_bot_auth.key_directory()
-    if bot_directory:
-        keys.extend(bot_directory["keys"])
-    receipt_jwk = receipts.receipt_public_jwk()
-    if receipt_jwk and receipt_jwk not in keys:
-        keys.append(receipt_jwk)
+    private_keys = []
+    bot_key = web_bot_auth.load_signing_key()
+    if bot_key is not None:
+        keys.append(web_bot_auth.public_jwk(bot_key))
+        private_keys.append(bot_key)
+    receipt_key = receipts.load_receipt_key()
+    if receipt_key is not None:
+        receipt_jwk = receipts.receipt_public_jwk()
+        if receipt_jwk not in keys:
+            keys.append(receipt_jwk)
+            private_keys.append(receipt_key)
     if not keys:
         raise HTTPException(status_code=404, detail="no signing keys configured")
+    authority = (request.headers.get("host") or request.url.netloc or "").lower()
     return Response(
         content=json.dumps({"keys": keys}),
         media_type="application/http-message-signatures-directory+json",
-        headers={"Cache-Control": "max-age=3600"},
+        headers={
+            "Cache-Control": "max-age=3600",
+            **web_bot_auth.directory_binding_headers(authority, private_keys),
+        },
     )
 
 

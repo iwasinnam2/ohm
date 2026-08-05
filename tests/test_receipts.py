@@ -128,7 +128,7 @@ async def test_hit_without_seed_has_no_receipt():
         assert "x-ohm-receipt" not in hit.headers
 
 
-async def test_directory_serves_both_keys(monkeypatch):
+async def test_directory_serves_both_keys_and_self_signs(monkeypatch):
     monkeypatch.setenv(receipts.ENV_SEED, RECEIPT_SEED)
     monkeypatch.setenv(wba.ENV_SEED, BOT_SEED)
     transport = ASGITransport(app=app)
@@ -139,6 +139,30 @@ async def test_directory_serves_both_keys(monkeypatch):
         assert len(keys) == 2
         assert all(k["kty"] == "OKP" and k["crv"] == "Ed25519" for k in keys)
         assert keys[0] != keys[1]
+
+        # Directory binding (Cloudflare Verified Bots requirement): the
+        # response is self-signed, one binding per served key.
+        sig_input = res.headers["signature-input"]
+        assert sig_input.count('tag="http-message-signatures-directory"') == 2
+        assert '("@authority";req)' in sig_input
+        assert res.headers["signature"].count(":") >= 4
+
+        # Verify the first binding cryptographically against key 1
+        import base64 as b64
+        import re
+
+        params = re.search(r"sig1=(\([^)]*\)[^,]*)", sig_input).group(1)
+        created = int(re.search(r"created=(\d+)", params).group(1))
+        expires = int(re.search(r"expires=(\d+)", params).group(1))
+        bot_key = wba.load_signing_key(BOT_SEED)
+        base = (
+            f'"@authority";req: test\n'
+            f'"@signature-params": ("@authority";req);created={created};'
+            f'expires={expires};keyid="{wba.jwk_thumbprint(bot_key)}";'
+            f'alg="ed25519";tag="http-message-signatures-directory"'
+        )
+        sig_b64 = re.search(r"sig1=:([^:]+):", res.headers["signature"]).group(1)
+        bot_key.public_key().verify(b64.b64decode(sig_b64), base.encode("utf-8"))
 
 
 async def test_edge_hit_response_includes_receipt(monkeypatch):

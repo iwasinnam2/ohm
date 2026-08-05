@@ -130,6 +130,52 @@ def build_signature_base(
     return "\n".join(lines), params
 
 
+DIRECTORY_TAG = "http-message-signatures-directory"
+
+
+def directory_binding_headers(
+    authority: str,
+    keys: list[Ed25519PrivateKey],
+    *,
+    created: Optional[int] = None,
+    expires_in: int = DEFAULT_EXPIRES_IN,
+) -> dict[str, str]:
+    """Self-sign the key-directory response (draft-meunier directory binding).
+
+    Verifiers (e.g. Cloudflare's Verified Bots enrollment) require the
+    directory response to carry one signature per key it serves, tag
+    ``http-message-signatures-directory``, binding ``@authority;req`` to the
+    host that served it — proving the operator controls both the keys and the
+    directory location, so nobody can mirror the JWKS and register it.
+    """
+    if not keys:
+        return {}
+    created = int(created if created is not None else time.time())
+    expires = created + int(expires_in)
+    inputs: list[str] = []
+    signatures: list[str] = []
+    for i, key in enumerate(keys, start=1):
+        label = f"sig{i}"
+        params = (
+            '("@authority";req)'
+            f";created={created};expires={expires}"
+            f';keyid="{jwk_thumbprint(key)}";alg="ed25519";tag="{DIRECTORY_TAG}"'
+        )
+        base = "\n".join(
+            [
+                f'"@authority";req: {authority}',
+                f'"@signature-params": {params}',
+            ]
+        )
+        signature = key.sign(base.encode("utf-8"))
+        inputs.append(f"{label}={params}")
+        signatures.append(f"{label}=:{base64.b64encode(signature).decode('ascii')}:")
+    return {
+        "Signature-Input": ", ".join(inputs),
+        "Signature": ", ".join(signatures),
+    }
+
+
 def signature_headers(
     url: str,
     *,

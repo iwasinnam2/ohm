@@ -41,7 +41,7 @@ Public distribution readiness for **withOhm** (Ohm). Hosted pipe is live; this c
 - [ ] Screenshots in [listings/screenshots/](listings/screenshots/)
 - [ ] Design-partner quotes on homepage (inbound via [/design-partners](https://www.withohm.dev/design-partners))
 - [ ] Host remote MCP at `mcp.withohm.dev` (`OHM_MCP_TRANSPORT=http ohm-mcp`, stateless; per-request `Authorization: Bearer sk-at-*`)
-- [ ] Publish Web Bot Auth key directory (`/.well-known/http-message-signatures-directory`) and register OhmBot as a verified crawler
+- [ ] Set signing seeds + register OhmBot with Cloudflare Verified Bots — full runbook: [infra/runbooks/VERIFIED_BOT.md](../infra/runbooks/VERIFIED_BOT.md)
 
 ## Deferred (do not claim)
 
