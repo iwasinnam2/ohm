@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { IBM_Plex_Mono, Source_Sans_3, Space_Grotesk } from "next/font/google";
+import { PipeNetwork } from "@/components/PipeNetwork";
 import { SiteHeader } from "@/components/SiteHeader";
 import "./globals.css";
 
@@ -76,6 +77,8 @@ export default function RootLayout({
         </a>
         <div className="atmosphere" aria-hidden="true">
           <div className="atmosphere__current" />
+          <div className="atmosphere__particles" />
+          <PipeNetwork />
         </div>
         <div className="shell">
           <SiteHeader />
