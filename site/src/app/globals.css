@@ -257,6 +257,9 @@ pre {
 
 .site-header__mega {
   position: relative;
+  /* Extend the hover hit-box so the cursor can travel into the panel */
+  padding: 0.55rem 0;
+  margin: -0.55rem 0;
 }
 
 .site-header__mega-trigger {
@@ -264,11 +267,12 @@ pre {
 }
 
 .site-header__mega-panel {
-  display: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
   position: absolute;
-  top: calc(100% + 0.65rem);
-  left: 50%;
-  transform: translateX(-35%);
+  top: 100%;
+  left: 0;
   z-index: 40;
   width: min(22rem, 80vw);
   padding: var(--space-3);
@@ -276,13 +280,32 @@ pre {
   border-radius: var(--radius-card);
   background: color-mix(in srgb, var(--bg-elevated) 94%, #000);
   box-shadow: var(--shadow-card);
-  flex-direction: column;
-  gap: var(--space-1);
+  /* Keep mounted; hide with visibility so hover isn't lost mid-travel */
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity 120ms ease,
+    visibility 120ms ease;
+  transition-delay: 100ms; /* grace period when leaving */
+}
+
+/* Invisible bridge covering any residual gap above the panel */
+.site-header__mega-panel::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 100%;
+  height: 0.75rem;
 }
 
 .site-header__mega:hover .site-header__mega-panel,
 .site-header__mega:focus-within .site-header__mega-panel {
-  display: flex;
+  visibility: visible;
+  opacity: 1;
+  pointer-events: auto;
+  transition-delay: 0s; /* open immediately on enter */
 }
 
 .site-header__mega-panel a {
@@ -292,6 +315,7 @@ pre {
   padding: var(--space-2);
   border-radius: var(--radius);
   color: var(--fg);
+  pointer-events: auto;
 }
 
 .site-header__mega-panel a:hover {
@@ -350,8 +374,15 @@ pre {
 
 /* Phone header: brand row + nav row, comfortable tap targets */
 @media (max-width: 900px) {
+  .site-header__mega {
+    padding: 0;
+    margin: 0;
+  }
+
   .site-header__mega-panel {
     display: none !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
   }
 }
 
