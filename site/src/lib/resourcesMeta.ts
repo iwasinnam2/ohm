@@ -30,13 +30,6 @@ export const RESOURCES_INDEX: ResourceMeta[] = [
     eyebrow: "Talk to us",
   },
   {
-    slug: "status",
-    href: "/status",
-    title: "Status",
-    description: "Public edge health and operational posture.",
-    eyebrow: "Ops",
-  },
-  {
     slug: "support",
     href: "/support",
     title: "Support",

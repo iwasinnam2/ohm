@@ -35,7 +35,7 @@ Repo: https://github.com/iwasinnam2/ohm · Plugin: `ohm` / withOhm
 
 - [x] Intermediate = `$0 membership + meters + BYOK` (API plan id `payg`)
 - [x] No “30-day free trial” / “proxy-managed keys” on Intermediate
-- [x] Status page: Amplify + live API (not Vercel / edge_pending)
+- [x] Public API live on Amplify-era marketing + EKS (no Vercel / edge_pending theatre); status UI retired
 - [x] Share line prefers `https://www.withohm.dev/i` until apex 301
 
 ## Legal links (listing)

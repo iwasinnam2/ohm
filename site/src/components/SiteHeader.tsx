@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { OhmMark } from "./OhmMark";
+import { StartOrProfileCta } from "./StartOrProfileCta";
 import { PRODUCT_INDEX } from "@/lib/productMeta";
 import { RESOURCES_INDEX } from "@/lib/resourcesMeta";
 import { USE_CASE_INDEX } from "@/lib/useCasesMeta";
@@ -18,13 +19,14 @@ function navCurrent(pathname: string, href: string): boolean {
       pathname === "/changelog" ||
       pathname === "/security" ||
       pathname === "/contact" ||
-      pathname.startsWith("/support") ||
-      pathname === "/status"
+      pathname.startsWith("/support")
     );
+  }
+  if (href === "/profile") {
+    return pathname === "/profile" || pathname.startsWith("/keys");
   }
   return pathname === href || pathname.startsWith(`${href}/`);
 }
-
 export function SiteHeader() {
   const pathname = usePathname() || "/";
 
@@ -140,9 +142,7 @@ export function SiteHeader() {
             {link.label}
           </Link>
         ))}
-        <Link href="/billing/intermediate" className="site-header__cta">
-          Start now — $0 seat
-        </Link>
+        <StartOrProfileCta className="site-header__cta" />
       </nav>
     </header>
   );

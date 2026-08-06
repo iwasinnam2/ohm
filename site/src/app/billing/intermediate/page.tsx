@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { BillingCheckoutForm } from "@/components/BillingCheckoutForm";
+import { ReturningSeatNote } from "@/components/ReturningSeatNote";
 import { PAYG_RATES, COMMIT_TIERS, formatUsd, formatUsdMoney } from "@/lib/meterRates";
 
 export const metadata: Metadata = {
@@ -55,6 +56,7 @@ export default async function IntermediateBillingPage({
           </p>
         )}
       </header>
+      <ReturningSeatNote />
       <BillingCheckoutForm commit={commit?.id ?? ""} />
       <section className="billing-meter-fineprint" aria-label="Meter rates">
         <p>

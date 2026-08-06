@@ -2,7 +2,7 @@
 
 withOhm’s distribution channel is the OpenAI-compatible API. No new protocol.
 
-Keys use legacy prefix `sk-at-…`. Prefer the **supported local edge** until public API cutover. Templates: LangChain / Vercel AI SDK under `examples/templates/` (see [PLATFORM](https://withohm.dev/docs) / repository `docs/PLATFORM.md`).
+Keys use legacy prefix `sk-at-…`. Public base: `https://api.withohm.dev/v1`. Local edge: `http://localhost:8081/v1`. Templates: LangChain / Vercel AI SDK under `examples/templates/` (see [PLATFORM](https://withohm.dev/docs) / repository `docs/PLATFORM.md`).
 
 ## Local (supported)
 
@@ -26,17 +26,33 @@ curl -s http://localhost:8081/v1/chat/completions \
   -d '{"model":"mock","messages":[{"role":"user","content":"hi"}]}'
 ```
 
-## Production host (reserved)
+## Production
 
-`https://api.withohm.dev/v1` is the documented public hostname (ACM issued). Chat traffic awaits AWS cutover — do not treat HTML on that host as the API.
+```python
+from openai import OpenAI
+client = OpenAI(
+    api_key="sk-at-YOUR_OHM_KEY",
+    base_url="https://api.withohm.dev/v1",
+    default_headers={"X-Ohm-Upstream-Key": "sk-proj-..."},  # BYOK on miss
+)
+```
+
+```bash
+curl -s https://api.withohm.dev/v1/chat/completions \
+  -H "Authorization: Bearer sk-at-YOUR_OHM_KEY" \
+  -H "X-Ohm-Upstream-Key: $OPENAI_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"model":"gpt-4o-mini","messages":[{"role":"user","content":"hi"}]}'
+```
 
 ## Web context (compliance required)
 
 Requires `web_purpose` and `web_compliance_ack`, plus Terms/DPA acks. See [legal](./legal).
 
 ```bash
-curl -s http://localhost:8081/v1/chat/completions \
-  -H "Authorization: Bearer sk-at-dev" \
+curl -s https://api.withohm.dev/v1/chat/completions \
+  -H "Authorization: Bearer sk-at-YOUR_OHM_KEY" \
+  -H "X-Ohm-Upstream-Key: $OPENAI_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"model":"gpt-4o-mini","messages":[{"role":"user","content":"Summarize"}],"fetch_web_context":true,"web_urls":["https://example.com"],"web_purpose":"business_catalog","web_compliance_ack":true,"terms_ack":true,"dpa_ack":true}'
 ```
@@ -52,8 +68,9 @@ curl -s http://localhost:8090/v1/ingest \
 ```
 
 ```bash
-curl -s http://localhost:8081/v1/chat/completions \
-  -H "Authorization: Bearer sk-at-dev" \
+curl -s https://api.withohm.dev/v1/chat/completions \
+  -H "Authorization: Bearer sk-at-YOUR_OHM_KEY" \
+  -H "X-Ohm-Upstream-Key: $OPENAI_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"model":"mock","messages":[{"role":"user","content":"Extract facts"}],"fetch_web_context":true,"web_format":"json","web_purpose":"public_web_retrieval","web_urls":["https://example.com"],"web_compliance_ack":true,"terms_ack":true,"dpa_ack":true}'
 ```

@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { OhmMark } from "@/components/OhmMark";
 import { cursorOhmInstallHref } from "@/lib/cursorMcp";
 import { persistKey, readStoredKey } from "@/lib/keyStorage";
+import { markSeatActivated, writeProfile, readCheckoutForm } from "@/lib/profileStorage";
 
 type ClaimState = "loading" | "ready" | "claimed" | "error";
 
@@ -49,6 +50,9 @@ function BillingSuccessInner() {
           const data = await res.json().catch(() => ({}));
           if (res.ok && typeof data.api_key === "string") {
             persistKey(data.api_key);
+            const form = readCheckoutForm();
+            if (form) writeProfile(form);
+            markSeatActivated();
             if (!cancelled) {
               setApiKey(data.api_key);
               setClaimState("ready");
@@ -163,7 +167,10 @@ function BillingSuccessInner() {
       ) : null}
 
       <div className="cta-row postpay__next">
-        <Link href="/keys" className="btn btn--primary">
+        <Link href="/profile" className="btn btn--primary">
+          Open profile
+        </Link>
+        <Link href="/keys" className="btn">
           Manage API keys
         </Link>
         <Link href="/workbench" className="btn">

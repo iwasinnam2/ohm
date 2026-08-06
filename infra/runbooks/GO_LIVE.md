@@ -1,12 +1,12 @@
 # Go-live checklist (Section E)
 
-Public product: **Ohm**. Hosts: `withohm.dev` (site), `api.withohm.dev` (API), `status.withohm.dev` (status).
+Public product: **Ohm**. Hosts: `www.withohm.dev` (site), `api.withohm.dev` (API), `fetch.withohm.dev` (fetch toy). Public status UI retired — limits at `/docs/status`.
 Internal AWS/k8s names may still be `at-utility`. See [docs/BRAND.md](../../docs/BRAND.md).
 API DNS handoff: [API_CUTOVER.md](API_CUTOVER.md).
 
 ## Before cutover
 
-- [x] Buy root domain; hosts decided (`withohm.dev` / `api.withohm.dev` / `status.withohm.dev`)
+- [x] Buy root domain; hosts decided (`withohm.dev` / `api.withohm.dev` / `fetch.withohm.dev`)
 - [ ] Section A `release_smoke` green three consecutive days on staging
 - [x] Section C public hostname serves miss/hit OpenAI from a second network ([API_CUTOVER.md](API_CUTOVER.md) Phase 1)
 - [x] Section D: `enable_edges=true`; two edge regions show local cache hits within lag budget (&lt;1s lab)
@@ -18,8 +18,8 @@ API DNS handoff: [API_CUTOVER.md](API_CUTOVER.md).
 - [ ] OpenAI hard budget alert set (your ledger) — see [BUDGETS.md](BUDGETS.md)
 - [x] AWS Budgets alarm set (infra ledger) — `withohm-monthly` $250; SNS email paused ([EMAIL_ALERTS.md](EMAIL_ALERTS.md))
 - [x] Global Accelerator endpoints healthy on `/health` (`anycast_enabled=true` + NLB ARNs)
-- [x] Status page live (`status.withohm.dev` → site `/status`) — Amplify
-- [x] Marketing site (`site/`) on Amplify (`www` / `fetch` / `status`); apex forward pending ([APEX_CUTOVER.md](APEX_CUTOVER.md))
+- [x] Public status UI retired (`/status` → 404; `status.withohm.dev` → `/docs/status`)
+- [x] Marketing site (`site/`) on Amplify (`www` / `fetch`; optional `status` host redirects to docs); apex forward pending ([APEX_CUTOVER.md](APEX_CUTOVER.md))
 - [x] Terms of service + DPA published
 - [ ] On-call rotation / incident channel defined
 - [x] Record last-known-good NLB hostname before GA cutover ([NLB_HOSTNAME.txt](NLB_HOSTNAME.txt))

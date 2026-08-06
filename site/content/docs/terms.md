@@ -10,7 +10,7 @@ By calling the API with `terms_ack: true` (or accepting these terms at tenant is
 
 withOhm provides: (a) LLM request routing and identical-request cache replay; (b) optional public-web context fetch under the [Legal & compliance](./legal) framework. Upstream model providers process prompts under their terms.
 
-**Service availability:** Documentation and marketing are served on `withohm.dev`. The production API edge is published on `api.withohm.dev` as cutover completes. Supported client contracts include `localhost:8081` and operator-deployed edges. Mid-stream provider handoff is unsupported — see [Streaming](./streaming).
+**Service availability:** Documentation and marketing are served on `www.withohm.dev`. The production API is `https://api.withohm.dev`. Supported client contracts also include `localhost:8081` and operator-deployed edges. Mid-stream provider handoff is unsupported — see [Streaming](./streaming).
 
 ## 2. Accounts and keys
 

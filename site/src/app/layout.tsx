@@ -96,7 +96,6 @@ export default function RootLayout({
               <Link href="/docs/security">Security</Link>
               <Link href="/docs/legal">Compliance</Link>
               <Link href="/support">Support</Link>
-              <Link href="/status">Status</Link>
               <a
                 href="https://github.com/iwasinnam2/ohm"
                 target="_blank"

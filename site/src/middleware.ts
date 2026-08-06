@@ -4,7 +4,7 @@ const API_HOSTS = new Set(["api.withohm.dev"]);
 const STATUS_HOSTS = new Set(["status.withohm.dev"]);
 const FETCH_HOSTS = new Set(["fetch.withohm.dev"]);
 
-/** When true, api.withohm.dev is live on AWS — do not intercept (domain should leave Vercel). */
+/** When true, api.withohm.dev is live on AWS — do not intercept (domain should leave Amplify). */
 function apiEdgeLive(): boolean {
   const v = (process.env.API_EDGE_LIVE || "").trim().toLowerCase();
   return v === "1" || v === "true" || v === "yes";
@@ -18,7 +18,7 @@ function hostname(host: string | null): string {
 /**
  * api.withohm.dev is reserved for the Ohm edge — do not silently serve marketing
  * until DNS points at AWS and API_EDGE_LIVE=1.
- * status.withohm.dev always rewrites to /status.
+ * status.withohm.dev redirects to docs limits (public status UI retired).
  * fetch.withohm.dev always rewrites to /fetch (public toy).
  */
 export function middleware(request: NextRequest) {
@@ -41,12 +41,10 @@ export function middleware(request: NextRequest) {
   }
 
   if (STATUS_HOSTS.has(host)) {
-    const url = request.nextUrl.clone();
-    if (url.pathname === "/" || url.pathname === "") {
-      url.pathname = "/status";
-      return NextResponse.rewrite(url);
-    }
-    return NextResponse.next();
+    return NextResponse.redirect(
+      "https://www.withohm.dev/docs/status",
+      308,
+    );
   }
 
   if (!API_HOSTS.has(host) || apiEdgeLive()) {

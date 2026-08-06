@@ -22,7 +22,7 @@ Public distribution readiness for **withOhm** (Ohm). Hosted pipe is live; this c
 
 - [x] MIT LICENSE + NOTICE
 - [x] Logo PNG in `site/public/`
-- [x] Status page truth (Amplify + live API)
+- [x] Public surfaces truth (Amplify marketing + live API; status UI retired)
 - [x] False claims removed (managed keys / 30-day trial)
 - [x] MCP: no forged legal acks; `OHM_API_KEY` required
 - [x] SSRF DNS re-check; robots fail-closed
