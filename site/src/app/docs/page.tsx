@@ -5,7 +5,7 @@ import { DOC_GROUPS } from "@/lib/docs";
 export const metadata: Metadata = {
   title: "Docs",
   description:
-    "withOhm docs — Start, Operative, Connect, Admin, and Legal. Interconnectedness and accessibility.",
+    "withOhm docs — Start, Architecture, Operative, Connect, Admin, and Legal.",
 };
 
 export default function DocsIndexPage() {
@@ -15,7 +15,9 @@ export default function DocsIndexPage() {
         <h1>Docs</h1>
         <p>
           Interconnectedness and accessibility — one <code>base_url</code>, the
-          tools you already use, and a meter you can read.
+          tools you already use, and a meter you can read. Product narrative
+          lives under <Link href="/product">Product</Link>; solutions under{" "}
+          <Link href="/use-cases">Solutions</Link>.
         </p>
       </header>
       {DOC_GROUPS.map((group) => (
