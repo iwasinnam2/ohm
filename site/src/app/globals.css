@@ -3140,6 +3140,63 @@ pre {
   color: var(--muted);
 }
 
+.changelog-list {
+  list-style: none;
+  margin: var(--space-5) 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.changelog-list__item {
+  padding-bottom: var(--space-5);
+  border-bottom: 1px solid var(--line);
+}
+
+.changelog-list__date {
+  display: block;
+  font-family: var(--font-display);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: var(--space-2);
+}
+
+.changelog-list__title {
+  margin: 0 0 var(--space-2);
+  font-family: var(--font-display);
+  font-size: var(--text-xl);
+  font-weight: 600;
+  letter-spacing: var(--tracking-tight);
+}
+
+.changelog-list__body {
+  margin: 0;
+  color: var(--muted);
+  line-height: var(--leading-body);
+  max-width: var(--measure);
+}
+
+.changelog-list__links {
+  margin-top: var(--space-3);
+}
+
+.contact-form {
+  margin-top: var(--space-7);
+  max-width: var(--measure-wide);
+}
+
+.contact-paths {
+  margin-bottom: var(--space-6);
+}
+
+.contact-paths .card__title {
+  font-size: var(--text-lg);
+}
+
 /* Cache trees flowchart (docs + homepage visual aid) */
 .ohm-flow {
   margin: var(--space-5) 0 var(--space-6);
