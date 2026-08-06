@@ -170,10 +170,11 @@ def require_meter_prices(settings: Settings, plan: str) -> None:
 def create_checkout_session(
     settings: Settings,
     *,
-    tenant_id: str,
     plan: str,
     success_url: str,
     cancel_url: str,
+    tenant_id: str = "",
+    pending_id: str = "",
     customer_email: str = "",
     commit: str = "",
 ) -> dict[str, Any]:
@@ -185,6 +186,9 @@ def create_checkout_session(
     attached to the subscription on ``checkout.session.completed`` via
     :func:`attach_meter_prices_to_subscription`. Included usage for commit
     tiers is granted per cycle by the invoice.paid webhook.
+
+    Self-serve uses ``pending_id`` (no API key until Checkout completes).
+    Admin flows may pass an already-issued ``tenant_id``.
     """
     if not settings.stripe_secret_key:
         raise RuntimeError("STRIPE_SECRET_KEY is not configured")
@@ -219,11 +223,17 @@ def create_checkout_session(
         log.warning(
             "checkout plan=payg without meter Prices — seat-only subscription"
         )
-    shared_meta = {
-        "tenant_id": tenant_id,
+    ref = (pending_id or tenant_id or "").strip()
+    if not ref:
+        raise RuntimeError("checkout requires pending_id or tenant_id")
+    shared_meta: dict[str, str] = {
         "plan": plan,
         "billing_model": BILLING_MODEL,
     }
+    if pending_id:
+        shared_meta["pending_id"] = pending_id.strip()
+    if tenant_id and not pending_id:
+        shared_meta["tenant_id"] = tenant_id.strip()
     if commit:
         shared_meta["commit_tier"] = commit
     params: dict[str, Any] = {
@@ -231,7 +241,7 @@ def create_checkout_session(
         "success_url": success_url,
         "cancel_url": cancel_url,
         "line_items": line_items,
-        "client_reference_id": tenant_id,
+        "client_reference_id": ref[:200],
         "metadata": dict(shared_meta),
         "subscription_data": {"metadata": dict(shared_meta)},
         "integration_identifier": _integration_identifier(),

@@ -4,7 +4,7 @@ import { KeysConsole } from "@/components/KeysConsole";
 export const metadata: Metadata = {
   title: "API keys",
   description:
-    "Find, reveal, and restore your withOhm secret API keys. Secrets are shown once at issue — this page recovers what this browser still holds.",
+    "Create, reveal, restore, and delete withOhm secret API keys after you subscribe. Secrets are shown once at issue.",
 };
 
 export default function KeysPage() {

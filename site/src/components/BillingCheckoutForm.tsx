@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { persistKey } from "@/lib/keyStorage";
 
 const FORM_STORAGE = "ohm_checkout_form";
 
@@ -14,9 +13,6 @@ export function BillingCheckoutForm({ commit = "" }: { commit?: string }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [rateLimited, setRateLimited] = useState(false);
-  const [issuedKey, setIssuedKey] = useState<string | null>(null);
-  const [checkoutUrl, setCheckoutUrl] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
 
   // A failed attempt (rate limit, network blip, back button from Stripe)
   // must never cost the visitor their typing — restore email/label.
@@ -43,22 +39,6 @@ export function BillingCheckoutForm({ commit = "" }: { commit?: string }) {
       /* ignore */
     }
   }, [email, organisation]);
-
-  async function copyKey() {
-    if (!issuedKey) return;
-    try {
-      await navigator.clipboard.writeText(issuedKey);
-      setCopied(true);
-      window.setTimeout(() => setCopied(false), 2500);
-    } catch {
-      /* ignore */
-    }
-  }
-
-  function continueToStripe() {
-    if (!checkoutUrl) return;
-    window.location.href = checkoutUrl;
-  }
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -97,55 +77,18 @@ export function BillingCheckoutForm({ commit = "" }: { commit?: string }) {
             : detail?.message || data?.error || `Checkout failed (${res.status})`;
         throw new Error(msg);
       }
-      const key = data.api_key as string;
       const url = data.checkout?.url as string | undefined;
-      if (!key) {
-        throw new Error("API key missing from checkout response.");
-      }
       if (!url) {
         throw new Error(
           "Checkout URL missing — Stripe may be unconfigured on the API.",
         );
       }
-      persistKey(key);
-      setIssuedKey(key);
-      setCheckoutUrl(url);
-      setBusy(false);
+      // Key is issued only after Stripe completes (success page claim).
+      window.location.href = url;
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
       setBusy(false);
     }
-  }
-
-  // Gate: key issued — do not auto-redirect. User must save, then continue.
-  if (issuedKey && checkoutUrl) {
-    return (
-      <div className="billing-form billing-form--key-gate" role="status">
-        <h2 className="billing-form__gate-title">Save your withOhm key</h2>
-        <p className="billing-form__gate-lede">
-          This is shown once. Copy it before you continue to Stripe — we cannot
-          email it again. After card setup you&apos;ll land on a success page
-          that also keeps it in this browser.
-        </p>
-        <div className="billing-form__key-panel">
-          <code className="billing-form__key-code">{issuedKey}</code>
-          <button type="button" className="btn btn--primary" onClick={copyKey}>
-            {copied ? "Copied" : "Copy key"}
-          </button>
-        </div>
-        <button
-          type="button"
-          className="btn btn--primary"
-          onClick={continueToStripe}
-        >
-          I&apos;ve saved it — continue to Stripe
-        </button>
-        <p className="billing-form__note">
-          Tip: paste into a password manager now. After Stripe, open{" "}
-          <Link href="/demo">the hit ratio demo</Link> with this key.
-        </p>
-      </div>
-    );
   }
 
   return (
@@ -215,13 +158,13 @@ export function BillingCheckoutForm({ commit = "" }: { commit?: string }) {
         className="btn btn--primary"
         disabled={busy || !termsAck || !dpaAck}
       >
-        {busy ? "Issuing key…" : "Get key & continue"}
+        {busy ? "Redirecting to Stripe…" : "Continue to Stripe"}
       </button>
       <p className="billing-form__note">
-        We issue your <code>sk-at-…</code> key first and pause so you can copy
-        it — then Stripe for the card on file. Membership is $0 at checkout;
-        usage meters invoice later (see rates below). Model tokens stay on your
-        provider keys (BYOK).
+        Card on file activates the seat. Your <code>sk-at-…</code> key appears
+        on the success page and under{" "}
+        <Link href="/keys">API keys</Link> — only after you subscribe. Already
+        a subscriber? Mint more keys there without checking out again.
       </p>
     </form>
   );

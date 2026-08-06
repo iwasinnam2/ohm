@@ -1,21 +1,112 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { OhmMark } from "@/components/OhmMark";
 import { cursorOhmInstallHref } from "@/lib/cursorMcp";
 import { persistKey, readStoredKey } from "@/lib/keyStorage";
 
-export default function BillingSuccessPage() {
+type ClaimState = "loading" | "ready" | "claimed" | "error";
+
+function BillingSuccessInner() {
+  const searchParams = useSearchParams();
+  const sessionId = (searchParams.get("session_id") || "").trim();
+
   const [apiKey, setApiKey] = useState<string | null>(null);
   const [upstreamKey, setUpstreamKey] = useState("");
   const [copied, setCopied] = useState(false);
+  const [claimState, setClaimState] = useState<ClaimState>("loading");
+  const [claimError, setClaimError] = useState<string | null>(null);
 
   useEffect(() => {
-    const key = readStoredKey();
-    setApiKey(key);
-    if (key) persistKey(key);
-  }, []);
+    let cancelled = false;
+    let attempts = 0;
+
+    async function claim() {
+      if (!sessionId.startsWith("cs_")) {
+        const existing = readStoredKey();
+        if (existing) {
+          setApiKey(existing);
+          setClaimState("ready");
+        } else {
+          setClaimState("error");
+          setClaimError(
+            "Missing Checkout session. Open API keys if you already saved a key.",
+          );
+        }
+        return;
+      }
+
+      while (!cancelled && attempts < 12) {
+        attempts += 1;
+        try {
+          const res = await fetch("/api/pipe/v1/billing/claim-key", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ session_id: sessionId }),
+          });
+          const data = await res.json().catch(() => ({}));
+          if (res.ok && typeof data.api_key === "string") {
+            persistKey(data.api_key);
+            if (!cancelled) {
+              setApiKey(data.api_key);
+              setClaimState("ready");
+            }
+            return;
+          }
+          if (res.status === 410) {
+            const existing = readStoredKey();
+            if (!cancelled) {
+              if (existing) {
+                setApiKey(existing);
+                setClaimState("ready");
+              } else {
+                setClaimState("claimed");
+                setClaimError(
+                  typeof data?.detail === "object"
+                    ? data.detail?.message
+                    : "Key already revealed. Open API keys with a saved secret, or mint another there.",
+                );
+              }
+            }
+            return;
+          }
+          if (res.status === 409) {
+            await new Promise((r) => window.setTimeout(r, 1500));
+            continue;
+          }
+          const detail = data?.detail;
+          const msg =
+            typeof detail === "string"
+              ? detail
+              : detail?.message || data?.error?.message || `HTTP ${res.status}`;
+          if (!cancelled) {
+            setClaimState("error");
+            setClaimError(msg);
+          }
+          return;
+        } catch (err) {
+          if (!cancelled) {
+            setClaimState("error");
+            setClaimError(err instanceof Error ? err.message : String(err));
+          }
+          return;
+        }
+      }
+      if (!cancelled) {
+        setClaimState("error");
+        setClaimError(
+          "Still activating your seat — refresh in a few seconds, or check API keys.",
+        );
+      }
+    }
+
+    void claim();
+    return () => {
+      cancelled = true;
+    };
+  }, [sessionId]);
 
   const installHref = useMemo(() => {
     if (!apiKey) return null;
@@ -45,9 +136,13 @@ export default function BillingSuccessPage() {
 
       <h1 className="postpay__title">Your withOhm key</h1>
       <p className="postpay__lede">
-        Copy it now if you haven&apos;t already. Prove the pipe in Agent Shell,
-        or wire Cursor from the integrations board.
+        Issued after Checkout. Copy it now — we only show the secret once.
+        Manage and mint more anytime under API keys.
       </p>
+
+      {claimState === "loading" ? (
+        <p className="postpay__cta-note">Activating your seat and issuing a key…</p>
+      ) : null}
 
       {apiKey ? (
         <div className="billing-form__key-panel postpay__key-hero">
@@ -56,16 +151,22 @@ export default function BillingSuccessPage() {
             {copied ? "Copied" : "Copy key"}
           </button>
         </div>
-      ) : (
+      ) : null}
+
+      {claimError ? (
         <p className="billing-form__error" role="alert">
-          Key not found in this browser. Restore it on{" "}
-          <Link href="/keys">API keys</Link>, or mint a new one at{" "}
-          <Link href="/billing/intermediate">Intermediate checkout</Link>.
+          {claimError}{" "}
+          <Link href="/keys">API keys</Link>
+          {" · "}
+          <Link href="/billing/intermediate">Checkout</Link>
         </p>
-      )}
+      ) : null}
 
       <div className="cta-row postpay__next">
-        <Link href="/demo" className="btn btn--primary">
+        <Link href="/keys" className="btn btn--primary">
+          Manage API keys
+        </Link>
+        <Link href="/demo" className="btn">
           Run hit ratio demo
         </Link>
         <Link href="/workbench" className="btn">
@@ -110,5 +211,13 @@ export default function BillingSuccessPage() {
         <Link href="/i">Install path</Link>
       </p>
     </section>
+  );
+}
+
+export default function BillingSuccessPage() {
+  return (
+    <Suspense fallback={<p className="postpay__cta-note">Loading…</p>}>
+      <BillingSuccessInner />
+    </Suspense>
   );
 }

@@ -26,7 +26,7 @@ def hash_api_key(raw_key: str) -> str:
 class TenantRecord:
     tenant_id: str
     plan: str  # payg | enterprise | dev | design_partner
-    status: str  # active | suspended
+    status: str  # active | suspended | revoked
     key_prefix: str
     created_at: int
     key_hash: str = ""
@@ -72,6 +72,17 @@ class TenantRegistry:
 
     def _tenant_meta(self, tenant_id: str) -> str:
         return tenant_key(tenant_id, "meta", "record")
+
+    def _customer_tenants_key(self, customer_id: str) -> str:
+        return f"at:global:stripe_customer:{customer_id}:tenants"
+
+    async def get(self, tenant_id: str) -> Optional[TenantRecord]:
+        if not tenant_id:
+            return None
+        raw = await self._store.get(self._tenant_meta(tenant_id))
+        if not raw:
+            return None
+        return TenantRecord.from_json(raw)
 
     async def resolve(self, raw_key: str) -> Optional[TenantRecord]:
         key_hash = hash_api_key(raw_key)
@@ -200,6 +211,7 @@ class TenantRegistry:
                 tenant_id,
                 ttl_seconds=0,
             )
+            await self._index_customer_tenant(customer_id, tenant_id)
         if subscription_id:
             record.stripe_subscription_id = subscription_id
         if plan and plan in VALID_PLANS:
@@ -214,6 +226,102 @@ class TenantRegistry:
             # Keep the earliest delinquency timestamp
             if not record.billing_delinquent_since:
                 record.billing_delinquent_since = billing_delinquent_since
+        return await self._save(record)
+
+    async def _index_customer_tenant(self, customer_id: str, tenant_id: str) -> None:
+        if not customer_id or not tenant_id:
+            return
+        existing = await self._store.list_range(
+            self._customer_tenants_key(customer_id), 0, -1
+        )
+        if tenant_id not in existing:
+            await self._store.list_push(
+                self._customer_tenants_key(customer_id), tenant_id
+            )
+
+    async def list_for_customer(self, customer_id: str) -> list[TenantRecord]:
+        """All API-key tenants billed to one Stripe customer (account)."""
+        if not customer_id:
+            return []
+        ids = await self._store.list_range(
+            self._customer_tenants_key(customer_id), 0, -1
+        )
+        primary = await self._store.get(f"at:global:stripe_customer:{customer_id}")
+        ordered: list[str] = []
+        for tid in list(ids) + ([primary] if primary else []):
+            if tid and tid not in ordered:
+                ordered.append(tid)
+        out: list[TenantRecord] = []
+        for tid in ordered:
+            rec = await self.get(tid)
+            if rec and rec.status != "revoked":
+                out.append(rec)
+        return out
+
+    def _family_key(self, root_tenant_id: str) -> str:
+        return f"at:global:key_family:{root_tenant_id}"
+
+    async def _index_family(self, root_tenant_id: str, tenant_id: str) -> None:
+        if not root_tenant_id or not tenant_id:
+            return
+        existing = await self._store.list_range(
+            self._family_key(root_tenant_id), 0, -1
+        )
+        if tenant_id not in existing:
+            await self._store.list_push(self._family_key(root_tenant_id), tenant_id)
+
+    async def list_for_family(self, root_tenant_id: str) -> list[TenantRecord]:
+        ids = await self._store.list_range(self._family_key(root_tenant_id), 0, -1)
+        ordered: list[str] = []
+        for tid in list(ids) + [root_tenant_id]:
+            if tid and tid not in ordered:
+                ordered.append(tid)
+        out: list[TenantRecord] = []
+        for tid in ordered:
+            rec = await self.get(tid)
+            if rec and rec.status != "revoked":
+                out.append(rec)
+        return out
+
+    async def issue_sibling(
+        self, parent: TenantRecord, *, label: str = ""
+    ) -> tuple[str, TenantRecord]:
+        """Mint another key on the same Stripe / org account as ``parent``."""
+        raw_key, record = await self.issue(
+            plan=parent.plan,
+            label=label or parent.label or "additional",
+            terms_version=parent.terms_version,
+            dpa_version=parent.dpa_version,
+            org_id=parent.org_id,
+            cost_center=parent.cost_center,
+            soft_quota_usd=parent.soft_quota_usd,
+            request_cap=parent.request_cap,
+        )
+        if parent.stripe_customer_id:
+            updated = await self.attach_stripe(
+                record.tenant_id,
+                customer_id=parent.stripe_customer_id,
+                subscription_id=parent.stripe_subscription_id,
+                plan=parent.plan,
+                status="active",
+                billing_paid=parent.billing_paid,
+            )
+            if updated:
+                record = updated
+        else:
+            # Dev/bootstrap seats without Stripe — keep a local family index.
+            await self._index_family(parent.tenant_id, parent.tenant_id)
+            await self._index_family(parent.tenant_id, record.tenant_id)
+        return raw_key, record
+
+    async def revoke(self, tenant_id: str) -> Optional[TenantRecord]:
+        """Permanently invalidate a key (hash index removed; status=revoked)."""
+        record = await self.get(tenant_id)
+        if not record:
+            return None
+        if record.key_hash:
+            await self._store.delete(self._key_index(record.key_hash))
+        record.status = "revoked"
         return await self._save(record)
 
     async def sweep_delinquent(self, suspend_days: int) -> int:

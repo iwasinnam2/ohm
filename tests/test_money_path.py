@@ -492,9 +492,9 @@ async def test_checkout_passes_commit_to_session(monkeypatch):
     main_mod.state.settings.stripe_price_payg = "price_seat"
     monkeypatch.setattr(sb, "stripe_configured", lambda s: True)
 
-    def fake_session(settings, *, tenant_id, plan, success_url, cancel_url,
-                     customer_email="", commit=""):
-        captured.update({"plan": plan, "commit": commit})
+    def fake_session(settings, *, plan, success_url, cancel_url,
+                     tenant_id="", pending_id="", customer_email="", commit=""):
+        captured.update({"plan": plan, "commit": commit, "pending_id": pending_id})
         return {"id": "cs_x", "url": "https://checkout.test", "plan": plan}
 
     monkeypatch.setattr(sb, "create_checkout_session", fake_session)
@@ -510,7 +510,10 @@ async def test_checkout_passes_commit_to_session(monkeypatch):
             },
         )
         assert res.status_code == 200
-        assert captured == {"plan": "payg", "commit": "c99"}
+        assert captured["plan"] == "payg"
+        assert captured["commit"] == "c99"
+        assert captured["pending_id"].startswith("pend_")
+        assert "api_key" not in res.json()
 
 
 def test_commit_tier_detected_from_invoice_lines():
@@ -706,3 +709,108 @@ async def test_checkout_rate_limited_after_burst():
             .status_code
             == 429
         )
+
+
+@pytest.mark.asyncio
+async def test_account_keys_mint_list_delete():
+    """Subscribers mint/list/delete keys without re-entering checkout details."""
+    from at_utility import checkout_fulfill as cf
+
+    admin = {"Authorization": "Bearer sk-at-dev"}
+    async with _client() as client:
+        issued = await client.post(
+            "/v1/admin/tenants",
+            headers=admin,
+            json={
+                "plan": "payg",
+                "label": "acct",
+                "terms_ack": True,
+                "dpa_ack": True,
+            },
+        )
+        assert issued.status_code == 200
+        api_key = issued.json()["api_key"]
+        tenant_id = issued.json()["tenant"]["tenant_id"]
+        await main_mod.state.tenants.attach_stripe(
+            tenant_id,
+            customer_id="cus_test_keys",
+            subscription_id="sub_test_keys",
+            status="active",
+            billing_paid=True,
+        )
+        headers = {"Authorization": f"Bearer {api_key}"}
+
+        listed = await client.get("/v1/account/keys", headers=headers)
+        assert listed.status_code == 200
+        assert len(listed.json()["keys"]) >= 1
+
+        minted = await client.post(
+            "/v1/account/keys",
+            headers=headers,
+            json={"label": "ci"},
+        )
+        assert minted.status_code == 200
+        new_key = minted.json()["api_key"]
+        new_tid = minted.json()["tenant"]["tenant_id"]
+        assert new_key.startswith("sk-at-")
+        assert new_tid != tenant_id
+
+        listed2 = await client.get("/v1/account/keys", headers=headers)
+        ids = {k["tenant_id"] for k in listed2.json()["keys"]}
+        assert tenant_id in ids and new_tid in ids
+
+        deleted = await client.delete(
+            f"/v1/account/keys/{new_tid}", headers=headers
+        )
+        assert deleted.status_code == 200
+        assert deleted.json()["tenant"]["status"] == "revoked"
+
+        # Revoked secret no longer authenticates
+        dead = await client.get(
+            "/v1/usage", headers={"Authorization": f"Bearer {new_key}"}
+        )
+        assert dead.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_checkout_fulfill_and_claim_key():
+    from at_utility import checkout_fulfill as cf
+
+    async with _client() as client:
+        pending_id = cf.new_pending_id()
+        await cf.save_pending(
+            main_mod.state.store,
+            pending_id,
+            {
+                "plan": "payg",
+                "email": "claim@test.dev",
+                "label": "claim-me",
+                "terms_version": "tos-test",
+                "dpa_version": "dpa-test",
+            },
+        )
+        fulfilled = await cf.fulfill_pending_checkout(
+            store=main_mod.state.store,
+            tenants=main_mod.state.tenants,
+            settings=main_mod.state.settings,
+            session_id="cs_test_claim_1",
+            pending_id=pending_id,
+            customer_id="cus_claim",
+            subscription_id="sub_claim",
+        )
+        assert fulfilled is not None
+        raw_key, record = fulfilled
+        assert record.stripe_customer_id == "cus_claim"
+        assert record.billing_paid is True
+
+        # Claim consumes the one-time reveal
+        claim = await client.post(
+            "/v1/billing/claim-key", json={"session_id": "cs_test_claim_1"}
+        )
+        assert claim.status_code == 200
+        assert claim.json()["api_key"] == raw_key
+
+        again = await client.post(
+            "/v1/billing/claim-key", json={"session_id": "cs_test_claim_1"}
+        )
+        assert again.status_code == 410

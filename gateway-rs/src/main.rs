@@ -503,9 +503,9 @@ async fn handle_inner(
     let is_stripe_webhook =
         path_q.starts_with("/v1/billing/webhook") && method == Method::POST;
     let is_ready = path_only == "/ready" && method == Method::GET;
-    // Self-serve checkout mints the tenant key, so callers cannot have one yet.
-    // Python applies its own per-IP token bucket on this route.
+    // Self-serve checkout / one-time key claim — no Bearer yet; Python rate-limits.
     let is_public_checkout = path_only == "/v1/billing/checkout" && method == Method::POST;
+    let is_public_claim = path_only == "/v1/billing/claim-key" && method == Method::POST;
     // Savings receipts / aggregate stats are unauthenticated by design —
     // Python applies its own per-IP token bucket on these routes.
     let is_public_read = path_only.starts_with("/v1/public/") && method == Method::GET;
@@ -517,6 +517,7 @@ async fn handle_inner(
     let is_passthrough = is_stripe_webhook
         || is_ready
         || is_public_checkout
+        || is_public_claim
         || is_public_read
         || is_key_directory;
     let mut edge_verified = false;
@@ -552,6 +553,8 @@ async fn handle_inner(
             "ready"
         } else if is_public_checkout {
             "public checkout"
+        } else if is_public_claim {
+            "public claim-key"
         } else if is_key_directory {
             "key directory"
         } else if is_public_read {

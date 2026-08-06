@@ -19,6 +19,11 @@ attached to the subscription on `checkout.session.completed`
 (`attach_meter_prices_to_subscription`). Rates are printed as fine print on
 the Intermediate billing page.
 
+Self-serve flow: `POST /v1/billing/checkout` creates a **pending** signup (no
+API key yet) → Stripe → `checkout.session.completed` / `claim-key` issues the
+first secret once. Further keys: `GET|POST|DELETE /v1/account/keys` with any
+active Bearer on that Stripe customer (no re-checkout).
+
 ### Meter units (must match Prices)
 
 | Event | Stripe quantity | List USD (`AT_PRICE_*`) |
