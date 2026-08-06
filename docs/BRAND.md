@@ -1,6 +1,6 @@
 # Name and promise
 
-**Product name:** Ohm
+**Product name:** Ohm / withOhm (public site brand)
 
 **Logo:** Ohm symbol (Ω) — Greek capital omega as the sole mark on the first screen. App / marketplace icon: [`brand/ohm-icon-360.png`](../brand/ohm-icon-360.png) (360×360). Vector source: [`brand/ohm-icon.svg`](../brand/ohm-icon.svg).
 
@@ -35,18 +35,25 @@ Site on Amplify: [AMPLIFY_SITE.md](../infra/runbooks/AMPLIFY_SITE.md).
 
 Lead with **latency/cache relief** and **compliant web context**. The bill is trust and pipe rent — not managed-token wholesale theatre. See [VISION.md](VISION.md).
 
+| Do | Don't |
+|----|--------|
+| Exact-match replay, BYOK, OpenAI-compatible | “Semantic cache,” gateway feature laundry lists |
+| Pipe, ingress, meters, receipts | Wrapper, proxy-as-product, free tokens |
+| Compose with Neon / agents — don’t clone them | Claim RAG, vectors, or database as Ohm’s gem |
+
 ## Hosts (owned)
 
 Root **`withohm.dev`** is registered (GoDaddy .dev + domain protection + Microsoft 365 email).
 
 | Role | Host |
 |------|------|
-| Marketing / docs | `https://withohm.dev` / `www` (apex cutover when ready) |
-| Public API | `https://api.withohm.dev` (ACM issued; edge cutover separate) |
-| Status (future) | `https://status.withohm.dev` |
+| Marketing / docs | `https://www.withohm.dev` (Amplify + CloudFront) |
+| Public API | `https://api.withohm.dev` (EKS, us-east-1) |
+| Fetch demo | `https://fetch.withohm.dev` |
 | Partner email | `partners@withohm.dev` |
+| Admin email | `admin@withohm.dev` |
 
-Until AWS edge cutover, the supported chat contract remains local `http://localhost:8081/v1`. Docs may temporarily share the `api.*` hostname on Vercel — disclosed on-site.
+Local smoke remains `http://localhost:8081/v1`. Public status UI is retired — limits live in [STATUS.md](STATUS.md) and site `/docs/status`.
 
 ## Internal vs public names
 

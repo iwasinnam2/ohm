@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { StartOrProfileCta } from "@/components/StartOrProfileCta";
 
 export default function NotFound() {
   return (
@@ -11,9 +12,7 @@ export default function NotFound() {
         </p>
       </header>
       <div className="cta-row">
-        <Link href="/billing/intermediate" className="btn btn--primary">
-          Start now — $0 seat
-        </Link>
+        <StartOrProfileCta className="btn btn--primary" />
         <Link href="/" className="link-quiet">
           Home
         </Link>

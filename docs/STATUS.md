@@ -5,10 +5,11 @@
 | Surface | URL | State |
 |---------|-----|--------|
 | Docs / marketing | https://www.withohm.dev | Live (AWS Amplify + CloudFront) |
-| Status page | https://status.withohm.dev → `/status` | Live |
 | Public API | https://api.withohm.dev | Live (EKS, single-region us-east-1) |
 | Fetch toy | https://fetch.withohm.dev | Live (demo strip) |
 | Local MVP edge | http://localhost:8081 | Supported for local smoke |
+
+Public status UI (`/status`, `status.withohm.dev`) is retired. Limits and hosts are documented here and on the site at `/docs/status`.
 
 ```powershell
 .\scripts\release_smoke.ps1
@@ -23,7 +24,6 @@
 | `withohm.dev` | Apex — forward to www per [APEX_CUTOVER.md](../infra/runbooks/APEX_CUTOVER.md) |
 | `api.withohm.dev` | Public API |
 | `fetch.withohm.dev` | Public fetch demo |
-| `status.withohm.dev` | Status page |
 
 See [BRAND.md](BRAND.md) and [infra/runbooks/GO_LIVE.md](../infra/runbooks/GO_LIVE.md).
 
