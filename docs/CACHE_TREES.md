@@ -43,12 +43,23 @@ Parent architecture (Neon-grammar overview): [ARCHITECTURE.md](ARCHITECTURE.md).
 
 | Phase | Scope |
 |-------|--------|
-| **0 (this)** | Spec, resolve, v3 keys for named trees, dual-plane parity, honesty/LEGAL/SECURITY stubs |
-| 1 | Fork / reset APIs, COW reads, CI compose, MCP |
-| 2 | Promote / freeze, receipt `tree_*`, audit |
-| 3 | Shared blob + index |
+| **0** | Spec, resolve, v3 keys for named trees, dual-plane parity, honesty/LEGAL/SECURITY stubs |
+| **1–2 (this)** | Fork / reset / promote / freeze APIs, COW reads, digest index, receipt `tree_*`, audit actions |
+| 3 | Shared blob store efficiency (refcount GC) |
 | 4 | Retain / restore (legal Duration first) |
 | 5 | Org ACLs / quotas |
+
+### API (Phases 1–2)
+
+| Method | Path | Role |
+|--------|------|------|
+| `GET` | `/v1/cache/trees` | List trees |
+| `POST` | `/v1/cache/trees` | Fork `{name, parent?}` |
+| `POST` | `/v1/cache/trees/{id}/reset` | `{to: empty\|parent}` |
+| `POST` | `/v1/cache/trees/{id}/promote` | Merge child digests into parent |
+| `POST` | `/v1/cache/trees/{id}/freeze` | Immutable tip; writes → 409 |
+
+Audit: `cache.tree_fork`, `cache.tree_reset`, `cache.tree_promote`, `cache.tree_freeze`, deny variants.
 
 ## Neon fence
 
