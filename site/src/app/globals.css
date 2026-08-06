@@ -2794,9 +2794,8 @@ body:has(.doc-layout) .site-footer {
   }
 }
 
-/* Org console + Agent Shell */
-.org-console__log,
-.agent-shell__thread pre {
+/* Org console */
+.org-console__log {
   font-family: var(--font-plex-mono), ui-monospace, monospace;
   font-size: 0.8rem;
   white-space: pre-wrap;
@@ -2806,32 +2805,6 @@ body:has(.doc-layout) .site-footer {
   border-radius: 4px;
   max-height: 28rem;
   overflow: auto;
-}
-
-.agent-shell__bar {
-  display: grid;
-  gap: var(--space-3, 1rem);
-  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
-  margin-bottom: var(--space-3, 1rem);
-}
-
-.agent-shell__bar label {
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-  font-size: 0.85rem;
-}
-
-.agent-shell__bar input,
-.agent-shell__compose textarea {
-  font: inherit;
-  padding: 0.55rem 0.7rem;
-}
-
-.agent-shell__meta {
-  font-family: var(--font-plex-mono), ui-monospace, monospace;
-  font-size: 0.8rem;
-  opacity: 0.85;
 }
 
 .demo-steps {
@@ -2845,77 +2818,169 @@ body:has(.doc-layout) .site-footer {
   margin-bottom: 0.4rem;
 }
 
-.demo-result {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-3, 1rem);
-  margin: var(--space-3, 1rem) 0;
-  padding: var(--space-3, 1rem) var(--space-4, 1.25rem);
-  border: 1px solid var(--line);
-  border-radius: var(--radius, 4px);
-  background: var(--surface);
-}
-
-.demo-result__call {
+/* Agent Shell — PowerShell-style terminal */
+.ps-shell {
+  --ps-bg: #012456;
+  --ps-fg: #f0f0f0;
+  --ps-muted: #9ec3e8;
+  --ps-err: #ff6b6b;
+  --ps-cmd: #ffe08a;
+  --ps-chrome: #0a1a33;
   display: flex;
   flex-direction: column;
+  min-height: min(70vh, 40rem);
+  max-width: 56rem;
+  border: 1px solid color-mix(in srgb, var(--ps-muted) 35%, transparent);
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--ps-bg);
+  color: var(--ps-fg);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+  cursor: text;
+}
+
+.ps-shell__titlebar {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.45rem 0.75rem;
+  background: linear-gradient(180deg, #1a3a66 0%, var(--ps-chrome) 100%);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 0.75rem;
+  color: var(--ps-muted);
+}
+
+.ps-shell__dots {
+  display: flex;
   gap: 0.35rem;
 }
 
-.demo-result__label {
-  font-size: 0.7rem;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--muted);
+.ps-shell__dots i {
+  display: block;
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.22);
 }
 
-.demo-result__badge {
+.ps-shell__dots i:first-child {
+  background: #ff5f57;
+}
+.ps-shell__dots i:nth-child(2) {
+  background: #febc2e;
+}
+.ps-shell__dots i:nth-child(3) {
+  background: #28c840;
+}
+
+.ps-shell__title {
   font-family: var(--font-plex-mono), ui-monospace, monospace;
-  font-weight: 600;
-  font-size: 1.05rem;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.02em;
 }
 
-.demo-result__badge--miss {
-  color: color-mix(in srgb, #c47a5a 85%, var(--fg));
-}
-
-.demo-result__badge--hit {
-  color: color-mix(in srgb, #5a9e6f 90%, var(--fg));
-}
-
-.demo-result__arrow {
-  color: var(--muted);
-  font-size: 1.25rem;
-  padding-top: 1rem;
-}
-
-.demo-result__ledger {
-  flex: 1 1 100%;
-  margin: 0;
-  font-family: var(--font-plex-mono), ui-monospace, monospace;
-  font-size: 0.8rem;
-  color: var(--muted);
-}
-
-.agent-shell--demo .agent-shell__bar input[readonly] {
-  opacity: 0.85;
-}
-
-.agent-shell__thread {
-  min-height: 12rem;
-  margin: var(--space-3, 1rem) 0;
-}
-
-.agent-shell__msg {
-  margin-bottom: var(--space-3, 1rem);
-}
-
-.agent-shell__compose {
+.ps-shell__statusbar {
   display: flex;
-  flex-direction: column;
-  gap: var(--space-2, 0.75rem);
+  flex-wrap: wrap;
+  gap: 0.75rem 1.25rem;
+  padding: 0.4rem 0.85rem;
+  background: color-mix(in srgb, var(--ps-chrome) 88%, #000);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  font-family: var(--font-plex-mono), ui-monospace, monospace;
+  font-size: 0.7rem;
+  color: var(--ps-muted);
+}
+
+.ps-shell__statusbar strong {
+  color: var(--ps-fg);
+  font-weight: 600;
+}
+
+.ps-shell__statusbar-hint {
+  margin-left: auto;
+  opacity: 0.75;
+}
+
+.ps-shell__scroll {
+  flex: 1 1 auto;
+  min-height: 18rem;
+  max-height: min(52vh, 32rem);
+  overflow: auto;
+  padding: 0.85rem 1rem 0.5rem;
+  font-family: var(--font-plex-mono), Consolas, "Courier New", monospace;
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.ps-shell__line {
+  margin: 0 0 0.65rem;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: var(--ps-fg);
+}
+
+.ps-shell__line--sys {
+  color: var(--ps-muted);
+}
+
+.ps-shell__line--cmd {
+  color: var(--ps-cmd);
+}
+
+.ps-shell__line--err {
+  color: var(--ps-err);
+}
+
+.ps-shell__line--out {
+  color: var(--ps-fg);
+}
+
+.ps-shell__prompt {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.55rem 0.85rem 0.7rem;
+  background: color-mix(in srgb, var(--ps-bg) 92%, #000);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.ps-shell__prompt-label {
+  flex: 0 0 auto;
+  font-family: var(--font-plex-mono), Consolas, monospace;
+  font-size: 0.82rem;
+  color: #5b9bd5;
+  white-space: nowrap;
+}
+
+.ps-shell__input {
+  flex: 1 1 auto;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: var(--ps-fg);
+  font-family: var(--font-plex-mono), Consolas, monospace;
+  font-size: 0.82rem;
+  caret-color: #5b9bd5;
+  padding: 0.2rem 0;
+}
+
+.ps-shell__input::placeholder {
+  color: color-mix(in srgb, var(--ps-muted) 55%, transparent);
+}
+
+.ps-shell__input:disabled {
+  opacity: 0.55;
+}
+
+@media (max-width: 640px) {
+  .ps-shell {
+    min-height: 60vh;
+    border-radius: 6px;
+  }
+
+  .ps-shell__statusbar-hint {
+    display: none;
+  }
 }
 
 /* --- API keys (/keys) --- */

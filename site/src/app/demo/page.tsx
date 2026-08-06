@@ -3,40 +3,41 @@ import Link from "next/link";
 import { AgentShellClient } from "@/components/AgentShellClient";
 
 export const metadata: Metadata = {
-  title: "Hit ratio demo",
+  title: "Agent Shell demo",
   description:
-    "Identical prompt twice through withOhm — watch MISS become HIT. Hit ratio is the inventory; the spread is the arbitrage.",
+    "Try the withOhm Agent Shell — PowerShell CLI for MCP skills on the pipe.",
 };
 
 export default function DemoPage() {
   return (
     <>
       <header className="page-head">
-        <h1>Hit ratio in sixty seconds</h1>
+        <h1>Agent Shell — try the pipe</h1>
         <p>
-          Same prompt, twice, through the Ohm pipe. First call misses the
-          cache; the second hits. That ratio — how often identical traffic
-          replays — is what withOhm meters.
+          Same PowerShell CLI as the{" "}
+          <Link href="/workbench">Agent Shell</Link>. Path defaults to{" "}
+          <code>self-proof</code> for this demo session.
         </p>
         <ol className="demo-steps">
           <li>
-            Paste your <code>sk-at-…</code> key (from{" "}
+            Paste your key:{" "}
+            <code>Set-OhmKey -Key sk-at-…</code> (from{" "}
             <Link href="/keys">API keys</Link> or{" "}
             <Link href="/billing/intermediate">Intermediate</Link>).
           </li>
           <li>
-            Leave model as <code>mock</code> — no provider key needed for this
-            proof. Path defaults to <code>self-proof</code> (feeds hit-ratio).
+            Chat on the pipe:{" "}
+            <code>Invoke-OhmChat -Prompt &quot;ohm-self-proof-v1&quot;</code>{" "}
+            — run it twice and read the <code>[MISS]</code> / <code>[HIT]</code>{" "}
+            prefix.
           </li>
           <li>
-            Click <strong>Prove miss → HIT</strong>. Read the strip: first
-            MISS, second HIT.
+            Inspect meters: <code>Get-OhmUsage</code> ·{" "}
+            <code>Get-OhmSaving</code> · <code>New-OhmReceipt</code>
           </li>
           <li>
-            Click <strong>Mint public receipt</strong> — shareable{" "}
-            <code>/r/…</code> link + README badge (same as{" "}
-            <code>POST /v1/savings/receipt</code> / MCP <code>ohm_receipt</code>
-            ).
+            List MCP skills: <code>Get-OhmSkill</code> · full help:{" "}
+            <code>Get-Help</code>
           </li>
         </ol>
       </header>
@@ -44,9 +45,9 @@ export default function DemoPage() {
       <p className="receipt__foot">
         <Link href="/workbench">Agent Shell</Link>
         {" · "}
-        <Link href="/org">Org ledger</Link>
+        <Link href="/docs/cursor">MCP skills</Link>
         {" · "}
-        <Link href="/docs/enterprise-chaos">Enterprise chaos</Link>
+        <Link href="/org">Org ledger</Link>
       </p>
     </>
   );

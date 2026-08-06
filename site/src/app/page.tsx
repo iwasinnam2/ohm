@@ -27,7 +27,7 @@ const BOARD = [
     href: "/workbench",
     eyebrow: "Shell",
     title: "Agent Shell",
-    desc: "Thin workbench on the Ohm pipe — hit ratio proof built in.",
+    desc: "PowerShell CLI on the Ohm pipe — MCP skills and pipe cmdlets.",
     go: "Open the shell",
   },
   {

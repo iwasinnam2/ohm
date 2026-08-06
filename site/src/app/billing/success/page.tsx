@@ -166,11 +166,11 @@ function BillingSuccessInner() {
         <Link href="/keys" className="btn btn--primary">
           Manage API keys
         </Link>
-        <Link href="/demo" className="btn">
-          Run hit ratio demo
-        </Link>
         <Link href="/workbench" className="btn">
           Open Agent Shell
+        </Link>
+        <Link href="/demo" className="btn">
+          Shell demo
         </Link>
       </div>
 
