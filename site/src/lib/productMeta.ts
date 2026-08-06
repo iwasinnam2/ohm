@@ -25,7 +25,7 @@ export const PRODUCT_INDEX: ProductMeta[] = [
     slug: "architecture",
     title: "Architecture",
     description:
-      "One OpenAI-compatible gateway. Cache tips for inventory. Promote as the only crossing to main.",
+      "Two containers, one metered crossing — tips, Promote, and compose with a database preview.",
     eyebrow: "Deep dive",
   },
   {
