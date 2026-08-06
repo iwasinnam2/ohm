@@ -2753,3 +2753,99 @@ pre {
 .keys-pill--ok {
   border-color: currentColor;
 }
+
+/* Cache trees flowchart (docs visual aid) */
+.ohm-flow {
+  margin: var(--space-5) 0 var(--space-6);
+  padding: var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  background: color-mix(in srgb, var(--bg) 92%, #000);
+}
+
+.ohm-flow__title {
+  margin: 0 0 var(--space-3);
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+  letter-spacing: var(--tracking-tight);
+  text-align: center;
+}
+
+.ohm-flow__svg {
+  display: block;
+  width: 100%;
+  max-width: 40rem;
+  height: auto;
+  margin: 0 auto;
+}
+
+.ohm-flow__panel {
+  fill: color-mix(in srgb, var(--bg-elevated) 88%, #000);
+  stroke: rgba(242, 235, 224, 0.45);
+  stroke-width: 1.5;
+}
+
+.ohm-flow__panel--ephemeral {
+  stroke-dasharray: 6 4;
+}
+
+.ohm-flow__panel--durable {
+  stroke: rgba(242, 235, 224, 0.7);
+}
+
+.ohm-flow__panel-label {
+  fill: var(--fg);
+  font-family: var(--font-body);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.ohm-flow__callout rect {
+  fill: color-mix(in srgb, var(--bg) 70%, #000);
+  stroke: rgba(242, 235, 224, 0.35);
+  stroke-width: 1;
+}
+
+.ohm-flow__callout text {
+  fill: var(--fg);
+  font-family: var(--font-body);
+  font-size: 11px;
+}
+
+.ohm-flow__callout line {
+  stroke: rgba(242, 235, 224, 0.35);
+  stroke-width: 1;
+}
+
+.ohm-flow__promote {
+  stroke: #a855f7;
+  stroke-width: 6;
+  stroke-linecap: round;
+}
+
+.ohm-flow__promote-pill {
+  fill: #a855f7;
+}
+
+.ohm-flow__promote-text {
+  fill: #0a0a0c;
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.ohm-flow__cow {
+  stroke: rgba(242, 235, 224, 0.45);
+  stroke-width: 1.5;
+  stroke-dasharray: 5 4;
+}
+
+.ohm-flow__note {
+  margin: var(--space-3) 0 0;
+  color: var(--muted);
+  font-size: var(--text-sm);
+  text-align: center;
+  max-width: 36rem;
+  margin-left: auto;
+  margin-right: auto;
+}

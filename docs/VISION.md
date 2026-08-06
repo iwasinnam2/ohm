@@ -34,6 +34,7 @@ managed pool only. Ingest always uses Ohm-owned network.
 2. **Proof wedge:** Indie / design-partner meter hits (personal COGS pain)
 3. **Compatibility:** MCP attach for Cursor, VS Code, Claude, custom agents
 
+Architecture (Ephemeral Side / Pipeline System): [ARCHITECTURE.md](ARCHITECTURE.md).  
 Gem (prefill waste): [GEM_POSITION.md](GEM_POSITION.md).  
 Enterprise thesis: [ENTERPRISE_CHAOS.md](ENTERPRISE_CHAOS.md).
 

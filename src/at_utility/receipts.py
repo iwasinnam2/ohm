@@ -91,6 +91,8 @@ def mint_receipt(
     region: str,
     plane: str = "python",
     kind: str = "cache_hit",
+    tree_id: str = "",
+    tree_name: str = "",
     created: Optional[int] = None,
     key: Optional[Ed25519PrivateKey] = None,
 ) -> Optional[str]:
@@ -111,6 +113,9 @@ def mint_receipt(
         "request_sha256": request_sha256,
         "tenant_sha256": _tenant_fingerprint(tenant),
     }
+    if tree_id:
+        payload["tree_id"] = tree_id
+        payload["tree_name"] = tree_name or tree_id
     signing_input = (
         _b64u(json.dumps(header, separators=(",", ":"), sort_keys=True).encode())
         + "."

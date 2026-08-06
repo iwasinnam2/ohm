@@ -32,7 +32,11 @@ Lag drill (us-west-2 in-cluster): **PASS (~0–1000ms budget)**. Edge NLBs + all
 
 ## Cache key (Python = Rust)
 
-Key = `at:{tenant}:cache:v2:{digest}`. Digest = SHA-256 of canonical JSON:
+Default tree `main`: `at:{tenant}:cache:v2:{digest}`.  
+Named tree (`X-Ohm-Cache-Tree`): `at:{tenant}:tree:{tree_id}:cache:v3:{digest}`.  
+Digest is always the last `:` segment. See [CACHE_TREES.md](CACHE_TREES.md).
+
+Digest = SHA-256 of canonical JSON:
 
 ```json
 {"extras":{...},"messages":[...],"model":"..."}

@@ -3,12 +3,15 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Markdown } from "@/components/Markdown";
 import { IntegrationBrandBoard } from "@/components/IntegrationBrandBoard";
+import { CacheTreesFlowchart } from "@/components/CacheTreesFlowchart";
 import {
   DOC_GROUPS,
   getDocMeta,
   getDocSlugs,
   readDocMarkdown,
 } from "@/lib/docs";
+
+const CACHE_TREES_FLOW_MARK = "<!-- ohm:cache-trees-flowchart -->";
 
 type Props = {
   params: Promise<{ slug: string }>;
@@ -62,7 +65,15 @@ export default async function DocPage({ params }: Props) {
         {slug === "integrations" ? (
           <IntegrationBrandBoard showIntro />
         ) : null}
-        <Markdown source={source} />
+        {slug === "cache-trees" && source.includes(CACHE_TREES_FLOW_MARK) ? (
+          <>
+            <Markdown source={source.split(CACHE_TREES_FLOW_MARK)[0] ?? ""} />
+            <CacheTreesFlowchart />
+            <Markdown source={source.split(CACHE_TREES_FLOW_MARK)[1] ?? ""} />
+          </>
+        ) : (
+          <Markdown source={source} />
+        )}
       </div>
     </div>
   );

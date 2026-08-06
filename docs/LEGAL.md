@@ -74,6 +74,10 @@ Allowed `web_purpose` values: `public_web_retrieval`, `business_catalog`, `publi
 
 `cache_control: "no_store"` skips Redis write (confidential prompts). Default cache purpose is identical-request replay only (`X-AT-Cache-Purpose: identical-request-replay`).
 
+### Cache trees (Phase 0 stub)
+
+Optional `X-Ohm-Cache-Tree` / `cache_tree` scopes exact-replay inventory within a tenant (`main` default). Named trees do **not** widen purpose, do **not** create a training corpus, and are **not** a database branch. Lineage ops (fork/promote/freeze/retain) are forthcoming processor operations on the same identical-request-replay purpose — see [CACHE_TREES.md](CACHE_TREES.md). Full ToS/DPA Duration language ships with Phase 1+ tree APIs.
+
 ## Adjacent frameworks
 
 Access/privacy gates are necessary but not sufficient. These regimes also bind the product:
