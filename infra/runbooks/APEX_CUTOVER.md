@@ -80,6 +80,6 @@ Vercel project `site` no longer owns `withohm.dev` (removed from account).
 1. Sign in at GoDaddy → Domains → `withohm.dev` → **Forwarding** (or DNS).
 2. **Domain Forward:** `withohm.dev` → `https://www.withohm.dev` (301 permanent), **or** ALIAS/ANAME `@` → `d2pta05dql0ixa.cloudfront.net`.
 3. Verify: `powershell -File scripts/verify_apex.ps1` — apex should 301 to www (or serve Amplify).
-4. Confirm SNS email for AWS budget (`admin@withohm.dev`) if you have a pending subscription mail.
+4. SNS email alerts are paused until revenue — skip inbox confirmation; see [EMAIL_ALERTS.md](EMAIL_ALERTS.md).
 
 Until forward is live, share **`https://www.withohm.dev`** and **`https://fetch.withohm.dev`**.
