@@ -993,7 +993,7 @@ body:has(.doc-layout) .site-footer {
   max-width: none;
 }
 
-/* Docs article — H2 bands: copy left, code/tables/boxes/figures right */
+/* Docs article — H2 bands; two-column only for terminal code/table showcases */
 .docs-article {
   display: flex;
   flex-direction: column;
@@ -1021,6 +1021,14 @@ body:has(.doc-layout) .site-footer {
 
 .doc-section--copy-only {
   grid-template-columns: minmax(0, 38rem);
+}
+
+.doc-section--media-only {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.doc-section--media-only .doc-section__media {
+  grid-column: 1 / -1;
 }
 
 .doc-section__title {
