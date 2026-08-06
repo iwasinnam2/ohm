@@ -7,6 +7,12 @@ variable "enable_eks" {
   description = "Provision EKS control plane + managed node group in the leader VPC"
 }
 
+variable "eks_kubernetes_version" {
+  type        = string
+  default     = "1.36"
+  description = "EKS control-plane Kubernetes version (leader + edge). 1.31 extended support ends 2026-11-26; 1.36 is the newest standard-support version. Upgrade live clusters one minor at a time."
+}
+
 variable "eks_node_instance_types" {
   type    = list(string)
   default = ["t3.medium"]
@@ -103,7 +109,7 @@ resource "aws_eks_cluster" "leader" {
   provider  = aws.leader
   name      = "${local.name_prefix}-eks"
   role_arn  = aws_iam_role.eks_cluster[0].arn
-  version   = "1.31"
+  version   = var.eks_kubernetes_version
 
   # API_AND_CONFIG_MAP enables EKS access entries (GitHub Actions deployer)
   # while keeping the existing aws-auth ConfigMap mappings working.
