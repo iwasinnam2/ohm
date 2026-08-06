@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { CacheTreesFlowchart } from "@/components/CacheTreesFlowchart";
+import { DualCrossingAid } from "@/components/DualCrossingAid";
 import { OhmMark } from "@/components/OhmMark";
 
 const PILLARS = [
@@ -103,6 +105,13 @@ export default function HomePage() {
           ))}
         </ul>
       </section>
+
+      <DualCrossingAid />
+
+      <div className="ohm-flow--home">
+        <CacheTreesFlowchart />
+      </div>
+
       <section className="board" aria-labelledby="board-label">
         <p className="board__label" id="board-label">
           The board — everything, compartmentalised
