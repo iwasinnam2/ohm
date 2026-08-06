@@ -17,6 +17,15 @@ type Entry = {
 const ENTRIES: Entry[] = [
   {
     date: "2026-08-06",
+    title: "Flagship tip isolation",
+    body: "Inventory per tenant and Architecture rewritten withOhm-first: shared gateway, separate tips, Promote as the only crossing. New schematics for noisy neighbor, Promote, and CI compose with an optional DB preview peer.",
+    links: [
+      { href: "/use-cases/inventory-per-tenant", label: "Inventory per tenant" },
+      { href: "/product/architecture", label: "Architecture" },
+    ],
+  },
+  {
+    date: "2026-08-06",
     title: "Resources spine",
     body: "Public Resources hub with Changelog, Security marketing page, and Contact (enterprise inquiry). Header exposes Resources alongside Product · Solutions · Docs · Pricing. Blog and case studies still deferred.",
     links: [
