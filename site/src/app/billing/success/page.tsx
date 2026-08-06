@@ -204,7 +204,7 @@ function BillingSuccessInner() {
       </p>
 
       <p className="postpay__cta-note">
-        <Link href="/org">Org console</Link>
+        <Link href="/org">Analytics</Link>
         {" · "}
         <Link href="/docs/pricing">Metered rates</Link>
         {" · "}

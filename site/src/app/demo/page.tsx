@@ -47,7 +47,7 @@ export default function DemoPage() {
         {" · "}
         <Link href="/docs/cursor">MCP skills</Link>
         {" · "}
-        <Link href="/org">Org ledger</Link>
+        <Link href="/org">Analytics</Link>
       </p>
     </>
   );
