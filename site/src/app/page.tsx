@@ -31,18 +31,18 @@ const BOARD = [
     go: "Open the shell",
   },
   {
-    href: "/docs/integrations",
-    eyebrow: "Connect",
-    title: "Integrations",
-    desc: "Cursor, Claude, VS Code, Windsurf, Zed — and the pipe stack, interlinked.",
-    go: "Open the board",
-  },
-  {
-    href: "/docs/quickstart",
-    eyebrow: "base_URL",
+    href: "/product/pipe",
+    eyebrow: "Product",
     title: "OpenAI-compatible pipe",
     desc: "Point any SDK at api.withohm.dev/v1. Keep your keys (BYOK).",
-    go: "Quickstart",
+    go: "See the product",
+  },
+  {
+    href: "/use-cases",
+    eyebrow: "Solutions",
+    title: "Use cases",
+    desc: "Agents, CI preview inventory, enterprise chaos, compliant fetch.",
+    go: "Browse solutions",
   },
   {
     href: "/demo",
@@ -52,18 +52,18 @@ const BOARD = [
     go: "Run the demo",
   },
   {
-    href: "/org",
-    eyebrow: "Govern",
-    title: "Org & ledger",
-    desc: "Cost centers, FinOps export, policy — corporate clean ledger.",
-    go: "Open org console",
+    href: "/product/architecture",
+    eyebrow: "Deep dive",
+    title: "Architecture",
+    desc: "Ephemeral Side × Pipeline System — one metered HIT/MISS crossing.",
+    go: "Read the architecture",
   },
   {
-    href: "/docs/enterprise-chaos",
+    href: "/use-cases/enterprise-chaos",
     eyebrow: "Enterprise",
     title: "Chaos governor",
     desc: "SSO, audit, compliant fetch — govern shadow AI and repeat spend.",
-    go: "Read the guide",
+    go: "Read the solution",
   },
 ] as const;
 
@@ -86,14 +86,14 @@ export default function HomePage() {
           <Link href="/billing/intermediate" className="btn btn--primary">
             Start now — $0 seat
           </Link>
-          <Link href="/docs/integrations" className="link-quiet">
-            Integrations
+          <Link href="/product" className="link-quiet">
+            Product
           </Link>
-          <Link href="/demo" className="link-quiet">
-            Hit ratio demo
+          <Link href="/use-cases" className="link-quiet">
+            Solutions
           </Link>
-          <Link href="/billing/enterprise" className="link-quiet">
-            Enterprise
+          <Link href="/pricing" className="link-quiet">
+            Pricing
           </Link>
         </div>
         <ul className="hero__pillars">
