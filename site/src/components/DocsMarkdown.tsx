@@ -15,16 +15,24 @@ export function DocsMarkdown({ source, sectionMedia }: Props) {
     <div className="docs-article">
       {sections.map((section, i) => {
         const inject = sectionMedia?.[section.title];
-        const hasMedia = Boolean(section.media) || Boolean(inject);
+        const hasInject = Boolean(inject);
+        const hasMarkdownMedia = Boolean(section.media);
+        const useTwoColumn =
+          hasInject || (section.twoColumn && hasMarkdownMedia);
+        const mediaOnly =
+          useTwoColumn && !section.copy.trim() && (hasMarkdownMedia || hasInject);
+
+        let sectionClass = "doc-section doc-section--copy-only";
+        if (mediaOnly) {
+          sectionClass = "doc-section doc-section--media-only";
+        } else if (useTwoColumn) {
+          sectionClass = "doc-section";
+        }
 
         return (
           <section
             key={`${section.title || "lead"}-${i}`}
-            className={
-              hasMedia
-                ? "doc-section"
-                : "doc-section doc-section--copy-only"
-            }
+            className={sectionClass}
             aria-labelledby={
               section.title ? `doc-sec-${i}` : undefined
             }
@@ -35,11 +43,13 @@ export function DocsMarkdown({ source, sectionMedia }: Props) {
               </h2>
             ) : null}
 
-            <div className="doc-section__copy">
-              {section.copy ? <Markdown source={section.copy} /> : null}
-            </div>
+            {section.copy.trim() ? (
+              <div className="doc-section__copy">
+                <Markdown source={section.copy} />
+              </div>
+            ) : null}
 
-            {hasMedia ? (
+            {useTwoColumn ? (
               <div className="doc-section__media">
                 {section.media ? <Markdown source={section.media} /> : null}
                 {inject}
