@@ -49,11 +49,13 @@ live tag after any CI deploy is the git SHA. Check with
 
 Route53 health checks probe `api.withohm.dev/health` and `www.withohm.dev/`
 every 30 seconds from AWS's checker fleet. CloudWatch alarms (`ohm-api-down`,
-`ohm-www-down`) email **admin@withohm.dev** via the SNS topic `ohm-alerts` on
-failure and on recovery (defined in `infra/terraform/alerts.tf`).
+`ohm-www-down`) publish to the SNS topic `ohm-alerts` on failure and on
+recovery (defined in `infra/terraform/alerts.tf`).
 
-One-time setup: the SNS email subscription must be confirmed from the
-admin@withohm.dev mailbox (AWS sends a confirmation link on `terraform apply`).
+**SNS email delivery is paused** (`enable_email_alerts = false`) until
+revenue — see `infra/runbooks/EMAIL_ALERTS.md`. The topic stays for Slack /
+Chatbot. To resume mailbox alerts later: set `enable_email_alerts = true`,
+apply, and confirm the subscription link AWS sends to `admin@withohm.dev`.
 
 A nightly reviewer smoke (`.github/workflows/golden-path.yml`) also walks the
 public surfaces; add the `OHM_GOLDEN_PATH_KEY` repo secret (a test-tenant API

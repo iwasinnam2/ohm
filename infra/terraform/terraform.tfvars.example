@@ -19,6 +19,10 @@ redis_snapshot_retention_days = 3
 enable_eks          = true
 eks_desired_nodes   = 1
 
+# SNS email for uptime alarms (admin@withohm.dev). Keep false pre-revenue;
+# Slack/Chatbot can still consume the ohm-alerts topic. See EMAIL_ALERTS.md.
+enable_email_alerts = false
+
 # Section E — Global Accelerator (~$20-40/mo). Keep false; DNS should CNAME
 # api → us-east-1 NLB. Confirm no leftover GA in console if the bill still
 # shows GlobalAccelerator.

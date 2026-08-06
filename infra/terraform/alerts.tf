@@ -1,12 +1,20 @@
 # Always-on uptime alerting — runs entirely in AWS, no local machine involved.
 # Route53 health checks probe the public endpoints from AWS's checker fleet;
-# CloudWatch alarms (Route53 metrics live in us-east-1) email the SNS topic.
-# NOTE: the email subscription must be confirmed once from the admin mailbox.
+# CloudWatch alarms (Route53 metrics live in us-east-1) publish to the SNS topic.
+# Email delivery is OFF by default (pre-revenue). Flip enable_email_alerts=true
+# and re-confirm the SNS subscription when revenue covers the mailbox noise —
+# see infra/runbooks/EMAIL_ALERTS.md.
+
+variable "enable_email_alerts" {
+  type        = bool
+  default     = false
+  description = "SNS email subscription for uptime alarms. Keep false until revenue; Slack/Chatbot can still use the topic."
+}
 
 variable "alert_email" {
   type        = string
   default     = "admin@withohm.dev"
-  description = "Email address that receives uptime alerts"
+  description = "Email address that receives uptime alerts when enable_email_alerts is true"
 }
 
 resource "aws_sns_topic" "ohm_alerts" {
@@ -16,6 +24,7 @@ resource "aws_sns_topic" "ohm_alerts" {
 }
 
 resource "aws_sns_topic_subscription" "ohm_alerts_email" {
+  count     = var.enable_email_alerts ? 1 : 0
   provider  = aws.leader
   topic_arn = aws_sns_topic.ohm_alerts.arn
   protocol  = "email"
