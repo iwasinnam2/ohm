@@ -152,7 +152,7 @@ pre {
   font-family: var(--font-mono);
 }
 
-/* Atmosphere — black field, thick purple current, velvet grain */
+/* Atmosphere — black field, static purple wash, upscaled velvet grain */
 .atmosphere {
   position: fixed;
   inset: 0;
@@ -160,60 +160,59 @@ pre {
   pointer-events: none;
   overflow: hidden;
   background:
-    radial-gradient(ellipse 100% 72% at 6% -8%, rgba(168, 85, 247, 0.34), transparent 58%),
-    radial-gradient(ellipse 70% 50% at 94% 8%, rgba(192, 132, 252, 0.2), transparent 52%),
-    radial-gradient(ellipse 55% 42% at 48% 88%, rgba(168, 85, 247, 0.12), transparent 62%),
+    radial-gradient(ellipse 100% 72% at 6% -8%, rgba(168, 85, 247, 0.28), transparent 58%),
+    radial-gradient(ellipse 70% 50% at 94% 8%, rgba(192, 132, 252, 0.16), transparent 52%),
+    radial-gradient(ellipse 55% 42% at 48% 88%, rgba(168, 85, 247, 0.1), transparent 62%),
     linear-gradient(165deg, var(--color-ink-850) 0%, var(--bg) 42%, var(--color-ink-800) 100%);
 }
 
+/* Static wash only — no sweeping shine band */
 .atmosphere__current {
   position: absolute;
-  inset: -25% -12%;
-  opacity: 0.62;
+  inset: -10% -8%;
+  opacity: 0.28;
   background:
     linear-gradient(
-      105deg,
+      115deg,
       transparent 0%,
-      transparent 34%,
-      rgba(168, 85, 247, 0.1) 42%,
-      rgba(192, 132, 252, 0.22) 48%,
-      rgba(168, 85, 247, 0.38) 50%,
-      rgba(192, 132, 252, 0.22) 52%,
-      rgba(168, 85, 247, 0.1) 58%,
-      transparent 66%,
+      transparent 38%,
+      rgba(168, 85, 247, 0.08) 46%,
+      rgba(192, 132, 252, 0.12) 50%,
+      rgba(168, 85, 247, 0.08) 54%,
+      transparent 62%,
       transparent 100%
     );
-  background-size: 220% 100%;
-  animation: current-flow var(--dur-current) var(--ease-out) infinite;
+  animation: none;
 }
 
-/* Dense purple particle field (OG thickness, violet) */
+/* Quiet dust field — no screen-blend shimmer */
 .atmosphere__particles {
   position: absolute;
   inset: 0;
-  opacity: 0.55;
+  opacity: 0.32;
   background-image:
-    radial-gradient(1.5px 1.5px at 12% 18%, rgba(192, 132, 252, 0.55), transparent),
-    radial-gradient(1px 1px at 28% 62%, rgba(168, 85, 247, 0.45), transparent),
-    radial-gradient(1.5px 1.5px at 44% 30%, rgba(242, 235, 224, 0.18), transparent),
-    radial-gradient(1px 1px at 58% 78%, rgba(192, 132, 252, 0.4), transparent),
-    radial-gradient(1.5px 1.5px at 72% 22%, rgba(168, 85, 247, 0.5), transparent),
-    radial-gradient(1px 1px at 86% 54%, rgba(192, 132, 252, 0.35), transparent),
-    radial-gradient(1px 1px at 18% 88%, rgba(168, 85, 247, 0.4), transparent),
-    radial-gradient(1.5px 1.5px at 63% 12%, rgba(192, 132, 252, 0.45), transparent),
-    radial-gradient(1px 1px at 91% 84%, rgba(168, 85, 247, 0.35), transparent),
-    radial-gradient(1px 1px at 37% 46%, rgba(242, 235, 224, 0.12), transparent);
+    radial-gradient(1.5px 1.5px at 12% 18%, rgba(192, 132, 252, 0.4), transparent),
+    radial-gradient(1px 1px at 28% 62%, rgba(168, 85, 247, 0.32), transparent),
+    radial-gradient(1.5px 1.5px at 44% 30%, rgba(242, 235, 224, 0.1), transparent),
+    radial-gradient(1px 1px at 58% 78%, rgba(192, 132, 252, 0.28), transparent),
+    radial-gradient(1.5px 1.5px at 72% 22%, rgba(168, 85, 247, 0.35), transparent),
+    radial-gradient(1px 1px at 86% 54%, rgba(192, 132, 252, 0.25), transparent),
+    radial-gradient(1px 1px at 18% 88%, rgba(168, 85, 247, 0.28), transparent),
+    radial-gradient(1.5px 1.5px at 63% 12%, rgba(192, 132, 252, 0.3), transparent),
+    radial-gradient(1px 1px at 91% 84%, rgba(168, 85, 247, 0.25), transparent),
+    radial-gradient(1px 1px at 37% 46%, rgba(242, 235, 224, 0.08), transparent);
   background-size: 100% 100%;
-  animation: particle-drift 28s linear infinite;
-  mix-blend-mode: screen;
+  animation: none;
 }
 
+/* Upscaled velvet grain — coarser turbulence, larger tile */
 .atmosphere::after {
   content: "";
   position: absolute;
   inset: 0;
-  opacity: 0.42;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.55'/%3E%3C/svg%3E");
+  opacity: 0.55;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.32' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.7'/%3E%3C/svg%3E");
+  background-size: 420px 420px;
   mix-blend-mode: soft-light;
 }
 
@@ -842,7 +841,7 @@ pre {
     transform: none;
   }
 
-  .pipe-network__payload-dot {
+  .pipe-network__payload {
     display: none;
   }
 }
@@ -2938,11 +2937,11 @@ pre {
   border-color: currentColor;
 }
 
-/* Graphite pipe network — background track + sporadic payloads */
+/* Graphite tube network — continuous runs, no joint spheres */
 .pipe-network {
   position: absolute;
   inset: 0;
-  opacity: 0.78;
+  opacity: 0.72;
   overflow: hidden;
 }
 
@@ -2956,32 +2955,30 @@ pre {
 .pipe-network__run {
   fill: none;
   stroke: var(--color-graphite-600);
-  stroke-width: 7;
+  stroke-width: 9;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
 
 .pipe-network__run--soft {
   stroke: var(--color-graphite-500);
-  stroke-width: 6;
+  stroke-width: 6.5;
+  opacity: 0.85;
 }
 
-.pipe-network__joint {
-  fill: var(--color-graphite-400);
-}
-
-.pipe-network__payload-dot {
+/* Capsule payload — oriented along the tube via rotate="auto" */
+.pipe-network__payload {
   fill: var(--color-violet-400);
   opacity: 0;
-  filter: drop-shadow(0 0 3px rgba(168, 85, 247, 0.65));
+  filter: drop-shadow(0 0 2.5px rgba(168, 85, 247, 0.55));
 }
 
 @media (max-width: 720px) {
   .pipe-network {
-    opacity: 0.45;
+    opacity: 0.4;
   }
 
-  .pipe-network__payload-dot {
+  .pipe-network__payload {
     display: none;
   }
 }
