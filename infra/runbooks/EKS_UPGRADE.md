@@ -37,8 +37,15 @@ step 1.31 → 1.32 → 1.33 → 1.34 → 1.35 → 1.36. For each step:
    ```
 3. Update add-ons for the new version (vpc-cni, kube-proxy, coredns) and the AWS
    Load Balancer Controller (the NLB Services in `infra/k8s/manifests.yaml` depend on it).
-4. Before each step, review the EKS version release notes for removed/changed APIs and
+4. Bump the cluster-autoscaler image minor in `infra/k8s/autoscaler.yaml` to match
+   the control plane (comment + `registry.k8s.io/autoscaling/cluster-autoscaler:vX.Y.Z`),
+   then `kubectl apply` — it is not managed by this Terraform variable.
+5. Before each step, review the EKS version release notes for removed/changed APIs and
    run `kubectl` deprecation checks against workloads.
+
+**Do not** `terraform apply` with the default `1.36` against a live 1.31 cluster —
+EKS rejects skipped minors. Always pass `-var 'eks_kubernetes_version=1.3x'` for the
+next single step.
 
 Do the leader cluster first, verify `api.withohm.dev` miss/hit is green, then the edges
 one region at a time (see `REGION_DRAIN.md`).
