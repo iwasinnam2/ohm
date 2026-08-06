@@ -92,7 +92,8 @@ export const DOC_GROUPS: DocGroup[] = [
       {
         slug: "streaming",
         title: "Streaming & failover",
-        description: "SSE pass-through, failover scope, mid-stream limits.",
+        description:
+          "Pre-first-byte failover (shipped), SSE pass-through, cache replay, mid-stream limits.",
       },
       {
         slug: "commands",
