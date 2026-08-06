@@ -32,7 +32,7 @@ export const PRODUCT_INDEX: ProductMeta[] = [
     slug: "locality",
     title: "Locality & edge",
     description:
-      "Redis edge reads, pre-first-byte failover, and HIT locality under spiky agent load.",
+      "Redis edge reads, streamed SSE with pre-first-byte failover, and HIT locality under spiky agent load.",
     eyebrow: "Scale",
   },
   {
