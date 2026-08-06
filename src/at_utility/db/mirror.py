@@ -136,6 +136,15 @@ def append_billing_event(conn: Any, event: dict[str, Any]) -> None:
     conn.commit()
 
 
+def write_billing_event(settings: Settings, event: dict[str, Any]) -> None:
+    """Open a short-lived connection and append one billing event (best-effort caller)."""
+    conn = connect(settings)
+    try:
+        append_billing_event(conn, event)
+    finally:
+        conn.close()
+
+
 def account_from_tenant_record(record: dict[str, Any], *, region: str = "", label: str = "") -> dict[str, Any]:
     """Project a TenantRecord dict (asdict) into the accounts column set."""
     out = {c: record.get(c) for c in _ACCOUNT_COLUMNS}
