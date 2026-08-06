@@ -67,7 +67,7 @@ AT_RS_REDIS=PRIMARY:6379
 AT_RS_REDIS_WRITE=PRIMARY:6379
 ```
 
-3. Confirm `X-AT-Cache: HIT|MISS` and `/v1/usage` on `https://api.withohm.dev` after cutover.
+3. Confirm `X-AT-Cache: HIT|MISS` and `/v1/usage` on `https://api.withohm.dev`.
 
 ## Phase 1 — local smoke
 

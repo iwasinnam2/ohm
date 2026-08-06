@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { writeProfile } from "@/lib/profileStorage";
 
 const FORM_STORAGE = "ohm_checkout_form";
 
@@ -37,6 +38,9 @@ export function BillingCheckoutForm({ commit = "" }: { commit?: string }) {
       );
     } catch {
       /* ignore */
+    }
+    if (email.trim() || organisation.trim()) {
+      writeProfile({ email: email.trim(), label: organisation.trim() });
     }
   }, [email, organisation]);
 

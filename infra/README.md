@@ -90,7 +90,7 @@ Prerequisites: ≥2 healthy regional NLBs, Phase 3 lag drill green, public API m
 
 ## Status host
 
-Attach `status.withohm.dev` to the Vercel `site` project (CNAME → Vercel). Middleware rewrites `/` → `/status`.
+`status.withohm.dev` may remain on Amplify for DNS continuity. Middleware **308-redirects** to `https://www.withohm.dev/docs/status`. The public `/status` UI is retired (404).
 
 ## Rate limits
 

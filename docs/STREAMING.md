@@ -4,7 +4,7 @@ Honest limits for Ohm’s edge. **Pre-first-byte failover is shipped** on both p
 
 ## Non-streaming completions
 
-1. Client calls Rust on port 8081 (or Python on 8080 directly); documented public entry is `https://api.withohm.dev/v1` after AWS cutover (MVP: local `:8081`).
+1. Client calls Rust on port 8081 (or Python on 8080 directly); documented public entry is `https://api.withohm.dev/v1` (local smoke: `:8081`).
 2. Rust computes a cache key from the raw request body and `GET`s Redis **only when** `stream` is false and `fetch_web_context` is not set. Web-enriched chats always proxy to Python so injection runs before the control-plane cache key.
 3. On miss, Rust proxies to Python (`AT_RS_PRIMARY`, then `AT_RS_FALLBACK` if the primary fails before a successful body).
 4. Python may call OpenAI or Anthropic; on success it stores the JSON response in Redis (key = hash of **post-injection** messages) and meters a cache miss.

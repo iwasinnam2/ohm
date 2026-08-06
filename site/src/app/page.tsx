@@ -2,6 +2,7 @@ import Link from "next/link";
 import { CacheTreesFlowchart } from "@/components/CacheTreesFlowchart";
 import { DualCrossingAid } from "@/components/DualCrossingAid";
 import { OhmMark } from "@/components/OhmMark";
+import { StartOrProfileCta } from "@/components/StartOrProfileCta";
 
 const PILLARS = [
   {
@@ -85,9 +86,7 @@ export default function HomePage() {
           </p>
         </div>
         <div className="hero__cta cta-row">
-          <Link href="/billing/intermediate" className="btn btn--primary">
-            Start now — $0 seat
-          </Link>
+          <StartOrProfileCta className="btn btn--primary" />
           <Link href="/product" className="link-quiet">
             Product
           </Link>

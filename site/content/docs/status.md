@@ -1,12 +1,15 @@
 # Status & limits
 
-## Service status
+## Surfaces
 
-- **Docs / marketing:** `https://www.withohm.dev` (AWS Amplify + CloudFront)
-- **Status:** `https://status.withohm.dev` → `/status`
-- **`api.withohm.dev`:** live public API (EKS, single-region us-east-1)
-- **Fetch toy:** `https://fetch.withohm.dev` — demo HTML strip (not the full compliance pipe)
-- **Local edge (dev):** `http://localhost:8081`
+| Surface | URL | Notes |
+|---------|-----|--------|
+| Docs / marketing | `https://www.withohm.dev` | AWS Amplify + CloudFront |
+| Public API | `https://api.withohm.dev` | EKS, single-region `us-east-1` |
+| Fetch toy | `https://fetch.withohm.dev` | Demo HTML strip — not the full compliance pipe |
+| Local edge (dev) | `http://localhost:8081` | Supported for local smoke |
+
+Plane health: `GET /health` and `GET /ready` on `api.withohm.dev`.
 
 ## Hosts
 
@@ -16,7 +19,6 @@
 | `withohm.dev` | Apex — forward to www when DNS cutover complete |
 | `api.withohm.dev` | Public API |
 | `fetch.withohm.dev` | Public fetch demo |
-| `status.withohm.dev` | Status page |
 | Local `:8081` | Dev client entry (Rust edge) |
 
 ## Defaults

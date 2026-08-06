@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { Markdown } from "@/components/Markdown";
+import { StartOrProfileCta } from "@/components/StartOrProfileCta";
 
 type Cta = {
   href: string;
@@ -105,15 +106,22 @@ export function MarketingArticle({
         <p>{description}</p>
         {ctas && ctas.length > 0 ? (
           <div className="cta-row marketing-article__cta">
-            {ctas.map((cta) => (
-              <Link
-                key={cta.href + cta.label}
-                href={cta.href}
-                className={cta.primary ? "btn btn--primary" : "link-quiet"}
-              >
-                {cta.label}
-              </Link>
-            ))}
+            {ctas.map((cta) =>
+              cta.primary && cta.href.includes("/billing/intermediate") ? (
+                <StartOrProfileCta
+                  key={cta.href + cta.label}
+                  className="btn btn--primary"
+                />
+              ) : (
+                <Link
+                  key={cta.href + cta.label}
+                  href={cta.href}
+                  className={cta.primary ? "btn btn--primary" : "link-quiet"}
+                >
+                  {cta.label}
+                </Link>
+              ),
+            )}
           </div>
         ) : null}
       </header>
