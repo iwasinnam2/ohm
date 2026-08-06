@@ -81,6 +81,11 @@ design, not by accident:
    seeds (`AT_RECEIPT_ED25519_SEED_B64`, `AT_WEB_BOT_AUTH_ED25519_SEED_B64`)
    follow `infra/runbooks/VERIFIED_BOT.md` — patch `at-utility-secrets`, then
    restart; Deploy API does not write secrets.
+   For admin API keys: `scripts/issue_admin_key.ps1` mints one into
+   `AT_ADMIN_API_KEYS` (append, never replace), rolls the gateway, and verifies
+   it against `/v1/admin/ops`; `-Revoke` takes one back out. Issue a dedicated
+   key per consumer — the same `admin_dep` also gates tenant minting, so
+   per-consumer keys are what keep revocation surgical.
 3. **GoDaddy DNS flip** — pointing `api.withohm.dev` CNAME directly at the
    us-east-1 NLB (then final Global Accelerator teardown). See
    `infra/runbooks/SINGLE_REGION.md`.

@@ -14,6 +14,10 @@ target/
 *.log
 .DS_Store
 .scaffold_test
+# redis-server run from the repo root drops its snapshot here; it holds cached
+# completions and tenant state and must never be committed
+dump.rdb
+*.rdb
 node_modules/
 .next/
 site/.next/
