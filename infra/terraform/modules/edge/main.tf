@@ -89,6 +89,12 @@ variable "eks_desired_nodes" {
   default = 2
 }
 
+variable "kubernetes_version" {
+  type        = string
+  default     = "1.36"
+  description = "EKS control-plane Kubernetes version for this edge cluster."
+}
+
 variable "domain_name" {
   type    = string
   default = "api.withohm.dev"
@@ -361,7 +367,7 @@ resource "aws_eks_cluster" "edge" {
   count     = var.create_resources && var.enable_eks ? 1 : 0
   name      = "${local.name_prefix}-eks"
   role_arn  = aws_iam_role.eks_cluster[0].arn
-  version   = "1.31"
+  version   = var.kubernetes_version
 
   vpc_config {
     subnet_ids              = concat(aws_subnet.private[*].id, aws_subnet.public[*].id)

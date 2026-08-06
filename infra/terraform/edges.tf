@@ -31,6 +31,7 @@ module "edge_us_west_2" {
   gateway_rs_image            = "${aws_ecr_repository.gateway_rs.repository_url}:${var.image_tag}"
   create_resources            = true
   enable_eks                  = true
+  kubernetes_version          = var.eks_kubernetes_version
   domain_name                 = var.domain_name
 }
 
@@ -54,6 +55,7 @@ module "edge_eu_west_2" {
   gateway_rs_image            = "${aws_ecr_repository.gateway_rs.repository_url}:${var.image_tag}"
   create_resources            = true
   enable_eks                  = true
+  kubernetes_version          = var.eks_kubernetes_version
   domain_name                 = var.domain_name
 }
 
