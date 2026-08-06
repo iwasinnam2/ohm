@@ -29,7 +29,7 @@ export default function EnterpriseBillingPage() {
         </ul>
         <p className="cta-row">
           <Link className="btn" href="/org">
-            Org console
+            Analytics
           </Link>
           <Link className="btn" href="/workbench">
             Agent Shell

@@ -77,7 +77,7 @@ Step "status page 200 (single-region truth)" {
 Step "demo page 200 + mint receipt claim" {
   $r = Get-Page "$SiteUrl/demo"
   if ($r.StatusCode -ne 200) { throw "status $($r.StatusCode)" }
-  foreach ($phrase in @("Mint public receipt", "Prove miss")) {
+  foreach ($phrase in @("Set-OhmKey", "Invoke-OhmChat", "Get-OhmSkill", "PowerShell")) {
     if ($r.Content -notmatch [regex]::Escape($phrase)) { throw "missing phrase '$phrase'" }
   }
 }

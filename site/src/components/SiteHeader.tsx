@@ -31,7 +31,7 @@ export function SiteHeader() {
   const utility = [
     { href: "/workbench", label: "Shell" },
     { href: "/keys", label: "Keys" },
-    { href: "/org", label: "Org" },
+    { href: "/org", label: "Analytics" },
   ] as const;
 
   return (

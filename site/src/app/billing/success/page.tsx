@@ -166,11 +166,11 @@ function BillingSuccessInner() {
         <Link href="/keys" className="btn btn--primary">
           Manage API keys
         </Link>
-        <Link href="/demo" className="btn">
-          Run hit ratio demo
-        </Link>
         <Link href="/workbench" className="btn">
           Open Agent Shell
+        </Link>
+        <Link href="/demo" className="btn">
+          Shell demo
         </Link>
       </div>
 
@@ -204,7 +204,7 @@ function BillingSuccessInner() {
       </p>
 
       <p className="postpay__cta-note">
-        <Link href="/org">Org console</Link>
+        <Link href="/org">Analytics</Link>
         {" · "}
         <Link href="/docs/pricing">Metered rates</Link>
         {" · "}
