@@ -16,7 +16,7 @@ API DNS handoff: [API_CUTOVER.md](API_CUTOVER.md).
 - [ ] Dashboard: Smart Retries 8/2 weeks + failed-payment emails; end action = cancel ([docs/STRIPE_DUNNING.md](../../docs/STRIPE_DUNNING.md))
 - [ ] Delinquency smoke: `invoice.payment_failed` → fetch 402; after `AT_DELINQUENT_SUSPEND_DAYS` or cancel → 403
 - [ ] OpenAI hard budget alert set (your ledger) — see [BUDGETS.md](BUDGETS.md)
-- [x] AWS Budgets alarm set (infra ledger) — `withohm-monthly` $250; confirm SNS email
+- [x] AWS Budgets alarm set (infra ledger) — `withohm-monthly` $250; SNS email paused ([EMAIL_ALERTS.md](EMAIL_ALERTS.md))
 - [x] Global Accelerator endpoints healthy on `/health` (`anycast_enabled=true` + NLB ARNs)
 - [x] Status page live (`status.withohm.dev` → site `/status`) — Amplify
 - [x] Marketing site (`site/`) on Amplify (`www` / `fetch` / `status`); apex forward pending ([APEX_CUTOVER.md](APEX_CUTOVER.md))

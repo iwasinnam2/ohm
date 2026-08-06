@@ -7,7 +7,7 @@
 | Budget | `withohm-monthly` — **$250 / month** cost |
 | Alerts | 80% and 100% of budget (ACTUAL) |
 | SNS | `arn:aws:sns:us-east-1:594161136574:withohm-budget-alerts` |
-| Email | `admin@withohm.dev` — **confirm the SNS subscription** in inbox |
+| Email | **paused** — do not subscribe `admin@withohm.dev` until revenue; see [EMAIL_ALERTS.md](EMAIL_ALERTS.md) |
 
 Legacy joke budget `Test Fuckery` ($100) can be deleted in Budgets console when you want.
 
