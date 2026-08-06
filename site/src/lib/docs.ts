@@ -149,7 +149,8 @@ export const DOC_GROUPS: DocGroup[] = [
       {
         slug: "brand",
         title: "Brand",
-        description: "withOhm naming and deferred sk-at / X-AT rename.",
+        description:
+          "withOhm promise, voice, hosts, and deferred sk-at / X-AT rename.",
       },
     ],
   },

@@ -54,7 +54,7 @@ v=spf1 include:spf.protection.outlook.com -all
 |------|------|
 | `https://withohm.dev` / `www` | Marketing + `/i` |
 | `https://fetch.withohm.dev` | Public fetch toy (middleware → `/fetch`) |
-| `https://status.withohm.dev` | Status |
+| `https://status.withohm.dev` | Redirects to `/docs/status` (status UI retired) |
 | `https://api.withohm.dev` | API edge (unchanged — AWS NLB/GA) |
 
 ## Status (2026-07-29)
@@ -63,7 +63,7 @@ v=spf1 include:spf.protection.outlook.com -all
 |------|-----|---------|
 | `www.withohm.dev` | CNAME → Amplify CloudFront | **Amplify** (200, `/i` live) |
 | `fetch.withohm.dev` | CNAME → Amplify CloudFront | **Amplify** (200, fetch toy) |
-| `status.withohm.dev` | CNAME → Amplify CloudFront | **Amplify** (200) |
+| `status.withohm.dev` | CNAME → Amplify CloudFront | **Amplify** — 308 → `/docs/status` |
 | `withohm.dev` (apex) | **A deleted** (no apex address; NXDOMAIN/unresolvable) | **Forward still required** — set GoDaddy Domain Forward → `https://www.withohm.dev` (301) or ALIAS `@` → CloudFront |
 | `api.withohm.dev` | AWS GA | Unchanged / healthy |
 

@@ -5,7 +5,7 @@ import { RESOURCES_INDEX } from "@/lib/resourcesMeta";
 export const metadata: Metadata = {
   title: "Resources",
   description:
-    "withOhm resources — changelog, security, contact, status, support, and docs.",
+    "withOhm resources — changelog, security, contact, support, and docs.",
 };
 
 export default function ResourcesIndexPage() {
@@ -14,8 +14,8 @@ export default function ResourcesIndexPage() {
       <header className="page-head">
         <h1>Resources</h1>
         <p>
-          Changelog, security posture, and how to reach us — plus status,
-          support, and docs. Case studies and blog come later.
+          Changelog, security posture, and how to reach us — plus support and
+          docs. Case studies and blog come later.
         </p>
       </header>
       <ul className="board__grid marketing-index">

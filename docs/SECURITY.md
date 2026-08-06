@@ -1,6 +1,6 @@
 # Security and trust
 
-Ohm sits between your apps and upstream model providers. Trust boundaries below apply to the public API hostname `https://api.withohm.dev` (ACM issued; chat edge cutover separate — use local `:8081` for MVP).
+Ohm sits between your apps and upstream model providers. Trust boundaries below apply to the public API hostname `https://api.withohm.dev`. Local smoke: `http://localhost:8081`.
 
 **Legal operating bounds for web ingestion and adjacent frameworks are mandatory.** See [LEGAL.md](LEGAL.md), [legal/TERMS_OF_SERVICE.md](legal/TERMS_OF_SERVICE.md), and [legal/DPA.md](legal/DPA.md).
 

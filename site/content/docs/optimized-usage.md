@@ -49,7 +49,7 @@ You pay pipe rent (routing, caching, compliant fetch), not token wholesale — s
 1. `ohm_usage` returns? The pipe and your key are fine.
 2. `mock` works but gpt/claude fails? BYOK key missing or wrong — see step 4 above.
 3. Fetch refused? `ohm_policy` for the allowed purposes.
-4. Still stuck? `ohm_providers` for upstream/failover status, then [Status](/status).
+4. Still stuck? `ohm_providers` for upstream/failover status, then [Status & limits](/docs/status).
 
 ## The loop, in one sitting
 

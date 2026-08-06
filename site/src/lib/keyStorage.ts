@@ -28,6 +28,11 @@ export function persistKey(key: string): void {
   } catch {
     /* ignore */
   }
+  try {
+    window.dispatchEvent(new Event("ohm-seat-changed"));
+  } catch {
+    /* ignore */
+  }
 }
 
 export function clearStoredKey(): void {
@@ -38,6 +43,11 @@ export function clearStoredKey(): void {
   }
   try {
     localStorage.removeItem(KEY_STORAGE_LOCAL);
+  } catch {
+    /* ignore */
+  }
+  try {
+    window.dispatchEvent(new Event("ohm-seat-changed"));
   } catch {
     /* ignore */
   }

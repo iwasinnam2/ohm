@@ -2,7 +2,7 @@
 
 ## Verified live before submit
 - Logo https://www.withohm.dev/ohm-icon-360.png → 200
-- Status https://www.withohm.dev/status → Amplify + live API (no Vercel/edge_pending)
+- Status (historical): `/status` retired — use https://www.withohm.dev/docs/status for limits
 - Subscriptions → Intermediate + Enterprise only (no 30-day trial / managed keys)
 - API https://api.withohm.dev/health → rust; /ready → python redis ok (sanitized)
 - Images rolled: gateway/ingest 0.1.7, gateway-rs 0.1.8 (all regions)
@@ -15,7 +15,7 @@ See CURSOR_DIRECTORY.md
 
 ## Screenshots still needing Cursor UI (operator)
 - mcp-tools.png, fetch-web.png, usage.png, add-to-cursor.png
-Web evidence: ohm-icon-360.png committed; /i and /status captured in browser session.
+Web evidence: ohm-icon-360.png committed; `/i` captured in browser session (status page since retired).
 
 ## Apex
 

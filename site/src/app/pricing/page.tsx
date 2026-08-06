@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
+import { StartOrProfileCta } from "@/components/StartOrProfileCta";
 
 export const metadata: Metadata = {
   title: "Pricing",
@@ -19,9 +20,7 @@ export default function PricingPage() {
           membership with a card on file.
         </p>
         <div className="cta-row marketing-article__cta">
-          <Link href="/billing/intermediate" className="btn btn--primary">
-            Start now — $0 seat
-          </Link>
+          <StartOrProfileCta className="btn btn--primary" />
           <Link href="/docs/pricing" className="link-quiet">
             Full rate card
           </Link>
