@@ -954,10 +954,17 @@ pre {
   font-weight: 600;
 }
 
+/* Docs use a wider shell so section two-columns can breathe */
+body:has(.doc-layout) .shell__main,
+body:has(.doc-layout) .site-header,
+body:has(.doc-layout) .site-footer {
+  width: min(1280px, calc(100% - var(--gutter)));
+}
+
 .doc-layout {
   display: grid;
-  grid-template-columns: 12.5rem 1fr;
-  gap: var(--space-7);
+  grid-template-columns: 13.5rem minmax(0, 1fr);
+  gap: var(--space-6) var(--space-7);
   padding-top: var(--space-3);
 }
 
@@ -983,6 +990,128 @@ pre {
 
 .doc-body {
   min-width: 0;
+  max-width: none;
+}
+
+/* Docs article — H2 bands: copy left, code/tables/boxes/figures right */
+.docs-article {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.doc-section {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+  column-gap: clamp(1.5rem, 3vw, 2.75rem);
+  row-gap: var(--space-3);
+  align-items: start;
+  padding: var(--space-5) 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.doc-section:first-child {
+  padding-top: 0;
+}
+
+.doc-section:last-child {
+  border-bottom: none;
+  padding-bottom: var(--space-3);
+}
+
+.doc-section--copy-only {
+  grid-template-columns: minmax(0, 38rem);
+}
+
+.doc-section__title {
+  grid-column: 1 / -1;
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+  letter-spacing: -0.02em;
+  line-height: var(--leading-tight);
+  color: var(--fg);
+}
+
+.doc-section__copy,
+.doc-section__media {
+  min-width: 0;
+}
+
+.doc-section__copy .prose,
+.doc-section__media .prose {
+  max-width: none;
+}
+
+.doc-section__copy .prose h1 {
+  margin-top: 0;
+}
+
+.doc-section__copy .prose > :first-child {
+  margin-top: 0;
+}
+
+.doc-section__media .prose > :first-child {
+  margin-top: 0;
+}
+
+.doc-section__media .prose pre {
+  margin: 0 0 var(--space-3);
+}
+
+.doc-section__media .prose pre:last-child {
+  margin-bottom: 0;
+}
+
+.doc-section__media .prose table {
+  margin: 0 0 var(--space-3);
+  display: block;
+  overflow-x: auto;
+}
+
+.doc-section__media .prose table:last-child {
+  margin-bottom: 0;
+}
+
+.doc-section__media .prose blockquote {
+  margin: 0 0 var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--bg-elevated) 88%, #000);
+  color: var(--muted);
+}
+
+.doc-section__media .prose blockquote:last-child {
+  margin-bottom: 0;
+}
+
+.doc-section__media .prose blockquote p {
+  margin: 0.35em 0;
+}
+
+.doc-section__media .prose blockquote p:first-child {
+  margin-top: 0;
+}
+
+.doc-section__media .prose blockquote p:last-child {
+  margin-bottom: 0;
+}
+
+.doc-section__media .ohm-flow {
+  margin: 0;
+}
+
+@media (max-width: 960px) {
+  .doc-section,
+  .doc-section--copy-only {
+    grid-template-columns: 1fr;
+  }
+
+  .doc-section__title {
+    margin-bottom: 0;
+  }
 }
 
 /* Integrations brand board */
