@@ -49,7 +49,7 @@ from at_utility.stream_usage import (
     sse_lines_from_completion,
     usage_from_sse_line,
 )
-from at_utility import stripe_billing
+from at_utility import checkout_fulfill, stripe_billing
 from at_utility.audit import AuditLog
 from at_utility.ledger import CleanLedger, normalize_path
 from at_utility.org_api import month_utc_bounds, router as org_router
@@ -1242,10 +1242,13 @@ async def public_create_checkout(
     request: Request,
 ) -> dict[str, Any]:
     """
-    Self-serve: issue Ohm tenant key once + Stripe Checkout URL.
-    Admin checkout remains an ops escape hatch.
+    Self-serve: start Stripe Checkout for a pending seat.
+
+    The API key is issued only after Checkout completes — claim it via
+    ``POST /v1/billing/claim-key`` (success page) or manage further keys at
+    ``/v1/account/keys``. Admin checkout remains an ops escape hatch.
     """
-    # Soft abuse control on unauthenticated key mint (IP token bucket).
+    # Soft abuse control on unauthenticated checkout start (IP token bucket).
     client_ip = (
         (request.headers.get("x-forwarded-for") or "").split(",")[0].strip()
         or (request.client.host if request.client else "")
@@ -1288,16 +1291,23 @@ async def public_create_checkout(
             status_code=503,
             detail="Stripe not configured (set STRIPE_SECRET_KEY and price IDs)",
         )
-    raw_key, record = await state.tenants.issue(
-        plan=body.plan,
-        label=body.label or body.email or "self-serve",
-        terms_version=s.at_compliance_terms_version if body.terms_ack else "",
-        dpa_version=s.at_compliance_dpa_version if body.dpa_ack else "",
+    pending_id = checkout_fulfill.new_pending_id()
+    await checkout_fulfill.save_pending(
+        state.store,
+        pending_id,
+        {
+            "plan": body.plan,
+            "commit": commit,
+            "email": body.email.strip(),
+            "label": (body.label or body.email or "self-serve").strip(),
+            "terms_version": s.at_compliance_terms_version if body.terms_ack else "",
+            "dpa_version": s.at_compliance_dpa_version if body.dpa_ack else "",
+        },
     )
     try:
         session = stripe_billing.create_checkout_session(
             s,
-            tenant_id=record.tenant_id,
+            pending_id=pending_id,
             plan=body.plan,
             success_url=body.success_url,
             cancel_url=body.cancel_url,
@@ -1305,14 +1315,242 @@ async def public_create_checkout(
             commit=commit,
         )
     except RuntimeError as exc:
+        await checkout_fulfill.delete_pending(state.store, pending_id)
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     return {
-        "api_key": raw_key,
-        "tenant": await state.tenants.public_view(record),
         "checkout": session,
-        "note": "Store api_key now; it is not shown again. Complete Checkout to keep the seat active.",
+        "pending_id": pending_id,
+        "note": (
+            "Complete Stripe Checkout. Your withOhm API key is issued after "
+            "the seat is active — open the success page (or POST "
+            "/v1/billing/claim-key with the session_id) to reveal it once."
+        ),
         "byok_header": "X-Ohm-Upstream-Key",
         "billing_model": stripe_billing.BILLING_MODEL,
+    }
+
+
+class ClaimKeyBody(BaseModel):
+    session_id: str
+
+
+@app.post("/v1/billing/claim-key")
+async def claim_checkout_key(
+    body: ClaimKeyBody,
+    request: Request,
+) -> dict[str, Any]:
+    """One-time reveal of the API key issued for a completed Checkout session."""
+    client_ip = (
+        (request.headers.get("x-forwarded-for") or "").split(",")[0].strip()
+        or (request.client.host if request.client else "")
+        or "unknown"
+    )
+    ok = await state.store.eval_token_bucket(
+        f"at:global:rl:claim:{client_ip}",
+        0.2,
+        6.0,
+        time.time(),
+    )
+    if not ok:
+        raise HTTPException(status_code=429, detail="Too many claim attempts")
+    session_id = body.session_id.strip()
+    if not session_id.startswith("cs_"):
+        raise HTTPException(status_code=400, detail="session_id required")
+
+    reveal = await checkout_fulfill.take_reveal(state.store, session_id)
+    if reveal:
+        tid = await checkout_fulfill.session_tenant_id(state.store, session_id)
+        record = await state.tenants.get(tid) if tid else None
+        return {
+            "api_key": reveal,
+            "tenant": await state.tenants.public_view(record) if record else None,
+            "note": "Store this key now — it cannot be retrieved again.",
+        }
+
+    # Already fulfilled and reveal consumed/expired — do not hit Stripe.
+    existing_tid = await checkout_fulfill.session_tenant_id(state.store, session_id)
+    if existing_tid:
+        raise HTTPException(
+            status_code=410,
+            detail={
+                "code": "key_already_claimed",
+                "message": (
+                    "This checkout key was already revealed. Open API keys with "
+                    "a saved key, or mint another key there — no need to check out again."
+                ),
+            },
+        )
+
+    # Webhook may still be in flight: try Stripe + pending fulfill.
+    if not stripe_billing.stripe_configured(state.settings):
+        raise HTTPException(status_code=503, detail="Stripe not configured")
+    try:
+        import stripe
+    except ImportError as exc:  # pragma: no cover
+        raise HTTPException(status_code=503, detail="stripe package missing") from exc
+    stripe.api_key = state.settings.stripe_secret_key
+    try:
+        session = stripe.checkout.Session.retrieve(session_id)
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(status_code=404, detail="Checkout session not found") from exc
+
+    status = str(getattr(session, "status", "") or "")
+    payment = str(getattr(session, "payment_status", "") or "")
+    if status not in ("complete",) and payment not in (
+        "paid",
+        "no_payment_required",
+    ):
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "checkout_pending",
+                "message": "Checkout is not complete yet — try again in a moment.",
+            },
+        )
+
+    meta = getattr(session, "metadata", None) or {}
+    if hasattr(meta, "to_dict"):
+        meta = meta.to_dict()
+    elif not isinstance(meta, dict):
+        meta = dict(meta) if meta else {}
+    pending_id = str(meta.get("pending_id") or "")
+    customer_id = str(getattr(session, "customer", None) or "")
+    subscription_id = str(getattr(session, "subscription", None) or "")
+
+    fulfilled = await checkout_fulfill.fulfill_pending_checkout(
+        store=state.store,
+        tenants=state.tenants,
+        settings=state.settings,
+        session_id=session_id,
+        pending_id=pending_id,
+        customer_id=customer_id,
+        subscription_id=subscription_id,
+    )
+    if fulfilled:
+        raw_key, record = fulfilled
+        # Consume reveal immediately for this caller.
+        await checkout_fulfill.take_reveal(state.store, session_id)
+        if subscription_id:
+            stripe_billing.attach_meter_prices_to_subscription(
+                state.settings, subscription_id=subscription_id
+            )
+        return {
+            "api_key": raw_key,
+            "tenant": await state.tenants.public_view(record),
+            "note": "Store this key now — it cannot be retrieved again.",
+        }
+
+    raise HTTPException(
+        status_code=404,
+        detail="No key available for this session — complete Checkout first.",
+    )
+
+
+class AccountMintBody(BaseModel):
+    label: str = ""
+
+
+def _subscriber_account(record: TenantRecord) -> bool:
+    """True when the bearer belongs to a billed Intermediate/Enterprise seat."""
+    if record.plan in ("enterprise", "dev", "design_partner"):
+        return True
+    return bool(record.stripe_customer_id)
+
+
+@app.get("/v1/account/keys")
+async def list_account_keys(
+    auth: tuple[str, TenantRecord] = Depends(auth_tenant),
+) -> dict[str, Any]:
+    """List API keys on the caller's Stripe account (prefixes only)."""
+    _raw, record = auth
+    if not _subscriber_account(record):
+        raise HTTPException(
+            status_code=402,
+            detail={
+                "code": "subscription_required",
+                "message": "Complete Intermediate checkout before managing keys.",
+            },
+        )
+    if record.stripe_customer_id:
+        keys = await state.tenants.list_for_customer(record.stripe_customer_id)
+    else:
+        keys = await state.tenants.list_for_family(record.tenant_id)
+    if not keys:
+        keys = [record]
+    return {
+        "keys": [await state.tenants.public_view(k) for k in keys],
+        "account": {
+            "stripe_customer_id": record.stripe_customer_id or None,
+            "plan": record.plan,
+        },
+    }
+
+
+@app.post("/v1/account/keys")
+async def mint_account_key(
+    body: AccountMintBody,
+    auth: tuple[str, TenantRecord] = Depends(auth_tenant),
+) -> dict[str, Any]:
+    """Mint another key on an existing subscriber account (no re-checkout)."""
+    _raw, record = auth
+    if not _subscriber_account(record):
+        raise HTTPException(
+            status_code=402,
+            detail={
+                "code": "subscription_required",
+                "message": "Complete Intermediate checkout before minting more keys.",
+            },
+        )
+    if not record.stripe_customer_id and record.plan == "payg":
+        raise HTTPException(
+            status_code=402,
+            detail={
+                "code": "subscription_required",
+                "message": "This seat has no Stripe customer yet — finish Checkout first.",
+            },
+        )
+    raw_key, sibling = await state.tenants.issue_sibling(
+        record, label=body.label.strip() or "additional"
+    )
+    return {
+        "api_key": raw_key,
+        "tenant": await state.tenants.public_view(sibling),
+        "note": "Store the api_key now — it cannot be retrieved again.",
+    }
+
+
+@app.delete("/v1/account/keys/{tenant_id}")
+async def delete_account_key(
+    tenant_id: str,
+    auth: tuple[str, TenantRecord] = Depends(auth_tenant),
+) -> dict[str, Any]:
+    """Revoke a key on the caller's account. Irreversible."""
+    _raw, record = auth
+    target = await state.tenants.get(tenant_id)
+    if target is None or target.status == "revoked":
+        raise HTTPException(status_code=404, detail="Key not found")
+    same_customer = (
+        record.stripe_customer_id
+        and target.stripe_customer_id
+        and record.stripe_customer_id == target.stripe_customer_id
+    )
+    same_family = False
+    if not same_customer and not record.stripe_customer_id:
+        family = await state.tenants.list_for_family(record.tenant_id)
+        same_family = any(k.tenant_id == target.tenant_id for k in family)
+    if (
+        target.tenant_id != record.tenant_id
+        and not same_customer
+        and not same_family
+    ):
+        raise HTTPException(status_code=403, detail="Key is not on this account")
+    revoked = await state.tenants.revoke(tenant_id)
+    if revoked is None:
+        raise HTTPException(status_code=404, detail="Key not found")
+    return {
+        "ok": True,
+        "tenant": await state.tenants.public_view(revoked),
+        "note": "Key revoked — requests with that secret return 401.",
     }
 
 
@@ -1509,12 +1747,39 @@ async def stripe_webhook(request: Request) -> dict[str, Any]:
     obj = _as_mapping(data_obj)
     meta_raw = obj.get("metadata") or {}
     meta = _as_mapping(meta_raw)
-    tenant_id = meta.get("tenant_id") or obj.get("client_reference_id")
+    tenant_id = meta.get("tenant_id") or ""
+    pending_id = str(meta.get("pending_id") or "")
     customer_id = obj.get("customer") or ""
     subscription_id = obj.get("subscription") or obj.get("id") or ""
     plan = meta.get("plan")
     subscription_status = str(obj.get("status") or "")
+    session_id = str(obj.get("id") or "")
 
+    # Self-serve: pending signup → issue key + one-time reveal after Checkout.
+    if (
+        event_type == "checkout.session.completed"
+        and pending_id
+        and meta.get("purpose") != "credit_pack"
+    ):
+        fulfilled = await checkout_fulfill.fulfill_pending_checkout(
+            store=state.store,
+            tenants=state.tenants,
+            settings=state.settings,
+            session_id=session_id,
+            pending_id=pending_id,
+            customer_id=str(customer_id or ""),
+            subscription_id=str(subscription_id or ""),
+        )
+        if fulfilled:
+            _raw_key, record = fulfilled
+            tenant_id = record.tenant_id
+            if not plan:
+                plan = record.plan
+
+    if not tenant_id:
+        ref = str(obj.get("client_reference_id") or "")
+        if ref.startswith("tenant_"):
+            tenant_id = ref
     if not tenant_id and customer_id:
         found = await state.tenants.find_by_stripe_customer(str(customer_id))
         if found:
@@ -1551,6 +1816,19 @@ async def stripe_webhook(request: Request) -> dict[str, Any]:
             credited,
         )
         return {"received": True, "type": event_type, "credit_pack": credited}
+
+    # Seat-only Checkout: attach hit/miss/fetch meter Prices after the card
+    # is collected so the hosted page does not list them as charges.
+    if event_type == "checkout.session.completed" and subscription_id:
+        attached = stripe_billing.attach_meter_prices_to_subscription(
+            state.settings, subscription_id=str(subscription_id)
+        )
+        log.info(
+            "checkout meters attached tenant=%s sub=%s new_items=%s",
+            tenant_id,
+            subscription_id,
+            attached,
+        )
 
     new_status = stripe_billing.apply_webhook_to_status(
         event_type, subscription_status=subscription_status

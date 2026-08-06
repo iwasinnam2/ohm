@@ -38,6 +38,7 @@ def upstash_cmd(url: str, token: str, cmd: list[Any]) -> Any:
 class CacheStore(Protocol):
     async def get(self, key: str) -> Optional[str]: ...
     async def set(self, key: str, value: str, ttl_seconds: int) -> None: ...
+    async def delete(self, key: str) -> None: ...
     async def incr_by_float(self, key: str, amount: float) -> float: ...
     async def eval_token_bucket(self, key: str, rate: float, burst: float, now: float) -> bool: ...
     async def list_push(self, key: str, value: str) -> int: ...
@@ -117,6 +118,9 @@ class RedisStore:
         else:
             await self._write.set(key, value)
 
+    async def delete(self, key: str) -> None:
+        await self._write.delete(key)
+
     async def incr_by_float(self, key: str, amount: float) -> float:
         return float(await self._write.incrbyfloat(key, amount))
 
@@ -179,6 +183,10 @@ class MemoryStore:
 
     async def set(self, key: str, value: str, ttl_seconds: int) -> None:
         self._data[key] = value
+
+    async def delete(self, key: str) -> None:
+        self._data.pop(key, None)
+        self._counters.pop(key, None)
 
     async def incr_by_float(self, key: str, amount: float) -> float:
         self._counters[key] = self._counters.get(key, 0.0) + amount
