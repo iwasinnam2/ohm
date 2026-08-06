@@ -1,5 +1,7 @@
+import pytest
+
 from at_utility.billing import arbitrage_summary
-from at_utility.cache import cache_key_for_request
+from at_utility.cache import cache_key_for_request, resolve_cache_tree
 from at_utility.ingest import inject_context_messages
 from at_utility.stripe_billing import apply_webhook_to_status
 
@@ -13,6 +15,45 @@ def test_cache_key_stable():
     )
     assert a == b
     assert a.startswith("at:t:cache:v2:")
+
+
+def test_resolve_cache_tree():
+    assert resolve_cache_tree() == "main"
+    assert resolve_cache_tree(header="PR-842") == "pr-842"
+    assert resolve_cache_tree(header="", body="agent-run-1") == "agent-run-1"
+    assert resolve_cache_tree(header="hdr", body="body") == "hdr"
+    with pytest.raises(ValueError):
+        resolve_cache_tree(header="BAD TREE")
+
+
+def test_cache_key_v3_named_tree():
+    """Named trees use v3; digest matches v2 main for the same payload."""
+    extras = {
+        "fetch_web_context": False,
+        "web_query": None,
+        "web_urls": [],
+        "web_purpose": None,
+        "web_format": None,
+        "temperature": None,
+        "max_tokens": None,
+        "cache_control": None,
+    }
+    msgs = [{"role": "user", "content": "  hello\r\nworld  "}]
+    main = cache_key_for_request(
+        tenant="parity", model="mock", messages=msgs, extras=extras, tree_id="main"
+    )
+    named = cache_key_for_request(
+        tenant="parity", model="mock", messages=msgs, extras=extras, tree_id="pr-842"
+    )
+    assert main == (
+        "at:parity:cache:v2:"
+        "ea9e2e59350222baec8ed5fc7f85078ea788c48526f389bb6264ef251052db4d"
+    )
+    assert named == (
+        "at:parity:tree:pr-842:cache:v3:"
+        "ea9e2e59350222baec8ed5fc7f85078ea788c48526f389bb6264ef251052db4d"
+    )
+    assert named.rsplit(":", 1)[-1] == main.rsplit(":", 1)[-1]
 
 
 def test_cache_key_v2_normalizes_transport_noise():

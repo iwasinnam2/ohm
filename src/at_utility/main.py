@@ -23,7 +23,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import Response
 
 from at_utility.auth import extract_bearer
-from at_utility.cache import cache_key_for_request
+from at_utility.cache import cache_key_for_request, resolve_cache_tree
 from at_utility import receipts
 from at_utility.compliance import web_bot_auth
 from at_utility.compliance.policy import ALLOWED_PURPOSES, BLOCKED_PURPOSES, PURPOSE_RISK
@@ -88,6 +88,8 @@ class ChatCompletionRequest(BaseModel):
     cache_control: Optional[str] = None
     # Frequency-farm path label (also accept X-Ohm-Path header)
     ohm_path: Optional[str] = None
+    # Exact-replay tree (also accept X-Ohm-Cache-Tree header; header wins)
+    cache_tree: Optional[str] = None
 
 
 class AppState:
@@ -237,6 +239,7 @@ app.add_middleware(
         "X-Ohm-Upstream-Key",
         "X-Ohm-Session",
         "X-Ohm-Path",
+        "X-Ohm-Cache-Tree",
         "X-Ohm-Cost-Center",
     ],
     expose_headers=[
@@ -245,6 +248,7 @@ app.add_middleware(
         "X-AT-Plane",
         "X-Ohm-Cost-Center",
         "X-Ohm-Path",
+        "X-Ohm-Cache-Tree",
         "X-Ohm-Spend-Cap",
         "X-Ohm-Spend-Cap-Usd",
     ],
@@ -926,6 +930,13 @@ async def public_honesty(request: Request) -> dict[str, Any]:
                 "verify": "GET /v1/compliance/policy → cache_purpose",
             },
             {
+                "claim": (
+                    "Named cache trees (X-Ohm-Cache-Tree) scope exact-replay only — "
+                    "not semantic merge, not a database branch (see docs/CACHE_TREES.md)"
+                ),
+                "verify": "GET /v1/compliance/policy → cache_ops + cache_tree_default",
+            },
+            {
                 "claim": "Savings figures are estimates, never a guarantee",
                 "verify": "GET /v1/savings → estimate_only=true on every payload",
             },
@@ -1160,6 +1171,8 @@ async def compliance_policy(
         "max_context_chars": s.at_compliance_max_context_chars,
         "allow_cache_training": s.at_compliance_allow_cache_training,
         "cache_purpose": "identical-request-replay",
+        "cache_tree_default": "main",
+        "cache_ops": ["select"],  # fork/reset/promote/freeze land in later phases
         "allowed_purposes": sorted(ALLOWED_PURPOSES),
         "blocked_purposes": sorted(BLOCKED_PURPOSES),
         "risk_bands": PURPOSE_RISK,
@@ -2126,6 +2139,7 @@ async def chat_completions(
     auth: tuple[str, TenantRecord] = Depends(auth_tenant),
     x_ohm_upstream_key: Optional[str] = Header(default=None, alias="X-Ohm-Upstream-Key"),
     x_ohm_path: Optional[str] = Header(default=None, alias="X-Ohm-Path"),
+    x_ohm_cache_tree: Optional[str] = Header(default=None, alias="X-Ohm-Cache-Tree"),
 ):
     api_key, tenant_rec = auth
     await rate_limit(api_key, tenant_rec.tenant_id)
@@ -2133,6 +2147,19 @@ async def chat_completions(
     tenant = tenant_rec.tenant_id
     stripe_customer = tenant_rec.stripe_customer_id or ""
     traffic_path = normalize_path(x_ohm_path or body.ohm_path)
+    try:
+        cache_tree = resolve_cache_tree(header=x_ohm_cache_tree, body=body.cache_tree)
+    except ValueError:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "code": "invalid_cache_tree",
+                "message": (
+                    "X-Ohm-Cache-Tree / cache_tree must match [a-z0-9_-]{1,64} "
+                    "(see docs/CACHE_TREES.md)"
+                ),
+            },
+        ) from None
     messages = [m.model_dump() for m in body.messages]
     upstream_key = (x_ohm_upstream_key or "").strip()
     # Enterprise managed pool / org policy may omit BYOK and use Ohm env keys
@@ -2260,7 +2287,11 @@ async def chat_completions(
         "cache_control": body.cache_control,
     }
     ckey = cache_key_for_request(
-        tenant=tenant, model=body.model, messages=messages, extras=extras
+        tenant=tenant,
+        model=body.model,
+        messages=messages,
+        extras=extras,
+        tree_id=cache_tree,
     )
 
     cache_headers = {
@@ -2268,6 +2299,7 @@ async def chat_completions(
         "X-AT-Region": state.settings.at_region,
         "X-Ohm-Byok": "1" if upstream_key else "0",
         "X-Ohm-Path": traffic_path,
+        "X-Ohm-Cache-Tree": cache_tree,
         "X-Ohm-Cost-Center": tenant_rec.cost_center or "default",
     }
 

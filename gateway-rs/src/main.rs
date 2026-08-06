@@ -267,10 +267,27 @@ fn normalized_messages(messages: serde_json::Value) -> serde_json::Value {
     }
 }
 
-/// Match Python `cache_key_for_request` (docs/REDIS_MESH.md) — key namespace
-/// v2 with normalized message content. Must stay byte-identical to Python or
-/// edge HITs silently vanish (parity: tests/test_units.py, tests below).
-fn cache_key_structured(tenant: &str, body: &serde_json::Value) -> String {
+/// Match Python `resolve_cache_tree` — header wins; empty → `main`.
+/// Returns `None` when an explicit value fails `[a-z0-9_-]{1,64}`.
+fn resolve_cache_tree(header: Option<&str>, body_tree: Option<&str>) -> Option<String> {
+    let raw = match header.map(str::trim).filter(|s| !s.is_empty()) {
+        Some(h) => h,
+        None => body_tree.map(str::trim).filter(|s| !s.is_empty()).unwrap_or(""),
+    };
+    if raw.is_empty() {
+        return Some("main".to_string());
+    }
+    let s = raw.to_ascii_lowercase();
+    if s.len() > 64 || !s.chars().all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-')
+    {
+        return None;
+    }
+    Some(s)
+}
+
+/// Match Python `cache_key_for_request` (docs/REDIS_MESH.md / docs/CACHE_TREES.md).
+/// Default tree `main` → v2 key; named trees → v3. Digest last segment always.
+fn cache_key_structured(tenant: &str, body: &serde_json::Value, tree_id: &str) -> String {
     let model = body.get("model").cloned().unwrap_or(serde_json::Value::Null);
     let messages = normalized_messages(
         body.get("messages")
@@ -332,7 +349,11 @@ fn cache_key_structured(tenant: &str, body: &serde_json::Value) -> String {
         "extras": serde_json::Value::Object(extras),
     });
     let digest = sha256_hex(canonical_json(&payload).as_bytes());
-    format!("at:{tenant}:cache:v2:{digest}")
+    if tree_id == "main" || tree_id.is_empty() {
+        format!("at:{tenant}:cache:v2:{digest}")
+    } else {
+        format!("at:{tenant}:tree:{tree_id}:cache:v3:{digest}")
+    }
 }
 
 async fn ensure_client(slot: &Mutex<Option<RespClient>>, addr: &str) -> bool {
@@ -648,11 +669,31 @@ async fn handle_inner(
     // Edge cache serving requires verified identity (Redis-confirmed key);
     // unverified requests full-proxy so Python owns both auth and caching.
     if edge_verified && is_chat && !wants_stream && !wants_web {
+        let header_tree = headers
+            .get("x-ohm-cache-tree")
+            .and_then(|v| v.to_str().ok());
+        let body_tree = body_json
+            .as_ref()
+            .and_then(|v| v.get("cache_tree").and_then(|t| t.as_str()));
+        let Some(cache_tree) = resolve_cache_tree(header_tree, body_tree) else {
+            return Ok(Response::builder()
+                .status(400)
+                .header("content-type", "application/json")
+                .header("x-at-plane", "rust")
+                .body(full_body(
+                    r#"{"detail":{"code":"invalid_cache_tree","message":"X-Ohm-Cache-Tree / cache_tree must match [a-z0-9_-]{1,64}"}}"#,
+                ))
+                .unwrap());
+        };
         let key = match body_json.as_ref() {
-            Some(v) => cache_key_structured(&tenant, v),
+            Some(v) => cache_key_structured(&tenant, v, &cache_tree),
             None => {
                 let digest = sha256_hex(&body);
-                format!("at:{tenant}:cache:v2:{digest}")
+                if cache_tree == "main" {
+                    format!("at:{tenant}:cache:v2:{digest}")
+                } else {
+                    format!("at:{tenant}:tree:{cache_tree}:cache:v3:{digest}")
+                }
             }
         };
         let cached: Option<String> = if ensure_client(&app.redis_read, &cfg.redis_addr).await {
@@ -698,7 +739,8 @@ async fn handle_inner(
                             .header("content-type", "application/json")
                             .header("x-at-cache", "HIT")
                             .header("x-at-plane", "rust")
-                            .header("x-at-billed-usd", format!("{billed:.6}"));
+                            .header("x-at-billed-usd", format!("{billed:.6}"))
+                            .header("x-ohm-cache-tree", cache_tree.as_str());
                         // Signed replay proof minted by the control plane
                         if let Some(receipt) = gate_json
                             .as_ref()
@@ -799,6 +841,9 @@ async fn handle_inner(
                 // edge fell through) — only stamp MISS when it did not.
                 if !headers_out.contains_key("x-at-cache") {
                     builder = builder.header("x-at-cache", "MISS");
+                }
+                if !headers_out.contains_key("x-ohm-cache-tree") {
+                    builder = builder.header("x-ohm-cache-tree", cache_tree.as_str());
                 }
                 builder = builder.header("x-at-plane", "rust");
                 Ok(builder.body(full_body(bytes)).unwrap())
@@ -909,7 +954,7 @@ mod tests {
             "messages": [{"role": "user", "content": "hi"}],
         });
         // sk-at-dev last 8 → k-at-dev (matches Python tenant_bootstrap_{key[-8:]})
-        let key = cache_key_structured("tenant_bootstrap_k-at-dev", &body);
+        let key = cache_key_structured("tenant_bootstrap_k-at-dev", &body, "main");
         assert!(key.starts_with("at:tenant_bootstrap_k-at-dev:cache:v2:"));
         assert_eq!(
             key.len(),
@@ -927,9 +972,31 @@ mod tests {
             "messages": [{"role": "user", "content": "  hello\r\nworld  "}],
         });
         assert_eq!(
-            cache_key_structured("parity", &body),
+            cache_key_structured("parity", &body, "main"),
             "at:parity:cache:v2:ea9e2e59350222baec8ed5fc7f85078ea788c48526f389bb6264ef251052db4d"
         );
+    }
+
+    #[test]
+    fn cache_key_v3_named_tree_parity_with_python() {
+        let body = serde_json::json!({
+            "model": "mock",
+            "messages": [{"role": "user", "content": "  hello\r\nworld  "}],
+        });
+        assert_eq!(
+            cache_key_structured("parity", &body, "pr-842"),
+            "at:parity:tree:pr-842:cache:v3:ea9e2e59350222baec8ed5fc7f85078ea788c48526f389bb6264ef251052db4d"
+        );
+    }
+
+    #[test]
+    fn resolve_cache_tree_header_wins() {
+        assert_eq!(
+            resolve_cache_tree(Some("PR-1"), Some("body-tree")).as_deref(),
+            Some("pr-1")
+        );
+        assert_eq!(resolve_cache_tree(None, None).as_deref(), Some("main"));
+        assert!(resolve_cache_tree(Some("BAD TREE"), None).is_none());
     }
 
     #[test]
