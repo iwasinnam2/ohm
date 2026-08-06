@@ -41,7 +41,7 @@ export default function ContactPage() {
               <p className="card__eyebrow">Enterprise</p>
               <h3 className="card__title">Chaos governor</h3>
               <p className="card__desc">
-                SSO, ledger, policy, managed capacity — from $2,500/month.
+                SSO, ledger, policy, managed capacity — contact us.
                 Application form below or on the Enterprise page.
               </p>
               <span className="card__go">Enterprise page →</span>

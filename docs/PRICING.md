@@ -14,7 +14,7 @@ The canonical rate card is [pricing/rate_card.v2.json](../pricing/rate_card.v2.j
 | Cache miss | `$0.001` / 1k tokens | OpenRouter's BYOK take is ~5% of inference (~$0.25/M blended). The miss meter is the visible per-call tax — the real price-resistance point — so it is priced low. |
 | Web fetch | `$0.003` / URL | Tavily PAYG $0.008/credit; Firecrawl Hobby $0.0032/page with no PAYG option. $3/1k undercuts Tavily 62% with the compliance pipe included. |
 
-**Commit tiers** (fixed monthly line; included metered usage refreshes each cycle, scoped to meters only, never the seat): `c29` $29/mo → $35 included · `c99` $99/mo → $125 · `c499` $499/mo → $700. Ladder rungs stay within ~5x of each other up to Enterprise ($2,500/mo).
+**Commit tiers** (fixed monthly line; included metered usage refreshes each cycle, scoped to meters only, never the seat): `c29` $29/mo → $35 included · `c99` $99/mo → $125 · `c499` $499/mo → $700. Enterprise is listed as **contact us** (negotiated); commit ladder coherence is checked against the internal enterprise floor in the rate card.
 
 ## Pre-committed adjustment rules (no moods, no ego)
 
@@ -40,7 +40,7 @@ Decided at v2 issue time (2026-07-31), executed on data from the weekly pricing 
 |-------|------|--------------------|
 | **Seat (Intermediate membership)** | Card on file; suspend→403 | `$0/mo` (`STRIPE_PRICE_PAYG`) |
 | **Commit tiers** | Fixed monthly seat + included metered usage per cycle (billing credit scoped to meters) | `c29/c99/c499` (`STRIPE_PRICE_COMMIT_*`) |
-| **Seat (Enterprise)** | Dedicated / managed-capacity SKU | `$2500/mo` (`STRIPE_PRICE_ENTERPRISE`) |
+| **Seat (Enterprise)** | Dedicated / managed-capacity SKU | Contact us (`STRIPE_PRICE_ENTERPRISE` when quoted) |
 | **Cache hit** | Cheap Redis replay rent | `AT_PRICE_PER_1K_TOKENS_HIT` → meter `ohm_cache_hit` (qty = ceil(tokens/1000)) |
 | **Cache miss** | Small proxy fee (not token wholesale) | `AT_PRICE_PER_1K_TOKENS_MISS` → meter `ohm_cache_miss` |
 | **Web fetch** | **Primary variable revenue** | `AT_PRICE_PER_FETCH` → meter `ohm_web_fetch` |

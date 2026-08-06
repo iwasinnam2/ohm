@@ -113,7 +113,7 @@ export default function PricingPage() {
           <tr>
             <td>Membership</td>
             <td>$0 + meters (card on file)</td>
-            <td>Negotiated / design-partner</td>
+            <td>Contact us</td>
           </tr>
           <tr>
             <td>Model tokens</td>
