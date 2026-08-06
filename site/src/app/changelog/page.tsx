@@ -17,6 +17,16 @@ type Entry = {
 const ENTRIES: Entry[] = [
   {
     date: "2026-08-06",
+    title: "Resources spine",
+    body: "Public Resources hub with Changelog, Security marketing page, and Contact (enterprise inquiry). Header exposes Resources alongside Product · Solutions · Docs · Pricing. Blog and case studies still deferred.",
+    links: [
+      { href: "/resources", label: "Resources" },
+      { href: "/security", label: "Security" },
+      { href: "/contact", label: "Contact" },
+    ],
+  },
+  {
+    date: "2026-08-06",
     title: "Product, Solutions, Architecture docs, Pricing",
     body: "Public Product and Use-cases filetree (Neon-shaped, Ohm nouns), Architecture docs group, and a first-class /pricing page. Header exposes Product · Solutions · Docs · Pricing.",
     links: [
