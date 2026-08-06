@@ -3247,6 +3247,24 @@ pre {
   font-weight: 600;
 }
 
+.ohm-flow__caption {
+  fill: var(--muted);
+  font-family: var(--font-body);
+  font-size: 12px;
+}
+
+.ohm-flow__chip {
+  fill: color-mix(in srgb, var(--bg) 75%, #000);
+  stroke: rgba(242, 235, 224, 0.28);
+  stroke-width: 1;
+}
+
+.ohm-flow__chip-text {
+  fill: var(--fg);
+  font-family: var(--font-mono, var(--font-body));
+  font-size: 11px;
+}
+
 .ohm-flow__callout rect {
   fill: color-mix(in srgb, var(--bg) 70%, #000);
   stroke: rgba(242, 235, 224, 0.35);

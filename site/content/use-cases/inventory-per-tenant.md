@@ -1,93 +1,75 @@
-Give every PR, agent, or customer stream a dedicated exact-replay namespace. Meet isolation needs, eliminate cross-suite cache pollution, and scale mechanical AI traffic without sharing one hot `main` tip.
+---
+title: Inventory per tenant
+description: Same model. Same gateway. Separate tips — so agent runs do not collide on main.
+---
 
-## Summary
+<!-- ohm:noisy-neighbor -->
 
-withOhm makes it straightforward to isolate each workload in its own **cache tree** — instance-level isolation for **exact-replay inventory**, without the cost of spinning a new model gateway or Postgres per tenant.
+## The problem
 
-- **No more noisy neighbors** — Suites and agents write HITs into named trees; one runaway job does not poison everyone else’s replay path.
-- **Simplified compliance story** — Replay stays inventory, never a training corpus; trees do not widen purpose or retention.
-- **Scale each stream independently** — Fork, promote, freeze, and TTL trees without resizing a shared opaque cache.
-- **Promote without copying blobs** — Content-addressed digests; promote merges tips, not byte-for-byte clones.
-- **API-first management** — List, fork, reset, promote, freeze over `/v1/cache/trees`.
+Teams often put every agent, CI job, and PR on one tip — usually `main`. The gateway is shared for the right reason (one BYOK path, one bill). The tip is shared for the wrong reason.
 
-Start with a [$0 Intermediate seat](/billing/intermediate), then follow [Cache trees](/docs/cache-trees).
+When two agents land different prompts on the same tip, the second write collides. Retries look like flaky LLM output. Engineers add a second gateway “for tenant B,” and now you have two keys, two meters, and still no tip discipline.
 
-## Why inventory-per-tenant?
+That is the noisy-neighbor pattern. Isolation is a tip problem, not a second-gateway problem.
 
-When you put agents and CI on an OpenAI-compatible pipe, multitenancy shows up as **who shares which HITs**:
+## What withOhm does
 
-- **Privacy & blast radius** — Regulated teams may require that one customer’s or one PR’s replay inventory never bleeds into another.
-- **Clean promote paths** — Preview trees promote into `main` the way preview DBs promote schema — for digests, not rows.
-- **Independent freeze / reset** — Freeze a tip for audit; reset a failed suite without wiping the org.
-- **Avoid noisy neighbors** — Shared caches turn one flaky suite into everyone else’s mystery HITs.
+withOhm keeps one OpenAI-compatible gateway and one Stripe bill. Isolation is a **cache tip** — a named tip in the Redis exact-replay inventory, addressed as `X-Ohm-Cache-Tree`.
 
-<!-- ohm:cache-trees-flowchart -->
+| Shared (good) | Separated (also good) |
+| --- | --- |
+| Gateway URL | Cache tip per agent / PR / suite |
+| BYOK path to the model | Exact-replay inventory on that tip |
+| Seat + meter on Stripe | Promote when the suite earns main |
 
-## Sharing one global cache for everything is not a good idea
+Same model. Same gateway. Separate tips.
 
-Gateway caches that dump all tenants into one keyspace look cheap until they are not.
+<!-- ohm:crossing -->
 
-### 1. Cramming every suite into `main`
+## Promote is the only crossing
 
-- **Single polluted tip** — Bad digests or oversized prompts land where production agents also read.
-- **Noisy neighbors** — A CI stampede evicts or confuses inventory others still need.
-- **Awkward ops** — You cannot freeze “just the PR” or reset “just the agent”.
-- **Rigid scaling** — You scale the whole shared cache story even when only one stream is hot.
+Work stays on the PR tip until the suite is green. Then **Promote** copies that tip onto durable `main`. Purple in the diagram is that crossing — not a second product.
 
-### 2. Standing up a whole new gateway per tenant
+Until Promote, `main` does not absorb the agent’s inventory. After Promote, the next job on `main` can hit exact replay for those entries.
 
-Isolation by deploying N copies of the pipe:
+## Compose with a database preview (optional)
 
-- **Expensive and slow** — Provisioning lag kills PR preview UX.
-- **No shared blob economics** — You lose content-addressed dedupe across trees.
-- **Ops burden** — Keys, meters, and honesty multiply with each snowflake stack.
-
-> We needed PR-scoped replay without teaching every engineer a second database product — cache trees are the git-shaped surface for exact-replay, not a Neon clone.
-
-## Exact-replay the way multi-tenant agent CI was meant to work
-
-withOhm keeps one pipe and partitions inventory with **cache trees**. Each tree is a named namespace over digests. Default `main` keeps today’s keys; named trees use the v3 layout. Neon still owns database branches. Ohm owns replay branches.
-
-### One tree per stream
-
-- Completely separate HIT namespaces per tree id
-- Independent promote / freeze / reset
-- Optional tree claims on receipts and audit events
-- No resource contention on the digest tip between suites
-
-### Scale each stream independently
-
-Busy PR trees accumulate HITs; idle ones cost nothing beyond Redis TTL policy. You do not provision a new RDS-shaped cache appliance per customer.
-
-### Promote a single stream without touching the fleet
-
-Promote merges child digests into the parent. Other trees keep serving. Frozen tips reject writes (409) while HITs continue.
-
-### API-first management
+If the PR also needs a database preview, compose it in CI. Neon (or any preview DB) is a peer for **database state**. withOhm is the peer for **exact-replay inventory**. Same job. Two headers. One bill for the model path.
 
 ```bash
-curl -s https://api.withohm.dev/v1/cache/trees \
-  -H "Authorization: Bearer $OHM_API_KEY"
+# Example compose — DB preview env + Ohm tip on the same suite
+export DATABASE_URL="$NEON_PREVIEW_URL"   # from your DB branch provider
+export OHM_TIP="pr-${PR_NUMBER}"
 
-curl -s -X POST https://api.withohm.dev/v1/cache/trees \
-  -H "Authorization: Bearer $OHM_API_KEY" \
+curl -sS https://api.withohm.dev/v1/chat/completions \
+  -H "Authorization: Bearer $OHM_KEY" \
   -H "Content-Type: application/json" \
-  -d '{"name":"pr-842"}'
+  -H "X-Ohm-Cache-Tree: $OHM_TIP" \
+  -d @prompt.json
 ```
 
-Send `X-Ohm-Cache-Tree: pr-842` on chat completions. Details: [API docs](/docs/api) · [Cache trees](/docs/cache-trees).
+<!-- ohm:compose-ci -->
 
-### Compliance and trust
+On green:
 
-- Exact-replay purpose unchanged — trees do not create a training corpus
-- Honesty map stays public: [Honesty](/docs/honesty)
-- Signed HIT receipts may carry `tree_id` / `tree_name`: [Receipts](/docs/receipts)
-- Security posture: [Security](/docs/security)
+```bash
+# Promote the tip onto main (API shape — see docs for auth)
+curl -sS -X POST "https://api.withohm.dev/v1/cache-trees/${OHM_TIP}/promote" \
+  -H "Authorization: Bearer $OHM_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"target":"main"}'
+```
 
-### Compose with Neon for data + Ohm for replay
+## Who this is for
 
-Keep a Neon branch for application state. Keep an Ohm cache tree for exact-replay inventory. Same CI job; different nouns. Guide: [Compose with Neon](/docs/compose-neon).
+- Multi-agent or multi-suite CI that shares one model path
+- Teams that already use preview databases and want matching inventory hygiene
+- Anyone who hit collisions on `main` and almost bought a second gateway
 
-### Start building
+## Related
 
-[Start now — $0 seat](/billing/intermediate) · [CI preview solution](/use-cases/ci-preview) · [Product: Cache trees](/product/cache-trees)
+- [Product — Architecture](/product/architecture) — tips, Promote, compose
+- [Docs — Compose with Neon](/docs/compose-neon) — peer headers in CI
+- [Docs — Cache trees](/docs/cache-trees) — tip semantics
+- [Pricing](/pricing) — seats and meters on the shared gateway
