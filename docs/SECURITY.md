@@ -63,3 +63,12 @@ Reviewer packet: [listings/DIRECTORY_VERIFICATION.md](listings/DIRECTORY_VERIFIC
 | Spend-cap headers | Soft mode: `X-Ohm-Spend-Cap: soft` + `X-Ohm-Spend-Cap-Usd` on allowed MISS; hard mode: `402` `spend_cap_exceeded` |
 | Clean ledger | Events include `path` (default `default` if absent); hit-ratio APIs group by cost center or path |
 | Public receipts | Threat model unchanged — unguessable token, no prompts, display name + aggregates only |
+
+## Amendments (2026-08) — cache trees (Phase 0)
+
+| Surface | Behavior |
+|---------|----------|
+| `X-Ohm-Cache-Tree` | Optional exact-replay tree (`[a-z0-9_-]{1,64}`); header wins over body `cache_tree`; default `main`; invalid → `400` |
+| Key layout | `main` → `at:{tenant}:cache:v2:{digest}` (unchanged); named → `at:{tenant}:tree:{id}:cache:v3:{digest}` |
+| Isolation | Trees never cross tenants; exact-match only inside a tree — not a semantic cache, not a DB branch |
+| Training | Unchanged hard deny — trees are still identical-request replay only ([CACHE_TREES.md](CACHE_TREES.md)) |

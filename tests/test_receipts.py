@@ -197,3 +197,6 @@ async def test_public_honesty_endpoint():
         assert all("claim" in e and "verify" in e for e in body["refusals"])
         assert body["proofs"]["cache_hit_receipts"]["header"] == "X-Ohm-Receipt"
         assert "mid_stream_failover" in json.dumps(body)
+        assert "cache trees" in json.dumps(body).lower() or "X-Ohm-Cache-Tree" in json.dumps(
+            body
+        )

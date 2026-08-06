@@ -46,6 +46,12 @@ export const DOC_GROUPS: DocGroup[] = [
         description: "Cache-first prompting, fetch with intent, read your meters.",
       },
       {
+        slug: "cache-trees",
+        title: "Cache trees",
+        description:
+          "Branch exact-replay inventory for PRs and agents — compose with Neon, don’t clone it.",
+      },
+      {
         slug: "streaming",
         title: "Streaming & failover",
         description: "SSE pass-through, failover scope, mid-stream limits.",

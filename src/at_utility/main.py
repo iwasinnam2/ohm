@@ -23,7 +23,8 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import Response
 
 from at_utility.auth import extract_bearer
-from at_utility.cache import cache_key_for_request
+from at_utility.cache import cache_key_for_request, resolve_cache_tree
+from at_utility.cache_trees import CacheTreeRegistry
 from at_utility import receipts
 from at_utility.compliance import web_bot_auth
 from at_utility.compliance.policy import ALLOWED_PURPOSES, BLOCKED_PURPOSES, PURPOSE_RISK
@@ -88,6 +89,8 @@ class ChatCompletionRequest(BaseModel):
     cache_control: Optional[str] = None
     # Frequency-farm path label (also accept X-Ohm-Path header)
     ohm_path: Optional[str] = None
+    # Exact-replay tree (also accept X-Ohm-Cache-Tree header; header wins)
+    cache_tree: Optional[str] = None
 
 
 class AppState:
@@ -99,6 +102,7 @@ class AppState:
     ledger: CleanLedger
     audit: AuditLog
     sso: SsoService
+    trees: CacheTreeRegistry
     mock: MockProvider
     openai: Optional[OpenAIProvider]
     anthropic: Optional[AnthropicProvider]
@@ -127,6 +131,7 @@ def bind_runtime(
     st.orgs = OrgRegistry(store)
     st.ledger = CleanLedger(store, settings)
     st.audit = AuditLog(store)
+    st.trees = CacheTreeRegistry(store)
     st.sso = SsoService(store, settings, st.orgs)
     st.mock = mock if mock is not None else MockProvider()
     if build_provider_shells:
@@ -237,6 +242,7 @@ app.add_middleware(
         "X-Ohm-Upstream-Key",
         "X-Ohm-Session",
         "X-Ohm-Path",
+        "X-Ohm-Cache-Tree",
         "X-Ohm-Cost-Center",
     ],
     expose_headers=[
@@ -245,6 +251,7 @@ app.add_middleware(
         "X-AT-Plane",
         "X-Ohm-Cost-Center",
         "X-Ohm-Path",
+        "X-Ohm-Cache-Tree",
         "X-Ohm-Spend-Cap",
         "X-Ohm-Spend-Cap-Usd",
     ],
@@ -473,6 +480,8 @@ async def _ensure_state() -> None:
         state.ledger = CleanLedger(store, settings)
         state.audit = AuditLog(store)
         state.sso = SsoService(store, settings, state.orgs)
+    if getattr(state, "trees", None) is None:
+        state.trees = CacheTreeRegistry(state.store)
 
 
 async def auth_tenant(
@@ -926,6 +935,13 @@ async def public_honesty(request: Request) -> dict[str, Any]:
                 "verify": "GET /v1/compliance/policy → cache_purpose",
             },
             {
+                "claim": (
+                    "Named cache trees (X-Ohm-Cache-Tree) scope exact-replay only — "
+                    "not semantic merge, not a database branch (see docs/CACHE_TREES.md)"
+                ),
+                "verify": "GET /v1/compliance/policy → cache_ops + cache_tree_default",
+            },
+            {
                 "claim": "Savings figures are estimates, never a guarantee",
                 "verify": "GET /v1/savings → estimate_only=true on every payload",
             },
@@ -1160,6 +1176,8 @@ async def compliance_policy(
         "max_context_chars": s.at_compliance_max_context_chars,
         "allow_cache_training": s.at_compliance_allow_cache_training,
         "cache_purpose": "identical-request-replay",
+        "cache_tree_default": "main",
+        "cache_ops": ["select", "fork", "reset", "promote", "freeze"],
         "allowed_purposes": sorted(ALLOWED_PURPOSES),
         "blocked_purposes": sorted(BLOCKED_PURPOSES),
         "risk_bands": PURPOSE_RISK,
@@ -2061,6 +2079,170 @@ class EdgeHitBody(BaseModel):
     request_sha256: str = ""
 
 
+class CacheTreeCreateBody(BaseModel):
+    name: str
+    parent: Optional[str] = None
+
+
+class CacheTreeResetBody(BaseModel):
+    to: str = "empty"  # empty | parent
+
+
+class CacheTreePromoteBody(BaseModel):
+    into: Optional[str] = None
+
+
+@app.get("/v1/cache/trees")
+async def list_cache_trees(
+    auth: tuple[str, TenantRecord] = Depends(auth_tenant),
+) -> dict[str, Any]:
+    api_key, tenant = auth
+    await rate_limit(api_key, tenant.tenant_id)
+    trees = await state.trees.list(tenant.tenant_id)
+    return {
+        "trees": [
+            {
+                "tree_id": t.tree_id,
+                "name": t.name,
+                "parent_tree_id": t.parent_tree_id,
+                "status": t.status,
+                "default": t.default,
+                "created_at": t.created_at,
+            }
+            for t in trees
+        ]
+    }
+
+
+@app.post("/v1/cache/trees")
+async def fork_cache_tree(
+    body: CacheTreeCreateBody,
+    auth: tuple[str, TenantRecord] = Depends(auth_tenant),
+) -> dict[str, Any]:
+    api_key, tenant = auth
+    await rate_limit(api_key, tenant.tenant_id)
+    try:
+        tree = await state.trees.fork(
+            tenant.tenant_id, name=body.name, parent=body.parent
+        )
+    except ValueError as exc:
+        code = str(exc)
+        status = 409 if code in ("tree_exists", "cannot_fork_main") else 400
+        raise HTTPException(
+            status_code=status,
+            detail={"code": code, "message": code},
+        ) from None
+    await state.audit.record(
+        org_id=tenant.org_id or "",
+        tenant_id=tenant.tenant_id,
+        actor=tenant.tenant_id,
+        action="cache.tree_fork",
+        detail={
+            "tree_id": tree.tree_id,
+            "parent_tree_id": tree.parent_tree_id,
+        },
+    )
+    return {
+        "tree_id": tree.tree_id,
+        "name": tree.name,
+        "parent_tree_id": tree.parent_tree_id,
+        "status": tree.status,
+    }
+
+
+@app.post("/v1/cache/trees/{tree_id}/reset")
+async def reset_cache_tree(
+    tree_id: str,
+    body: CacheTreeResetBody,
+    auth: tuple[str, TenantRecord] = Depends(auth_tenant),
+) -> dict[str, Any]:
+    api_key, tenant = auth
+    await rate_limit(api_key, tenant.tenant_id)
+    try:
+        tid = resolve_cache_tree(body=tree_id)
+        tree = await state.trees.reset(tenant.tenant_id, tid, to=body.to)
+    except ValueError as exc:
+        code = str(exc)
+        raise HTTPException(
+            status_code=409 if code == "tree_frozen" else 400,
+            detail={"code": code, "message": code},
+        ) from None
+    await state.audit.record(
+        org_id=tenant.org_id or "",
+        tenant_id=tenant.tenant_id,
+        actor=tenant.tenant_id,
+        action="cache.tree_reset",
+        detail={"tree_id": tree.tree_id, "to": body.to},
+    )
+    return {"tree_id": tree.tree_id, "status": tree.status, "reset_to": body.to}
+
+
+@app.post("/v1/cache/trees/{tree_id}/promote")
+async def promote_cache_tree(
+    tree_id: str,
+    body: CacheTreePromoteBody,
+    auth: tuple[str, TenantRecord] = Depends(auth_tenant),
+) -> dict[str, Any]:
+    api_key, tenant = auth
+    await rate_limit(api_key, tenant.tenant_id)
+    try:
+        tid = resolve_cache_tree(body=tree_id)
+        result = await state.trees.promote(
+            tenant.tenant_id,
+            tid,
+            into=body.into,
+            ttl_seconds=state.settings.at_cache_ttl_seconds,
+        )
+    except ValueError as exc:
+        code = str(exc)
+        await state.audit.record(
+            org_id=tenant.org_id or "",
+            tenant_id=tenant.tenant_id,
+            actor=tenant.tenant_id,
+            action="cache.tree_promote_deny",
+            detail={"tree_id": tree_id, "reason": code},
+            allowed=False,
+        )
+        raise HTTPException(
+            status_code=409 if "frozen" in code else 400,
+            detail={"code": code, "message": code},
+        ) from None
+    await state.audit.record(
+        org_id=tenant.org_id or "",
+        tenant_id=tenant.tenant_id,
+        actor=tenant.tenant_id,
+        action="cache.tree_promote",
+        detail=result,
+    )
+    return result
+
+
+@app.post("/v1/cache/trees/{tree_id}/freeze")
+async def freeze_cache_tree(
+    tree_id: str,
+    auth: tuple[str, TenantRecord] = Depends(auth_tenant),
+) -> dict[str, Any]:
+    api_key, tenant = auth
+    await rate_limit(api_key, tenant.tenant_id)
+    try:
+        tid = resolve_cache_tree(body=tree_id)
+        tree = await state.trees.freeze(tenant.tenant_id, tid)
+    except ValueError as exc:
+        code = str(exc)
+        raise HTTPException(
+            status_code=400,
+            detail={"code": code, "message": code},
+        ) from None
+    await state.audit.record(
+        org_id=tenant.org_id or "",
+        tenant_id=tenant.tenant_id,
+        actor=tenant.tenant_id,
+        action="cache.tree_freeze",
+        detail={"tree_id": tree.tree_id},
+    )
+    return {"tree_id": tree.tree_id, "status": tree.status}
+
+
 @app.post("/internal/edge-hit")
 async def edge_hit_meter(
     body: EdgeHitBody,
@@ -2126,6 +2308,7 @@ async def chat_completions(
     auth: tuple[str, TenantRecord] = Depends(auth_tenant),
     x_ohm_upstream_key: Optional[str] = Header(default=None, alias="X-Ohm-Upstream-Key"),
     x_ohm_path: Optional[str] = Header(default=None, alias="X-Ohm-Path"),
+    x_ohm_cache_tree: Optional[str] = Header(default=None, alias="X-Ohm-Cache-Tree"),
 ):
     api_key, tenant_rec = auth
     await rate_limit(api_key, tenant_rec.tenant_id)
@@ -2133,6 +2316,20 @@ async def chat_completions(
     tenant = tenant_rec.tenant_id
     stripe_customer = tenant_rec.stripe_customer_id or ""
     traffic_path = normalize_path(x_ohm_path or body.ohm_path)
+    try:
+        cache_tree = resolve_cache_tree(header=x_ohm_cache_tree, body=body.cache_tree)
+    except ValueError:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "code": "invalid_cache_tree",
+                "message": (
+                    "X-Ohm-Cache-Tree / cache_tree must match [a-z0-9_-]{1,64} "
+                    "(see docs/CACHE_TREES.md)"
+                ),
+            },
+        ) from None
+    tree_meta = await state.trees.ensure_tree(tenant, cache_tree)
     messages = [m.model_dump() for m in body.messages]
     upstream_key = (x_ohm_upstream_key or "").strip()
     # Enterprise managed pool / org policy may omit BYOK and use Ohm env keys
@@ -2260,7 +2457,11 @@ async def chat_completions(
         "cache_control": body.cache_control,
     }
     ckey = cache_key_for_request(
-        tenant=tenant, model=body.model, messages=messages, extras=extras
+        tenant=tenant,
+        model=body.model,
+        messages=messages,
+        extras=extras,
+        tree_id=cache_tree,
     )
 
     cache_headers = {
@@ -2268,11 +2469,34 @@ async def chat_completions(
         "X-AT-Region": state.settings.at_region,
         "X-Ohm-Byok": "1" if upstream_key else "0",
         "X-Ohm-Path": traffic_path,
+        "X-Ohm-Cache-Tree": cache_tree,
         "X-Ohm-Cost-Center": tenant_rec.cost_center or "default",
     }
 
+    request_digest = receipts.request_digest_from_cache_key(ckey)
+
+    async def _deny_frozen_write() -> None:
+        if tree_meta.status == "frozen":
+            await state.audit.record(
+                org_id=tenant_rec.org_id or "",
+                tenant_id=tenant,
+                actor=tenant,
+                action="cache.tree_write_frozen_deny",
+                detail={"tree_id": cache_tree},
+                allowed=False,
+            )
+            raise HTTPException(
+                status_code=409,
+                detail={
+                    "code": "tree_frozen",
+                    "message": "cache tree is frozen; fork to write",
+                },
+            )
+
     if not no_store:
-        cached = await state.store.get(ckey)
+        cached, _served_from = await state.trees.get_blob_cow(
+            tenant, cache_tree, request_digest
+        )
         if cached:
             payload = json.loads(cached)
             usage = payload.get("usage") or {}
@@ -2305,9 +2529,11 @@ async def chat_completions(
                 model=body.model,
                 tokens_replayed=total,
                 pipe_usd=event.billed_usd,
-                request_sha256=receipts.request_digest_from_cache_key(ckey),
+                request_sha256=request_digest,
                 region=state.settings.at_region,
                 plane="python",
+                tree_id=cache_tree,
+                tree_name=cache_tree,
             )
             if receipt_jws:
                 hit_headers[receipts.RECEIPT_HEADER] = receipt_jws
@@ -2366,6 +2592,10 @@ async def chat_completions(
         kwargs["temperature"] = body.temperature
     if body.max_tokens is not None:
         kwargs["max_tokens"] = body.max_tokens
+
+    # Frozen trees may still HIT via COW; new writes / upstream MISS are denied.
+    if not no_store:
+        await _deny_frozen_write()
 
     try:
         if body.stream:
@@ -2441,6 +2671,9 @@ async def chat_completions(
                             json.dumps(assembled),
                             ttl_seconds=state.settings.at_cache_ttl_seconds,
                         )
+                        await state.trees.index_add(
+                            tenant, cache_tree, request_digest
+                        )
 
             return StreamingResponse(
                 event_stream(),
@@ -2479,6 +2712,7 @@ async def chat_completions(
         await state.store.set(
             ckey, json.dumps(result), ttl_seconds=state.settings.at_cache_ttl_seconds
         )
+        await state.trees.index_add(tenant, cache_tree, request_digest)
     usage = result.get("usage") or {}
     total = int(usage.get("total_tokens") or 0)
     event = await state.meter.record_chat(
