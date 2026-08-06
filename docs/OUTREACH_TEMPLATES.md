@@ -101,6 +101,83 @@ for the remaining days. Thanks!
 
 ---
 
+## 7. Neon — Agent Plan / partnerships (ship-gated)
+
+> **Do not send until** https://www.withohm.dev/docs/compose-neon and
+> https://github.com/iwasinnam2/ohm/tree/master/templates/neon-ohm-ci are live.
+> **Bryan Clark:** WAITING — do not email until he replies.
+> Strapline everywhere: **withOhm — middleware governance.**
+
+### 7a. Neon Agent Plan form (short answer paste)
+
+```
+withOhm — middleware governance. OpenAI-compatible exact-replay inventory
+(BYOK Redis tips, Promote-on-merge, HIT meters, receipts) that composes with
+Neon AI Gateway beta on the same PR slug.
+
+Neon owns database state + branch-scoped gateway. We own mechanical prompt
+replay. Complimentary upgrade layer — not a rival gateway, not a DB product.
+
+Proof:
+https://www.withohm.dev/docs/compose-neon
+https://github.com/iwasinnam2/ohm/tree/master/templates/neon-ohm-ci
+
+Ask: Agent Plan / technical design-partner loop for platforms already on
+Neon branches + AI Gateway. Contact: partners@withohm.dev
+```
+
+### 7b. agents@neon.tech / partnerships@neon.tech
+
+**Subject:** Compose offer — withOhm beside Neon AI Gateway beta
+
+```
+Hi Neon Agent / Partnerships team,
+
+withOhm — middleware governance. We rent exact-replay inventory (Redis tips,
+Promote-on-merge, HIT meters, receipts) as a complimentary layer beside Neon
+AI Gateway beta — same PR slug as the preview branch, not a competing gateway.
+
+Neon already branches state and (in beta) the model path. We branch the
+exact-replay tip so agent/CI previews stop re-paying mechanical prompts while
+Neon stays the backend center.
+
+Compose pack:
+https://www.withohm.dev/docs/compose-neon
+https://github.com/iwasinnam2/ohm/tree/master/templates/neon-ohm-ci
+
+Brief: https://github.com/iwasinnam2/ohm/blob/master/docs/distribution/NEON_BD_BRIEF.md
+
+Single ask: evaluate for Agent Plan or a short technical design-partner loop.
+Happy to issue a key and instrument a week of preview traffic.
+
+Thanks,
+Ivan
+partners@withohm.dev
+```
+
+### 7c. Bryan Clark — hold / escalate (ONLY after he replies)
+
+**Subject:** Re: {his thread} — compose note if useful to forward
+
+```
+Thanks Bryan — appreciated.
+
+Quick product note if it’s useful to share internally: withOhm — middleware
+governance — composes exact-replay tips with Neon AI Gateway beta on the same
+branch slug (Promote on merge). Neon stays the state + gateway center; we rent
+the pipe on mechanical repeats.
+
+https://www.withohm.dev/docs/compose-neon
+https://github.com/iwasinnam2/ohm/tree/master/templates/neon-ohm-ci
+
+Happy to set up a design-partner key if you or the team want a week of data.
+No ask beyond that.
+
+Ivan
+```
+
+---
+
 ## Tracking sheet columns
 
 `date | channel | person_or_handle | link_to_thread | outreached | replied | key_issued | quote_captured | notes`

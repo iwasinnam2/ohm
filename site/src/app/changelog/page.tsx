@@ -17,6 +17,18 @@ type Entry = {
 const ENTRIES: Entry[] = [
   {
     date: "2026-08-06",
+    title: "Neon × Ohm CI compose pack",
+    body: "Middleware governance beside Neon AI Gateway beta: one-slug tips, Promote-on-merge workflows, and a drop-in templates/neon-ohm-ci starter. Compose docs upgraded.",
+    links: [
+      { href: "/docs/compose-neon", label: "Compose with Neon" },
+      {
+        href: "https://github.com/iwasinnam2/ohm/tree/master/templates/neon-ohm-ci",
+        label: "CI template",
+      },
+    ],
+  },
+  {
+    date: "2026-08-06",
     title: "Flagship tip isolation",
     body: "Inventory per tenant and Architecture rewritten withOhm-first: shared gateway, separate tips, Promote as the only crossing. New schematics for noisy neighbor, Promote, and CI compose with an optional DB preview peer.",
     links: [

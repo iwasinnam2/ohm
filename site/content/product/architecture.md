@@ -84,7 +84,7 @@ curl -sS https://api.withohm.dev/v1/chat/completions \
   -d @prompt.json
 
 # on green — Promote inventory to main
-curl -sS -X POST "https://api.withohm.dev/v1/cache-trees/${OHM_TIP}/promote" \
+curl -sS -X POST "https://api.withohm.dev/v1/cache/trees/${OHM_TIP}/promote" \
   -H "Authorization: Bearer $OHM_KEY" \
   -H "Content-Type: application/json" \
   -d '{"target":"main"}'
