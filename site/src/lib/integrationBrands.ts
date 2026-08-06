@@ -110,7 +110,7 @@ export const INTEGRATION_BRANDS: BrandTile[] = [
   },
   {
     id: "org",
-    name: "Org console",
+    name: "Analytics",
     kind: "surface",
     blurb: "Ledger + policy",
     href: "/org",

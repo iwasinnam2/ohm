@@ -1,20 +1,27 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { OrgConsoleClient } from "@/components/OrgConsoleClient";
 
 export const metadata: Metadata = {
-  title: "Org console",
+  title: "Analytics",
   description:
-    "withOhm org console — cost centers, policy, clean ledger export, SSO session.",
+    "withOhm analytics — live usage tallies, plan configuration, hit-ratio breakdown, and FinOps export.",
 };
 
 export default function OrgPage() {
   return (
     <>
       <header className="page-head">
-        <h1>Org console</h1>
+        <h1>Analytics</h1>
         <p>
-          Govern AI chaos: cost centers, policy profiles, audit, and FinOps
-          export. Humans via SSO session; agents via org-bound API keys.
+          Live pipe meters for your seat: plan configuration, usage tallies,
+          hit-ratio by path or cost center, and estimated savings. Org setup and
+          CSV export live under the fold.{" "}
+          <Link href="/keys">API keys</Link>
+          {" · "}
+          <Link href="/subscriptions">Subscriptions</Link>
+          {" · "}
+          <Link href="/workbench">Agent Shell</Link>
         </p>
       </header>
       <OrgConsoleClient />

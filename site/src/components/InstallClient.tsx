@@ -71,7 +71,7 @@ export function InstallClient() {
         {" · "}
         <Link href="/connections">All hosts</Link>
         {" · "}
-        <Link href="/org">Org console</Link>
+        <Link href="/org">Analytics</Link>
         {" · "}
         <Link href="/docs/pricing">Pricing</Link>
       </p>
