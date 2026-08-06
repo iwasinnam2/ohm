@@ -74,7 +74,7 @@ export default function HomePage() {
         <div className="hero__copy">
           <div className="hero__lockup">
             <OhmMark className="hero__mark" />
-            <h1 className="hero__brand">withOhm</h1>
+            <h1 className="hero__brand">withOhm.</h1>
           </div>
           <p className="hero__strapline">Interconnectedness and accessibility.</p>
           <p className="hero__promise">
