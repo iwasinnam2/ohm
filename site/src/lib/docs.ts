@@ -44,18 +44,19 @@ export const DOC_GROUPS: DocGroup[] = [
         slug: "architecture",
         title: "Architecture",
         description:
-          "Ephemeral Side × Pipeline System — dual containers and the HIT/MISS crossing.",
+          "Deep dive — Ephemeral Side × Pipeline System, HIT/MISS paths, and what each container owns.",
       },
       {
         slug: "edge",
         title: "Edge & Redis locality",
-        description: "Hot-path GETs, key layout, mesh posture.",
+        description:
+          "Why GETs stay close to the work — hot path, key layout, mesh posture.",
       },
       {
         slug: "compose-neon",
         title: "Compose with Neon",
         description:
-          "NEON_BRANCH for state + X-Ohm-Cache-Tree for exact-replay inventory.",
+          "State branch + inventory tip in one CI job — keep the nouns straight.",
       },
       {
         slug: "api",
