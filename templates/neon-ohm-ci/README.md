@@ -1,74 +1,71 @@
-# neon-ohm-ci — Neon × withOhm compose starter
+# neon-ohm-ci
 
-**withOhm — middleware governance.** Exact-replay inventory that branches with the same PR slug as your Neon preview.
+Drop-in CI compose: **Neon branches database state** (and AI Gateway per branch in beta); **withOhm branches exact-replay inventory**. Same PR slug. Upgrade alongside Gateway — not instead of it.
 
-Neon owns **database state** (and, in beta, branch-scoped **AI Gateway**).  
-withOhm owns **exact-replay inventory** (tips, Promote, HIT meters, receipts).
+Docs: [Compose with Neon](https://www.withohm.dev/docs/compose-neon) · [Cache trees](https://www.withohm.dev/docs/cache-trees) · [CI preview](https://www.withohm.dev/use-cases/ci-preview)
 
-Compose them. Do not confuse the nouns.
+## Fence
 
-| Peer | Branches | Header / env |
-|------|----------|----------------|
-| Neon | Postgres state (+ AI Gateway endpoint per branch) | `DATABASE_URL` / Neon branch |
-| withOhm | Exact-replay tip | `X-Ohm-Cache-Tree: pr-$N` |
+| Product | Branches | Noun |
+|---------|----------|------|
+| Neon | Postgres state (+ Gateway endpoint per branch in beta) | Preview connection / branch |
+| withOhm | Exact-replay inventory | `X-Ohm-Cache-Tree` |
 
-## One-slug discipline
+## Quick start
 
-Use the same slug everywhere:
+1. Copy the workflows into your app repo:
 
-```text
-pr-${{ github.event.number }}
-```
+| Template file | Copy to |
+|---------------|---------|
+| `.github/workflows/ohm-preview.yml` | `.github/workflows/ohm-preview.yml` |
+| `.github/workflows/ohm-promote-on-merge.yml` | `.github/workflows/ohm-promote-on-merge.yml` |
 
-- Neon preview branch name: `pr-842`
-- Ohm cache tip: `pr-842`
-- Optional: Neon AI Gateway calls from that branch stay on the preview path; Ohm tips keep mechanical prompts off `main` inventory until Promote
+2. Optionally copy `scripts/ohm_tree.sh` (or keep the inline curl fallbacks in the workflows).
 
-## Setup
+3. Secrets / vars:
 
-1. Copy workflows into your app repo (or submodule this folder).
-2. Add GitHub Actions secrets:
-   - `OHM_API_KEY` — Ohm Bearer key (`sk-at-…`)
-   - `OHM_API_URL` — default `https://api.withohm.dev` (optional override)
-3. Point your suite at Ohm with the tip header (see `scripts/chat-once.sh`).
-4. Create/select the Neon branch with your usual Neon Action/CLI — we do not reimplement Neon here.
+| Name | Required | Notes |
+|------|----------|--------|
+| `OHM_API_KEY` | yes | Intermediate or design-partner `sk-at-…` |
+| `OHM_API_URL` | no | Default `https://api.withohm.dev` |
+| `OHM_UPSTREAM_KEY` | for real model calls | BYOK on cache miss |
+| `DATABASE_URL` | if you run app tests | Neon branch connection string |
 
-## Workflows
+4. Behavior:
 
-| File | When | What |
-|------|------|------|
-| `.github/workflows/ohm-preview.yml` | `pull_request` | Ensure tip `pr-N` exists; run a smoke chat with `X-Ohm-Cache-Tree` |
-| `.github/workflows/ohm-promote-on-merge.yml` | `push` to default branch after merge | `POST /v1/cache/trees/pr-N/promote` |
+- **Every PR:** ensure tip `pr-<N>`; smoke chat with `X-Ohm-Cache-Tree`
+- **On merge:** `POST /v1/cache/trees/pr-N/promote` into `main`
 
-## Manual curls
+## Minimal curl (no Actions)
 
 ```bash
+export OHM_KEY=sk-at-…
 export OHM_API_URL=https://api.withohm.dev
-export OHM_API_KEY=sk-at-YOUR_KEY
 export OHM_TIP=pr-842
 
-# Fork tip from main (idempotent if you already created it)
 curl -sS -X POST "$OHM_API_URL/v1/cache/trees" \
-  -H "Authorization: Bearer $OHM_API_KEY" \
+  -H "Authorization: Bearer $OHM_KEY" \
   -H "Content-Type: application/json" \
-  -d "{\"name\":\"$OHM_TIP\"}"
+  -d "{\"name\":\"$OHM_TIP\",\"parent\":\"main\"}" || true
 
-# Chat on the tip
 curl -sS "$OHM_API_URL/v1/chat/completions" \
-  -H "Authorization: Bearer $OHM_API_KEY" \
+  -H "Authorization: Bearer $OHM_KEY" \
   -H "Content-Type: application/json" \
   -H "X-Ohm-Cache-Tree: $OHM_TIP" \
-  -d '{"model":"mock","messages":[{"role":"user","content":"ping"}]}'
+  -d '{"model":"gpt-4o-mini","messages":[{"role":"user","content":"ohm-ci-self-proof-v1"}]}'
 
-# On merge — Promote inventory into main
 curl -sS -X POST "$OHM_API_URL/v1/cache/trees/${OHM_TIP}/promote" \
-  -H "Authorization: Bearer $OHM_API_KEY" \
+  -H "Authorization: Bearer $OHM_KEY" \
   -H "Content-Type: application/json" \
   -d '{}'
 ```
 
-## Docs
+## What’s inside
 
-- https://www.withohm.dev/docs/compose-neon
-- https://www.withohm.dev/docs/cache-trees
-- https://www.withohm.dev/product/architecture
+| Path | Role |
+|------|------|
+| `.github/workflows/ohm-preview.yml` | PR: fork tip + smoke |
+| `.github/workflows/ohm-promote-on-merge.yml` | Merge: promote tip → `main` |
+| `scripts/ohm_tree.sh` | `fork` / `promote` / `echo-tree` helpers |
+
+Powered by [withOhm](https://www.withohm.dev) — pipe rent, not token wholesale. BYOK.
