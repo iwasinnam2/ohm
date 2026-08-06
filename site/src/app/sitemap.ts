@@ -14,8 +14,13 @@ export default function sitemap(): MetadataRoute.Sitemap {
     "/pricing",
     "/product",
     "/use-cases",
+    "/resources",
+    "/changelog",
+    "/security",
+    "/contact",
     "/docs",
     "/status",
+    "/support",
   ].map((path) => ({
     url: `${base}${path || "/"}`,
     lastModified: now,
