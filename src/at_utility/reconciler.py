@@ -17,11 +17,12 @@ from __future__ import annotations
 import argparse
 import asyncio
 import time
-from dataclasses import dataclass, field
-from typing import Optional
+from dataclasses import asdict, dataclass, field
+from typing import Any, Optional
 
 from at_utility import stripe_billing
 from at_utility.config import Settings, get_settings
+from at_utility.metering import Meter
 from at_utility.redis_store import CacheStore, build_store, tenant_key
 from at_utility.tenants import TenantRecord, TenantRegistry
 
@@ -39,6 +40,7 @@ class Finding:
 @dataclass
 class Report:
     scanned: int = 0
+    mirrored: int = 0
     findings: list[Finding] = field(default_factory=list)
 
     def add(self, f: Finding) -> None:
@@ -46,6 +48,27 @@ class Report:
 
     def by_reason(self, reason: str) -> list[Finding]:
         return [f for f in self.findings if f.reason == reason]
+
+
+def _iso_day(ledger_day: str) -> str:
+    # "20260730" -> "2026-07-30" for the usage_daily DATE column.
+    return f"{ledger_day[:4]}-{ledger_day[4:6]}-{ledger_day[6:8]}"
+
+
+def _daily_usage(snap: dict[str, Any]) -> dict[str, Any]:
+    hit = float(snap.get("today_cache_hit_tokens") or 0)
+    miss = float(snap.get("today_cache_miss_tokens") or 0)
+    denom = hit + miss
+    return {
+        "cache_hit_tokens": hit,
+        "cache_miss_tokens": miss,
+        "fetches": float(snap.get("today_fetches") or 0),
+        "requests": float(snap.get("today_requests") or 0),
+        "revenue_usd": float(snap.get("today_cache_hit_usd") or 0)
+        + float(snap.get("today_cache_miss_usd") or 0)
+        + float(snap.get("today_fetch_usd") or 0),
+        "cache_hit_ratio": (hit / denom) if denom > 0 else 0.0,
+    }
 
 
 def _tenant_id_from_meta_key(key: str) -> Optional[str]:
@@ -70,6 +93,17 @@ async def reconcile(
     suspend_days = settings.at_delinquent_suspend_days
     cur_terms = settings.at_compliance_terms_version
     cur_dpa = settings.at_compliance_dpa_version
+
+    # Optional durable mirror: only writes on --apply (a real run), never dry-run.
+    mirror_conn = None
+    meter: Optional[Meter] = None
+    if apply:
+        from at_utility.db import mirror  # lazy: avoids psycopg import when unused
+
+        if mirror.mirror_enabled(settings):
+            mirror_conn = mirror.connect(settings)
+            mirror.ensure_schema(mirror_conn)
+            meter = Meter(store, settings)
 
     for key in await store.scan_keys(META_PATTERN):
         tenant_id = _tenant_id_from_meta_key(key)
@@ -130,12 +164,28 @@ async def reconcile(
                 )
             )
 
+        # 5) mirror account + today's usage rollup to the durable store (apply-only)
+        if mirror_conn is not None and meter is not None:
+            from at_utility.db import mirror
+
+            account = mirror.account_from_tenant_record(asdict(rec), region=settings.at_region)
+            mirror.upsert_account(mirror_conn, account)
+            snap = await meter.snapshot(tenant_id)
+            mirror.record_usage_daily(
+                mirror_conn, tenant_id, _iso_day(snap["ledger_day"]), _daily_usage(snap)
+            )
+            report.mirrored += 1
+
+    if mirror_conn is not None:
+        mirror_conn.close()
     return report
 
 
 def _print_report(report: Report, *, apply: bool) -> None:
     mode = "APPLY" if apply else "DRY-RUN"
     print(f"[reconciler:{mode}] scanned {report.scanned} tenant record(s)")
+    if report.mirrored:
+        print(f"  mirrored {report.mirrored} account(s) + daily usage to the DB")
     order = ["expired", "delinquent_window", "meter_sync_failed", "compliance_stale"]
     labels = {
         "expired": "expired -> suspend",
