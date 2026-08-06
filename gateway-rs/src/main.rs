@@ -46,6 +46,11 @@ struct Config {
     fallback_upstream: String,
     cache_ttl: u64,
     api_keys: Vec<String>,
+    /// Admin keys are not tenant keys and are absent from the Redis key index,
+    /// so without this the edge would deny every /v1/admin/* call with a 401
+    /// before Python's admin_dep ever saw it. Recognised here only to defer:
+    /// authorization stays with Python.
+    admin_api_keys: Vec<String>,
     /// Shared secret for /internal/edge-hit. Empty disables edge HIT serving.
     edge_secret: String,
 }
@@ -73,6 +78,12 @@ impl Config {
                 .unwrap_or(3600),
             api_keys: env::var("AT_API_KEYS")
                 .unwrap_or_else(|_| "sk-at-dev".into())
+                .split(',')
+                .map(|s| s.trim().to_string())
+                .filter(|s| !s.is_empty())
+                .collect(),
+            admin_api_keys: env::var("AT_ADMIN_API_KEYS")
+                .unwrap_or_default()
                 .split(',')
                 .map(|s| s.trim().to_string())
                 .filter(|s| !s.is_empty())
@@ -358,6 +369,12 @@ async fn authorize(app: &App, token: &str) -> EdgeAuth {
     if app.cfg.api_keys.iter().any(|k| k == token) {
         return EdgeAuth::Allowed;
     }
+    // Admin keys: do not deny, do not vouch. Unverified full-proxies to Python,
+    // whose admin_dep is the only thing that knows what an admin key may do —
+    // and it keeps the key out of the edge cache path, which is tenant-scoped.
+    if app.cfg.admin_api_keys.iter().any(|k| k == token) {
+        return EdgeAuth::Unverified;
+    }
     let idx = format!("at:global:apikey:{}", sha256_hex(token.as_bytes()));
     if ensure_client(&app.redis_read, &app.cfg.redis_addr).await {
         let mut guard = app.redis_read.lock().await;
@@ -509,6 +526,11 @@ async fn handle_inner(
     // Savings receipts / aggregate stats are unauthenticated by design —
     // Python applies its own per-IP token bucket on these routes.
     let is_public_read = path_only.starts_with("/v1/public/") && method == Method::GET;
+    // Slack slash commands carry a Slack signature, not a Bearer key; Python
+    // verifies the signature. Without this the edge would 401 them like it did
+    // /v1/admin/* before AT_ADMIN_API_KEYS was wired in.
+    let is_slack_command =
+        path_only.starts_with("/v1/slack/") && method == Method::POST;
     // Web Bot Auth + receipt JWKS directory must be fetchable without a key
     // (Cloudflare Verified Bots + scripts/verify_receipt.py).
     let is_key_directory = path_only
@@ -518,6 +540,7 @@ async fn handle_inner(
         || is_ready
         || is_public_checkout
         || is_public_read
+        || is_slack_command
         || is_key_directory;
     let mut edge_verified = false;
     let token = if is_passthrough {
@@ -556,6 +579,8 @@ async fn handle_inner(
             "key directory"
         } else if is_public_read {
             "public read"
+        } else if is_slack_command {
+            "slack command"
         } else {
             "stripe webhook"
         };
