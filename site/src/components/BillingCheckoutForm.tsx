@@ -219,9 +219,9 @@ export function BillingCheckoutForm({ commit = "" }: { commit?: string }) {
       </button>
       <p className="billing-form__note">
         We issue your <code>sk-at-…</code> key first and pause so you can copy
-        it — then Stripe for the card. Membership is $0; meters invoice monthly.
-        Model tokens stay on your provider keys (BYOK).{" "}
-        <Link href="/docs/pricing">Pricing</Link>
+        it — then Stripe for the card on file. Membership is $0 at checkout;
+        usage meters invoice later (see rates below). Model tokens stay on your
+        provider keys (BYOK).
       </p>
     </form>
   );

@@ -12,7 +12,12 @@
 | **Fetch soft-cap** | `AT_FREE_TIER_FETCH_CAP_DAY` (default 100) until `invoice.paid` unlocks Intermediate — metered spend alone never unlocks |
 | **Meter DLQ** | Failed meter events queue in Redis (`at:global:stripe_meter_dlq`) and replay every 60s; identifier dedup keeps replays single-billed |
 
-Checkout line items: seat Price + **all three** metered Prices (required when `AT_ENV=production` or `AT_REQUIRE_METER_PRICES=true`).
+Checkout **line items are seat-only** (membership or commit tier) so hosted
+Checkout does not list hit/miss/fetch as charges. Meter Prices are still
+required when `AT_ENV=production` or `AT_REQUIRE_METER_PRICES=true`; they are
+attached to the subscription on `checkout.session.completed`
+(`attach_meter_prices_to_subscription`). Rates are printed as fine print on
+the Intermediate billing page.
 
 ### Meter units (must match Prices)
 

@@ -1551,6 +1551,19 @@ async def stripe_webhook(request: Request) -> dict[str, Any]:
         )
         return {"received": True, "type": event_type, "credit_pack": credited}
 
+    # Seat-only Checkout: attach hit/miss/fetch meter Prices after the card
+    # is collected so the hosted page does not list them as charges.
+    if event_type == "checkout.session.completed" and subscription_id:
+        attached = stripe_billing.attach_meter_prices_to_subscription(
+            state.settings, subscription_id=str(subscription_id)
+        )
+        log.info(
+            "checkout meters attached tenant=%s sub=%s new_items=%s",
+            tenant_id,
+            subscription_id,
+            attached,
+        )
+
     new_status = stripe_billing.apply_webhook_to_status(
         event_type, subscription_status=subscription_status
     )

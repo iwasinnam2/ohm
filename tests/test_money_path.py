@@ -570,6 +570,123 @@ def test_commit_grant_skips_without_stripe_config():
     assert granted == 0.0
 
 
+def test_checkout_session_seat_only_line_items(monkeypatch):
+    """Hosted Checkout must not list hit/miss/fetch as charges."""
+    import sys
+    import types
+
+    from at_utility import stripe_billing as sb
+    from at_utility.config import get_settings
+
+    settings = get_settings()
+    settings.stripe_secret_key = "sk_test_x"
+    settings.stripe_price_payg = "price_seat"
+    settings.stripe_price_meter_web_fetch = "price_fetch"
+    settings.stripe_price_meter_cache_hit = "price_hit"
+    settings.stripe_price_meter_cache_miss = "price_miss"
+    settings.at_require_meter_prices = False
+    settings.stripe_automatic_tax = False
+    settings.stripe_checkout_success_url = "https://www.withohm.dev/ok"
+    settings.stripe_checkout_cancel_url = "https://www.withohm.dev/cancel"
+
+    captured: dict = {}
+
+    class _FakeSession:
+        id = "cs_test"
+        url = "https://checkout.test/s"
+
+    def _create(**params):
+        captured.clear()
+        captured.update(params)
+        return _FakeSession()
+
+    fake = types.ModuleType("stripe")
+    fake.api_key = None
+    fake.checkout = types.SimpleNamespace(
+        Session=types.SimpleNamespace(create=_create)
+    )
+    monkeypatch.setitem(sys.modules, "stripe", fake)
+
+    result = sb.create_checkout_session(
+        settings,
+        tenant_id="ten_x",
+        plan="payg",
+        success_url="https://www.withohm.dev/ok",
+        cancel_url="https://www.withohm.dev/cancel",
+        customer_email="a@test.dev",
+    )
+    assert result["url"] == "https://checkout.test/s"
+    assert captured["line_items"] == [{"price": "price_seat", "quantity": 1}]
+    assert "price_hit" not in str(captured["line_items"])
+    assert "price_miss" not in str(captured["line_items"])
+    assert "price_fetch" not in str(captured["line_items"])
+
+
+def test_attach_meter_prices_idempotent(monkeypatch):
+    from at_utility import stripe_billing as sb
+    from at_utility.config import get_settings
+    import sys
+    import types
+
+    settings = get_settings()
+    settings.stripe_secret_key = "sk_test_x"
+    settings.stripe_price_meter_web_fetch = "price_fetch"
+    settings.stripe_price_meter_cache_hit = "price_hit"
+    settings.stripe_price_meter_cache_miss = "price_miss"
+
+    modify_calls: list[dict] = []
+
+    fake = types.ModuleType("stripe")
+    fake.api_key = None
+
+    class _Sub:
+        @staticmethod
+        def retrieve(sub_id, expand=None):
+            return {
+                "id": sub_id,
+                "items": {
+                    "data": [
+                        {"price": {"id": "price_seat"}},
+                        {"price": {"id": "price_hit"}},  # already attached
+                    ]
+                },
+            }
+
+        @staticmethod
+        def modify(sub_id, **params):
+            modify_calls.append({"id": sub_id, **params})
+            return {"id": sub_id}
+
+    fake.Subscription = _Sub
+    monkeypatch.setitem(sys.modules, "stripe", fake)
+
+    n = sb.attach_meter_prices_to_subscription(settings, subscription_id="sub_x")
+    assert n == 2
+    assert len(modify_calls) == 1
+    prices = {item["price"] for item in modify_calls[0]["items"]}
+    assert prices == {"price_fetch", "price_miss"}
+    assert modify_calls[0]["proration_behavior"] == "none"
+
+    # Second call: all three meters present → no-op
+    def retrieve_all(sub_id, expand=None):
+        return {
+            "id": sub_id,
+            "items": {
+                "data": [
+                    {"price": {"id": "price_seat"}},
+                    {"price": {"id": "price_hit"}},
+                    {"price": {"id": "price_miss"}},
+                    {"price": {"id": "price_fetch"}},
+                ]
+            },
+        }
+
+    fake.Subscription.retrieve = staticmethod(retrieve_all)
+    modify_calls.clear()
+    assert sb.attach_meter_prices_to_subscription(settings, subscription_id="sub_x") == 0
+    assert modify_calls == []
+
+
 @pytest.mark.asyncio
 async def test_checkout_rate_limited_after_burst():
     async with _client() as client:

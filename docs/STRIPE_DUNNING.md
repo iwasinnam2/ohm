@@ -47,7 +47,9 @@ Refs: [Smart Retries](https://docs.stripe.com/billing/revenue-recovery/smart-ret
 
 ## Metering cannot be sidestepped
 
-- Checkout in production **requires** all three meter Prices (`AT_ENV=production` / `AT_REQUIRE_METER_PRICES`).
+- Checkout in production **requires** all three meter Prices configured
+  (`AT_ENV=production` / `AT_REQUIRE_METER_PRICES`); they attach to the
+  subscription after Checkout (seat-only hosted page), not as Checkout line items.
 - Usage is written to Redis **and** Stripe `MeterEvent` when `stripe_customer_id` is set.
 - Delinquent tenants cannot use the revenue rocket (web fetch) until paid.
 - After 14 days unpaid, keys are dead (403) — no silent free pipe.
