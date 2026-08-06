@@ -26,5 +26,5 @@
 ## Budget caps
 
 - OpenAI: hard limit in OpenAI usage dashboard.
-- AWS: Budgets alert → SNS.
+- AWS: Budgets alert → SNS (email delivery paused; Slack/Chatbot if enabled — [EMAIL_ALERTS.md](EMAIL_ALERTS.md)).
 - Customer: suspend tenant on `invoice.payment_failed` webhook.
