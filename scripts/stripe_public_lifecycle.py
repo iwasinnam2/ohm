@@ -7,17 +7,21 @@ Env:
   STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET (must match gateway)
   AT_ADMIN_API_KEY (or AT_ADMIN_API_KEYS first entry)
   OHM_BASE_URL (default https://api.withohm.dev)
-  OHM_RESOLVE_IP (optional NLB IP for pre-DNS SNI via curl)
+  OHM_RESOLVE_IP (optional NLB IP for pre-DNS SNI pinning)
 """
 
 from __future__ import annotations
 
+import http.client
 import json
 import os
-import subprocess
+import socket
+import ssl
 import sys
 import time
 from pathlib import Path
+from typing import Any
+from urllib.parse import urlparse
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -49,7 +53,27 @@ def _admin_key() -> str:
     raise SystemExit("Set AT_ADMIN_API_KEY or AT_ADMIN_API_KEYS")
 
 
-def _curl_json(
+class _ResolveHTTPSConnection(http.client.HTTPSConnection):
+    """HTTPS to a fixed IP while keeping SNI + Host = the original hostname.
+
+    Cross-platform equivalent of ``curl --resolve host:port:ip`` for pre-DNS
+    cutover checks against an NLB before the public record exists.
+    """
+
+    def __init__(self, host: str, resolve_ip: str, **kwargs: Any) -> None:
+        super().__init__(host, **kwargs)
+        self._resolve_ip = resolve_ip
+
+    def connect(self) -> None:
+        self.sock = socket.create_connection(
+            (self._resolve_ip, self.port), self.timeout
+        )
+        if self._tunnel_host:
+            self._tunnel()
+        self.sock = self._context.wrap_socket(self.sock, server_hostname=self.host)
+
+
+def _http_json(
     method: str,
     url: str,
     *,
@@ -57,37 +81,41 @@ def _curl_json(
     body: bytes | None = None,
     resolve_ip: str = "",
 ) -> tuple[int, str]:
-    hdr_file = Path(os.environ.get("TEMP", ".")) / f"ohm_hdr_{os.getpid()}.txt"
-    body_file = Path(os.environ.get("TEMP", ".")) / f"ohm_body_{os.getpid()}.txt"
-    args = ["curl.exe", "-sS", "-D", str(hdr_file), "-o", str(body_file), "-X", method, "--max-time", "90"]
-    if resolve_ip:
-        # parse host/port from url
-        from urllib.parse import urlparse
+    """Portable JSON HTTP call (stdlib only) returning ``(status, text)``.
 
-        u = urlparse(url)
-        port = u.port or (443 if u.scheme == "https" else 80)
-        args += ["--resolve", f"{u.hostname}:{port}:{resolve_ip}"]
-    for k, v in headers.items():
-        args += ["-H", f"{k}: {v}"]
-    payload_path = None
-    if body is not None:
-        payload_path = Path(os.environ.get("TEMP", ".")) / f"ohm_payload_{os.getpid()}.bin"
-        payload_path.write_bytes(body)
-        args += ["--data-binary", f"@{payload_path}"]
-    args.append(url)
-    subprocess.check_call(args)
-    raw_hdr = hdr_file.read_text(encoding="utf-8", errors="replace")
-    status = 0
-    for line in raw_hdr.splitlines():
-        if line.startswith("HTTP/"):
-            parts = line.split()
-            if len(parts) >= 2 and parts[1].isdigit():
-                status = int(parts[1])
-    text = body_file.read_text(encoding="utf-8", errors="replace")
-    for p in (hdr_file, body_file, payload_path):
-        if p and p.exists():
-            p.unlink(missing_ok=True)
-    return status, text
+    Non-2xx responses are returned rather than raised so callers can assert on
+    codes such as 403.
+    """
+    u = urlparse(url)
+    host = u.hostname or ""
+    port = u.port or (443 if u.scheme == "https" else 80)
+    path = u.path or "/"
+    if u.query:
+        path = f"{path}?{u.query}"
+
+    send_headers = dict(headers)
+    conn: http.client.HTTPConnection
+    if u.scheme == "https":
+        ctx = ssl.create_default_context()
+        if resolve_ip:
+            conn = _ResolveHTTPSConnection(
+                host, resolve_ip, port=port, context=ctx, timeout=90
+            )
+        else:
+            conn = http.client.HTTPSConnection(host, port, context=ctx, timeout=90)
+    elif resolve_ip:
+        conn = http.client.HTTPConnection(resolve_ip, port, timeout=90)
+        send_headers["Host"] = host  # preserve intended vhost when dialing a raw IP
+    else:
+        conn = http.client.HTTPConnection(host, port, timeout=90)
+
+    try:
+        conn.request(method, path, body=body, headers=send_headers)
+        resp = conn.getresponse()
+        text = resp.read().decode("utf-8", errors="replace")
+        return resp.status, text
+    finally:
+        conn.close()
 
 
 def main() -> int:
@@ -119,7 +147,7 @@ def main() -> int:
             "dpa_ack": True,
         }
     ).encode()
-    code, text = _curl_json(
+    code, text = _http_json(
         "POST",
         f"{api_root}/admin/tenants",
         headers={"Authorization": f"Bearer {admin}", "Content-Type": "application/json"},
@@ -162,7 +190,7 @@ def main() -> int:
     ).hexdigest()
     header = f"t={timestamp},v1={signed}"
 
-    code, text = _curl_json(
+    code, text = _http_json(
         "POST",
         f"{api_root}/billing/webhook",
         headers={"Stripe-Signature": header, "Content-Type": "application/json"},
@@ -177,7 +205,7 @@ def main() -> int:
     chat_body = json.dumps(
         {"model": "mock", "messages": [{"role": "user", "content": "life-active"}]}
     ).encode()
-    code, text = _curl_json(
+    code, text = _http_json(
         "POST",
         f"{api_root}/chat/completions",
         headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
@@ -212,7 +240,7 @@ def main() -> int:
     ).hexdigest()
     header2 = f"t={timestamp},v1={signed}"
 
-    code, text = _curl_json(
+    code, text = _http_json(
         "POST",
         f"{api_root}/billing/webhook",
         headers={"Stripe-Signature": header2, "Content-Type": "application/json"},
@@ -224,7 +252,7 @@ def main() -> int:
         return 1
     print("OK: webhook customer.subscription.deleted")
 
-    code, text = _curl_json(
+    code, text = _http_json(
         "POST",
         f"{api_root}/chat/completions",
         headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
