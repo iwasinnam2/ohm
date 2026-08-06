@@ -4,26 +4,26 @@
 */
 
 :root {
-  /* --- Primitives: color --- */
-  --color-ink-950: #050507;
-  --color-ink-900: #0b0b0f;
-  --color-ink-850: #070709;
-  --color-ink-800: #020203;
-  --color-paper-50: #f2ebe0;
-  --color-paper-400: #9b9690;
-  --color-violet-400: #c084fc;
-  --color-violet-500: #a855f7;
-  --color-violet-700: #7e22ce;
-  --color-violet-ink: #050507;
+  /* --- Primitives: color (~10% brighter than prior ink field) --- */
+  --color-ink-950: #1e1e20;
+  --color-ink-900: #232327;
+  --color-ink-850: #202022;
+  --color-ink-800: #1b1b1c;
+  --color-paper-50: #f3ede3;
+  --color-paper-400: #a5a19b;
+  --color-violet-400: #c690fc;
+  --color-violet-500: #b166f8;
+  --color-violet-700: #8b38d3;
+  --color-violet-ink: #1e1e20;
   /* Legacy copper aliases → violet (OG chrome now purple) */
   --color-copper-400: var(--color-violet-400);
   --color-copper-500: var(--color-violet-500);
   --color-copper-700: var(--color-violet-700);
   --color-copper-ink: var(--color-violet-ink);
-  --color-graphite-400: #16151a;
-  --color-graphite-500: #121116;
-  --color-graphite-600: #0e0d12;
-  --color-slate-500: #1a191f;
+  --color-graphite-400: #2d2c31;
+  --color-graphite-500: #2a292d;
+  --color-graphite-600: #26252a;
+  --color-slate-500: #313035;
 
   /* --- Primitives: space (8px grid) --- */
   --space-1: 0.25rem; /* 4 */
@@ -80,9 +80,9 @@
   --accent: var(--color-violet-500);
   --accent-hover: var(--color-violet-400);
   --accent-deep: var(--color-violet-700);
-  --accent-soft: rgba(168, 85, 247, 0.18);
+  --accent-soft: rgba(177, 102, 248, 0.2);
   --accent-ink: var(--color-violet-ink);
-  --line: rgba(242, 235, 224, 0.1);
+  --line: rgba(243, 237, 227, 0.12);
   --focus-ring: var(--color-violet-500);
 
   /* --- Semantic: modular surfaces (card system) --- */
@@ -95,7 +95,7 @@
   --shadow-card-hover:
     inset 0 1px 0 rgba(242, 235, 224, 0.08),
     0 2px 6px rgba(0, 0, 0, 0.35),
-    0 24px 56px -24px rgba(168, 85, 247, 0.32);
+    0 24px 56px -24px rgba(177, 102, 248, 0.32);
 
   --content-width: 1080px;
   --gutter: var(--space-5);
@@ -450,7 +450,7 @@ pre {
 .btn--primary:hover {
   background: var(--accent-hover);
   color: var(--accent-ink);
-  box-shadow: 0 12px 40px -18px rgba(168, 85, 247, 0.75);
+  box-shadow: 0 12px 40px -18px rgba(177, 102, 248, 0.75);
 }
 
 .btn--ghost {
@@ -3123,12 +3123,12 @@ body:has(.doc-layout) .site-footer {
 
 /* Agent Shell — PowerShell-style terminal */
 .ps-shell {
-  --ps-bg: #012456;
-  --ps-fg: #f0f0f0;
-  --ps-muted: #9ec3e8;
-  --ps-err: #ff6b6b;
-  --ps-cmd: #ffe08a;
-  --ps-chrome: #0a1a33;
+  --ps-bg: #1a3a66;
+  --ps-fg: #f5f5f5;
+  --ps-muted: #a8cceb;
+  --ps-err: #ff7a7a;
+  --ps-cmd: #ffe79c;
+  --ps-chrome: #233147;
   display: flex;
   flex-direction: column;
   min-height: min(70vh, 40rem);
@@ -3468,7 +3468,7 @@ body:has(.doc-layout) .site-footer {
 .pipe-network__payload {
   fill: var(--color-violet-400);
   opacity: 0;
-  filter: drop-shadow(0 0 3px rgba(168, 85, 247, 0.7));
+  filter: drop-shadow(0 0 3px rgba(177, 102, 248, 0.7));
 }
 
 /* Thin purple page-border tubing — constant accent rails */
@@ -3574,7 +3574,7 @@ body:has(.doc-layout) .site-footer {
   height: 5px;
   border-radius: 2px;
   background: var(--accent);
-  box-shadow: 0 0 12px rgba(168, 85, 247, 0.45);
+  box-shadow: 0 0 12px rgba(177, 102, 248, 0.45);
 }
 
 .dual-aid__crossing span {
@@ -3836,13 +3836,13 @@ body:has(.doc-layout) .site-footer {
 }
 
 .ohm-flow__promote {
-  stroke: #a855f7;
+  stroke: #b166f8;
   stroke-width: 7;
   stroke-linecap: round;
 }
 
 .ohm-flow__promote-pill {
-  fill: #a855f7;
+  fill: #b166f8;
 }
 
 .ohm-flow__promote-text {
