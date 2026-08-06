@@ -51,7 +51,9 @@ set `redis_num_cache_clusters = 2` again.
 2. **Amplify** — delete feature-branch apps; keep `master` / production only
    (`AMPLIFY_SITE.md` still lists old preview URLs).
 3. **SNS email** — unsubscribe mailbox delivery ([EMAIL_ALERTS.md](EMAIL_ALERTS.md) if merged).
-4. **Neon** — turn on scale-to-zero; do not buy snapshot schedules yet ([NEON.md](NEON.md)).
+4. **Neon** — turn on scale-to-zero (suspend 300s); history is already Free **6h**
+   — leave it (do not set to 0; History $0 on Free). Cost win is scale-to-zero,
+   not the history slider. No snapshot schedules yet ([NEON.md](NEON.md)).
 
 ## Do not do (architecture destroy / high risk)
 
