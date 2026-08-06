@@ -3,10 +3,13 @@
 withOhm serves all traffic from **us-east-1**: EKS (`at-utility-eks`, 1×
 t3.medium) running `gateway` (Python control plane), `gateway-rs` (Rust edge),
 and `ingest-worker`, in front of ElastiCache Redis (`at-utility-redis-leader`,
-2 nodes, multi-AZ, TLS, **daily snapshots, 7-day retention**). The mesh
-(us-west-2 + eu-west-2 edges, Global Datastore, Global Accelerator) was torn
-down to cut burn from ~$1.5–2k/mo toward <$200/mo. Terraform keeps the mesh
-behind `enable_edges` / `anycast_enabled` for when paid traffic justifies it.
+TLS, daily snapshots). Pre-revenue Terraform defaults slim Redis to **1×
+`cache.t4g.small`** (no Multi-AZ) and **3-day** snapshot retention — same
+architecture, less HA fat; set `redis_num_cache_clusters = 2` when HA matters
+again. The mesh (us-west-2 + eu-west-2 edges, Global Datastore, Global
+Accelerator) was torn down to cut burn from ~$1.5–2k/mo toward <$200/mo.
+Terraform keeps the mesh behind `enable_edges` / `anycast_enabled` for when
+paid traffic justifies it.
 
 ## Region notes
 
@@ -77,6 +80,13 @@ kubectl --context ohm-us-east-1 -n at-utility rollout restart deploy/gateway dep
 |------|-----------|
 | EKS control plane | $73 |
 | 1× t3.medium node | $30 |
-| Redis (2× t4g.small, after flip) | $46 |
+| Redis (1× t4g.small, pre-revenue slim) | ~$23 |
+| Redis (2× t4g.small Multi-AZ, HA) | ~$46 |
 | NLB + NAT + data | $40–60 |
-| **Total** | **~$190–210** |
+| **Total (slim)** | **~$165–185** |
+| **Total (HA Redis)** | **~$190–210** |
+
+A mid-cycle bill around **~$100** with mesh/GA already gone is consistent with
+this floor (partial month or credits) — it is **not** SNS email. Slim knobs
+(not teardown): [COST_FREEZE.md](COST_FREEZE.md). Neon mirror / snapshots:
+[NEON.md](NEON.md). Never re-apply `cache.r6g.large` until mesh returns.

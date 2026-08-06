@@ -43,15 +43,24 @@ variable "enable_edges" {
 }
 
 variable "redis_node_type" {
-  type        = string
-  default     = "cache.r6g.large"
-  description = "Leader Redis node type; Global Datastore requires large+ (not t-family)"
+  type = string
+  # Live single-region posture is t4g.small. r6g.large is only required when
+  # re-enabling Global Datastore / enable_edges — never the pre-revenue default
+  # (that alone is ~$360+/mo).
+  default     = "cache.t4g.small"
+  description = "Leader Redis node type. Use cache.r6g.large+ only when enabling Global Datastore / mesh."
+}
+
+variable "redis_num_cache_clusters" {
+  type        = number
+  default     = 1
+  description = "Redis cluster size. 1 = single primary (pre-revenue slim, ~half Redis $). 2+ enables Multi-AZ + automatic failover. Same architecture — HA only."
 }
 
 variable "redis_snapshot_retention_days" {
   type        = number
-  default     = 7
-  description = "Daily Redis snapshot retention — this RG is the only datastore, keep backups on"
+  default     = 3
+  description = "Daily Redis snapshot retention. Keep ≥1 while Redis is SoT; 3d is enough pre-revenue (was 7)."
 }
 
 variable "ga_nlb_endpoint_arns" {
@@ -266,24 +275,26 @@ resource "aws_elasticache_subnet_group" "leader" {
 }
 
 resource "aws_elasticache_replication_group" "leader" {
-  provider                   = aws.leader
-  replication_group_id       = "${var.project}-redis-leader"
-  description                = "at-utility Redis replication leader (cache writes + quota grants)"
-  engine                     = "redis"
-  engine_version             = "7.1"
-  node_type                  = var.redis_node_type
-  num_cache_clusters         = 2
-  automatic_failover_enabled = true
-  multi_az_enabled           = true
+  provider             = aws.leader
+  replication_group_id = "${var.project}-redis-leader"
+  description          = "at-utility Redis replication leader (cache writes + quota grants)"
+  engine               = "redis"
+  engine_version       = "7.1"
+  node_type            = var.redis_node_type
+  num_cache_clusters   = var.redis_num_cache_clusters
+  # Failover / Multi-AZ require ≥2 nodes. Single-primary keeps the same RG
+  # architecture; it just drops the replica bill until revenue.
+  automatic_failover_enabled = var.redis_num_cache_clusters >= 2
+  multi_az_enabled           = var.redis_num_cache_clusters >= 2
   port                       = 6379
   apply_immediately          = true
   at_rest_encryption_enabled = true
   transit_encryption_enabled = true
   # Must not overlap the maintenance window (sun:03:00-sun:04:00).
-  snapshot_retention_limit   = var.redis_snapshot_retention_days
-  snapshot_window            = "05:00-07:00"
-  subnet_group_name          = aws_elasticache_subnet_group.leader.name
-  security_group_ids         = [aws_security_group.redis.id]
+  snapshot_retention_limit = var.redis_snapshot_retention_days
+  snapshot_window          = "05:00-07:00"
+  subnet_group_name        = aws_elasticache_subnet_group.leader.name
+  security_group_ids       = [aws_security_group.redis.id]
   tags = {
     Project = var.project
     Role    = "redis-leader"
@@ -314,14 +325,14 @@ resource "aws_secretsmanager_secret_version" "runtime" {
   provider  = aws.leader
   secret_id = aws_secretsmanager_secret.runtime.id
   secret_string = jsonencode({
-    OPENAI_API_KEY     = var.openai_api_key
-    AT_API_KEYS        = var.at_api_keys
+    OPENAI_API_KEY = var.openai_api_key
+    AT_API_KEYS    = var.at_api_keys
     # Phase 2: GET on same-region reader; SET/RL/tenants on primary
-    REDIS_URL          = "rediss://${aws_elasticache_replication_group.leader.reader_endpoint_address}:6379/0"
-    REDIS_WRITE_URL    = "rediss://${aws_elasticache_replication_group.leader.primary_endpoint_address}:6379/0"
-    REDIS_RL_URL       = "rediss://${aws_elasticache_replication_group.leader.primary_endpoint_address}:6379/0"
-    AT_RS_REDIS        = "${aws_elasticache_replication_group.leader.reader_endpoint_address}:6379"
-    AT_RS_REDIS_WRITE  = "${aws_elasticache_replication_group.leader.primary_endpoint_address}:6379"
+    REDIS_URL         = "rediss://${aws_elasticache_replication_group.leader.reader_endpoint_address}:6379/0"
+    REDIS_WRITE_URL   = "rediss://${aws_elasticache_replication_group.leader.primary_endpoint_address}:6379/0"
+    REDIS_RL_URL      = "rediss://${aws_elasticache_replication_group.leader.primary_endpoint_address}:6379/0"
+    AT_RS_REDIS       = "${aws_elasticache_replication_group.leader.reader_endpoint_address}:6379"
+    AT_RS_REDIS_WRITE = "${aws_elasticache_replication_group.leader.primary_endpoint_address}:6379"
   })
 }
 
@@ -345,6 +356,33 @@ resource "aws_ecr_repository" "ingest_worker" {
   name                 = "${var.project}/ingest-worker"
   image_tag_mutability = "IMMUTABLE"
   image_scanning_configuration { scan_on_push = true }
+}
+
+# Cap image sprawl — immutable SHA tags accumulate otherwise. Keep recent N.
+locals {
+  ecr_repos = {
+    gateway       = aws_ecr_repository.gateway.name
+    gateway_rs    = aws_ecr_repository.gateway_rs.name
+    ingest_worker = aws_ecr_repository.ingest_worker.name
+  }
+}
+
+resource "aws_ecr_lifecycle_policy" "keep_recent" {
+  for_each   = local.ecr_repos
+  provider   = aws.leader
+  repository = each.value
+  policy = jsonencode({
+    rules = [{
+      rulePriority = 1
+      description  = "Keep last 15 images (pre-revenue storage slim)"
+      selection = {
+        tagStatus   = "any"
+        countType   = "imageCountMoreThan"
+        countNumber = 15
+      }
+      action = { type = "expire" }
+    }]
+  })
 }
 
 # --- ACM (DNS validation; attach certificate ARN to NLB listener in k8s/Ingress) ---
