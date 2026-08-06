@@ -43,25 +43,32 @@ export default async function IntermediateBillingPage({
               {formatUsdMoney(commit.included_usd)} metered usage included each
               cycle.
             </strong>{" "}
-            Overage bills at list rates: cache hit{" "}
-            {formatUsd(PAYG_RATES.cache_hit)}/1k tokens, cache miss{" "}
-            {formatUsd(PAYG_RATES.cache_miss)}/1k tokens, web fetch{" "}
-            {formatUsd(PAYG_RATES.web_fetch)}/URL. Model tokens stay on your
-            provider keys (BYOK). Checkout issues your withOhm API key once.
+            Model tokens stay on your provider keys (BYOK). Checkout issues your
+            withOhm API key once.
           </p>
         ) : (
           <p>
-            <strong>$0 membership</strong> with card on file. You are billed for
-            pipe rent: cache hit {formatUsd(PAYG_RATES.cache_hit)}/1k tokens,
-            cache miss {formatUsd(PAYG_RATES.cache_miss)}/1k tokens, web fetch{" "}
-            {formatUsd(PAYG_RATES.web_fetch)}/URL. Prefer a fixed monthly line?{" "}
-            <Link href="/subscriptions">Pick a commit tier</Link>. Model tokens
-            stay on your provider keys (BYOK). Checkout issues your withOhm API
-            key once.
+            <strong>$0 membership</strong> with card on file. Prefer a fixed
+            monthly line? <Link href="/subscriptions">Pick a commit tier</Link>.
+            Model tokens stay on your provider keys (BYOK). Checkout issues your
+            withOhm API key once.
           </p>
         )}
       </header>
       <BillingCheckoutForm commit={commit?.id ?? ""} />
+      <section className="billing-meter-fineprint" aria-label="Meter rates">
+        <p>
+          Usage meters invoice monthly after you use the pipe — they are not
+          checkout line items. List rates: cache hit{" "}
+          {formatUsd(PAYG_RATES.cache_hit)}/1k tokens · cache miss{" "}
+          {formatUsd(PAYG_RATES.cache_miss)}/1k tokens · web fetch{" "}
+          {formatUsd(PAYG_RATES.web_fetch)}/URL.
+          {commit
+            ? " Overage beyond the included commit bills at these rates."
+            : null}{" "}
+          <Link href="/docs/pricing">Full pricing</Link>.
+        </p>
+      </section>
       <p className="billing-form__alt">
         Need fixed usage agreements?{" "}
         <Link href="/billing/enterprise">Enterprise at withOhm</Link>

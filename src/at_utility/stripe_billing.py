@@ -41,16 +41,76 @@ def _integration_identifier() -> str:
     return f"ohm_checkout_{suffix}"
 
 
-def _meter_line_items(settings: Settings) -> list[dict[str, Any]]:
-    items: list[dict[str, Any]] = []
-    for price_id in (
-        settings.stripe_price_meter_web_fetch,
-        settings.stripe_price_meter_cache_hit,
-        settings.stripe_price_meter_cache_miss,
-    ):
-        if price_id:
-            items.append({"price": price_id})
-    return items
+def meter_price_ids(settings: Settings) -> list[str]:
+    """Configured metered Price IDs (web_fetch, cache_hit, cache_miss)."""
+    return [
+        price_id
+        for price_id in (
+            settings.stripe_price_meter_web_fetch,
+            settings.stripe_price_meter_cache_hit,
+            settings.stripe_price_meter_cache_miss,
+        )
+        if price_id
+    ]
+
+
+def attach_meter_prices_to_subscription(
+    settings: Settings, *, subscription_id: str
+) -> int:
+    """Attach metered Prices to a seat-only subscription. Idempotent.
+
+    Checkout shows only the membership/commit seat so the hosted page does not
+    list hit/miss/fetch as separate charges. Meters are added here on
+    ``checkout.session.completed``. Returns the number of items newly created.
+    """
+    if not settings.stripe_secret_key or not subscription_id:
+        return 0
+    wanted = meter_price_ids(settings)
+    if not wanted:
+        return 0
+    try:
+        import stripe
+    except ImportError:
+        return 0
+    try:
+        stripe.api_key = settings.stripe_secret_key
+        sub = stripe.Subscription.retrieve(
+            subscription_id, expand=["items.data.price"]
+        )
+        items = sub.get("items") if isinstance(sub, dict) else getattr(sub, "items", None)
+        data = (
+            items.get("data")
+            if isinstance(items, dict)
+            else getattr(items, "data", None)
+        ) or []
+        existing: set[str] = set()
+        for item in data:
+            price = (
+                item.get("price")
+                if isinstance(item, dict)
+                else getattr(item, "price", None)
+            )
+            price_id = (
+                price.get("id")
+                if isinstance(price, dict)
+                else getattr(price, "id", None)
+            )
+            if price_id:
+                existing.add(str(price_id))
+        missing = [pid for pid in wanted if pid not in existing]
+        if not missing:
+            return 0
+        stripe.Subscription.modify(
+            subscription_id,
+            items=[{"price": pid} for pid in missing],
+            proration_behavior="none",
+        )
+        return len(missing)
+    except Exception as exc:  # noqa: BLE001 — webhook must still 200
+        log.warning(
+            "attach meter prices failed sub=%s err=%s", subscription_id, exc
+        )
+        return 0
 
 
 def commit_tier_prices(settings: Settings) -> dict[str, str]:
@@ -110,18 +170,25 @@ def require_meter_prices(settings: Settings, plan: str) -> None:
 def create_checkout_session(
     settings: Settings,
     *,
-    tenant_id: str,
     plan: str,
     success_url: str,
     cancel_url: str,
+    tenant_id: str = "",
+    pending_id: str = "",
     customer_email: str = "",
     commit: str = "",
 ) -> dict[str, Any]:
     """
-    Create a Stripe Checkout Session (subscription seat + meters)
-    for payg or enterprise. ``commit`` (c29/c99/c499) swaps the $0 membership
-    seat for a commit-tier seat; meters are always attached. Included usage is
-    granted per cycle by the invoice.paid webhook.
+    Create a Stripe Checkout Session for payg or enterprise.
+
+    Hosted Checkout line items are **seat only** ($0 membership or a commit
+    tier) so hit/miss/fetch do not appear as charges. Metered Prices are
+    attached to the subscription on ``checkout.session.completed`` via
+    :func:`attach_meter_prices_to_subscription`. Included usage for commit
+    tiers is granted per cycle by the invoice.paid webhook.
+
+    Self-serve uses ``pending_id`` (no API key until Checkout completes).
+    Admin flows may pass an already-issued ``tenant_id``.
     """
     if not settings.stripe_secret_key:
         raise RuntimeError("STRIPE_SECRET_KEY is not configured")
@@ -149,18 +216,24 @@ def create_checkout_session(
         raise RuntimeError(f"Stripe price id missing for plan={plan}")
 
     success_url, cancel_url = resolve_checkout_urls(settings, success_url, cancel_url)
+    # Seat only on the hosted page — meters attach post-checkout (webhook).
     line_items: list[dict[str, Any]] = [{"price": price, "quantity": 1}]
-    line_items.extend(_meter_line_items(settings))
-    if plan == "payg" and not _meter_line_items(settings):
+    if plan == "payg" and not meter_prices_configured(settings):
         # Defense in depth when require_meter_prices was skipped (non-prod)
         log.warning(
             "checkout plan=payg without meter Prices — seat-only subscription"
         )
-    shared_meta = {
-        "tenant_id": tenant_id,
+    ref = (pending_id or tenant_id or "").strip()
+    if not ref:
+        raise RuntimeError("checkout requires pending_id or tenant_id")
+    shared_meta: dict[str, str] = {
         "plan": plan,
         "billing_model": BILLING_MODEL,
     }
+    if pending_id:
+        shared_meta["pending_id"] = pending_id.strip()
+    if tenant_id and not pending_id:
+        shared_meta["tenant_id"] = tenant_id.strip()
     if commit:
         shared_meta["commit_tier"] = commit
     params: dict[str, Any] = {
@@ -168,7 +241,7 @@ def create_checkout_session(
         "success_url": success_url,
         "cancel_url": cancel_url,
         "line_items": line_items,
-        "client_reference_id": tenant_id,
+        "client_reference_id": ref[:200],
         "metadata": dict(shared_meta),
         "subscription_data": {"metadata": dict(shared_meta)},
         "integration_identifier": _integration_identifier(),
