@@ -44,8 +44,11 @@ variable "enable_edges" {
 
 variable "redis_node_type" {
   type        = string
-  default     = "cache.r6g.large"
-  description = "Leader Redis node type; Global Datastore requires large+ (not t-family)"
+  # Live single-region posture is t4g.small (~$46/mo for 2 nodes). r6g.large is
+  # only required when re-enabling Global Datastore / enable_edges — never the
+  # pre-revenue default (that alone is ~$360+/mo).
+  default     = "cache.t4g.small"
+  description = "Leader Redis node type. Use cache.r6g.large+ only when enabling Global Datastore / mesh."
 }
 
 variable "redis_snapshot_retention_days" {

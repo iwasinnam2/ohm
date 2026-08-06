@@ -19,8 +19,9 @@ variable "eks_node_instance_types" {
 }
 
 variable "eks_desired_nodes" {
-  type    = number
-  default = 2
+  type        = number
+  default     = 1
+  description = "Managed node group desired size. Live single-region = 1; ASG min stays 1 (no scale-to-zero)."
 }
 
 data "aws_eks_cluster_auth" "leader" {

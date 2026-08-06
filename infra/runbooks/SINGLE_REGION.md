@@ -80,3 +80,9 @@ kubectl --context ohm-us-east-1 -n at-utility rollout restart deploy/gateway dep
 | Redis (2× t4g.small, after flip) | $46 |
 | NLB + NAT + data | $40–60 |
 | **Total** | **~$190–210** |
+
+A mid-cycle bill around **~$100** with mesh/GA already gone is consistent with
+this floor (partial month or credits) — it is **not** SNS email. For freeze /
+downgrade options see [COST_FREEZE.md](COST_FREEZE.md). Keep
+`redis_node_type = cache.t4g.small` and `eks_desired_nodes = 1`; never re-apply
+`cache.r6g.large` until mesh returns.
