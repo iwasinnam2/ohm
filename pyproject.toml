@@ -45,6 +45,7 @@ dev = [
 at-utility = "at_utility.main:run"
 ohm-mcp = "ohm_mcp:main"
 ohm-mcp-http = "ohm_mcp:main_http"
+ohm-reconciler = "at_utility.reconciler:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
