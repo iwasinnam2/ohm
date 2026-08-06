@@ -25,7 +25,7 @@ export const PRODUCT_INDEX: ProductMeta[] = [
     slug: "architecture",
     title: "Architecture",
     description:
-      "Ephemeral Side × Pipeline System — two containers, one metered HIT/MISS crossing.",
+      "One OpenAI-compatible gateway. Cache tips for inventory. Promote as the only crossing to main.",
     eyebrow: "Deep dive",
   },
   {

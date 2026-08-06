@@ -11,7 +11,7 @@ export const USE_CASE_INDEX: UseCaseMeta[] = [
     slug: "inventory-per-tenant",
     title: "Inventory per tenant",
     description:
-      "Isolate exact-replay inventory per PR or agent — no noisy neighbors on the cache path.",
+      "Same model. Same gateway. Separate tips — so agent runs do not collide on main.",
     eyebrow: "Flagship",
   },
   {

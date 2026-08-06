@@ -4,12 +4,23 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { OhmMark } from "./OhmMark";
 import { PRODUCT_INDEX } from "@/lib/productMeta";
+import { RESOURCES_INDEX } from "@/lib/resourcesMeta";
 import { USE_CASE_INDEX } from "@/lib/useCasesMeta";
 
 function navCurrent(pathname: string, href: string): boolean {
   if (href === "/") return pathname === "/";
   if (href === "/pricing") {
     return pathname === "/pricing" || pathname.startsWith("/subscriptions");
+  }
+  if (href === "/resources") {
+    return (
+      pathname === "/resources" ||
+      pathname === "/changelog" ||
+      pathname === "/security" ||
+      pathname === "/contact" ||
+      pathname.startsWith("/support") ||
+      pathname === "/status"
+    );
   }
   return pathname === href || pathname.startsWith(`${href}/`);
 }
@@ -90,6 +101,33 @@ export function SiteHeader() {
         >
           Pricing
         </Link>
+
+        <div className="site-header__mega">
+          <Link
+            href="/resources"
+            className="site-header__mega-trigger"
+            aria-current={
+              navCurrent(pathname, "/resources") ? "page" : undefined
+            }
+          >
+            Resources
+          </Link>
+          <div
+            className="site-header__mega-panel"
+            role="group"
+            aria-label="Resources"
+          >
+            {RESOURCES_INDEX.map((item) => (
+              <Link key={item.slug} href={item.href}>
+                <span className="site-header__mega-title">{item.title}</span>
+                <span className="site-header__mega-desc">{item.description}</span>
+              </Link>
+            ))}
+            <Link href="/resources" className="site-header__mega-all">
+              All resources →
+            </Link>
+          </div>
+        </div>
 
         <span className="site-header__util" aria-hidden="true" />
         {utility.map((link) => (
