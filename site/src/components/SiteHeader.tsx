@@ -3,16 +3,13 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { OhmMark } from "./OhmMark";
+import { PRODUCT_INDEX } from "@/lib/productMeta";
+import { USE_CASE_INDEX } from "@/lib/useCasesMeta";
 
-function navCurrent(
-  pathname: string,
-  href: string,
-): boolean {
+function navCurrent(pathname: string, href: string): boolean {
   if (href === "/") return pathname === "/";
-  if (href === "/subscriptions") {
-    return (
-      pathname === "/subscriptions" || pathname.startsWith("/billing")
-    );
+  if (href === "/pricing") {
+    return pathname === "/pricing" || pathname.startsWith("/subscriptions");
   }
   return pathname === href || pathname.startsWith(`${href}/`);
 }
@@ -20,14 +17,10 @@ function navCurrent(
 export function SiteHeader() {
   const pathname = usePathname() || "/";
 
-  const links = [
+  const utility = [
     { href: "/workbench", label: "Shell" },
     { href: "/keys", label: "Keys" },
     { href: "/org", label: "Org" },
-    { href: "/connections", label: "Connections" },
-    { href: "/docs", label: "Docs" },
-    { href: "/subscriptions", label: "Billing" },
-    { href: "/", label: "Home" },
   ] as const;
 
   return (
@@ -37,18 +30,81 @@ export function SiteHeader() {
         <span className="site-header__name">withOhm</span>
       </Link>
       <nav className="site-header__nav" aria-label="Primary">
-        {links.map((link) => {
-          const current = navCurrent(pathname, link.href);
-          return (
-            <Link
-              key={link.href + link.label}
-              href={link.href}
-              aria-current={current ? "page" : undefined}
-            >
-              {link.label}
+        <div className="site-header__mega">
+          <Link
+            href="/product"
+            className="site-header__mega-trigger"
+            aria-current={navCurrent(pathname, "/product") ? "page" : undefined}
+          >
+            Product
+          </Link>
+          <div className="site-header__mega-panel" role="group" aria-label="Product">
+            {PRODUCT_INDEX.map((item) => (
+              <Link key={item.slug} href={`/product/${item.slug}`}>
+                <span className="site-header__mega-title">{item.title}</span>
+                <span className="site-header__mega-desc">{item.description}</span>
+              </Link>
+            ))}
+            <Link href="/product" className="site-header__mega-all">
+              All product →
             </Link>
-          );
-        })}
+          </div>
+        </div>
+
+        <div className="site-header__mega">
+          <Link
+            href="/use-cases"
+            className="site-header__mega-trigger"
+            aria-current={
+              navCurrent(pathname, "/use-cases") ? "page" : undefined
+            }
+          >
+            Solutions
+          </Link>
+          <div
+            className="site-header__mega-panel"
+            role="group"
+            aria-label="Solutions"
+          >
+            {USE_CASE_INDEX.map((item) => (
+              <Link key={item.slug} href={`/use-cases/${item.slug}`}>
+                <span className="site-header__mega-title">{item.title}</span>
+                <span className="site-header__mega-desc">{item.description}</span>
+              </Link>
+            ))}
+            <Link href="/use-cases" className="site-header__mega-all">
+              All solutions →
+            </Link>
+          </div>
+        </div>
+
+        <Link
+          href="/docs"
+          aria-current={navCurrent(pathname, "/docs") ? "page" : undefined}
+        >
+          Docs
+        </Link>
+        <Link
+          href="/pricing"
+          aria-current={navCurrent(pathname, "/pricing") ? "page" : undefined}
+        >
+          Pricing
+        </Link>
+
+        <span className="site-header__util" aria-hidden="true" />
+        {utility.map((link) => (
+          <Link
+            key={link.href}
+            href={link.href}
+            className="site-header__util-link"
+            aria-current={navCurrent(pathname, link.href) ? "page" : undefined}
+          >
+            {link.label}
+          </Link>
+        ))}
+        <Link href="/billing/intermediate" className="site-header__cta">
+          Start now — $0 seat
+        </Link>
       </nav>
     </header>
   );

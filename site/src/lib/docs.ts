@@ -37,6 +37,44 @@ export const DOC_GROUPS: DocGroup[] = [
     ],
   },
   {
+    id: "architecture",
+    title: "Architecture",
+    docs: [
+      {
+        slug: "architecture",
+        title: "Architecture",
+        description:
+          "Ephemeral Side × Pipeline System — dual containers and the HIT/MISS crossing.",
+      },
+      {
+        slug: "edge",
+        title: "Edge & Redis locality",
+        description: "Hot-path GETs, key layout, mesh posture.",
+      },
+      {
+        slug: "compose-neon",
+        title: "Compose with Neon",
+        description:
+          "NEON_BRANCH for state + X-Ohm-Cache-Tree for exact-replay inventory.",
+      },
+      {
+        slug: "api",
+        title: "API reference",
+        description: "Index of public endpoints, headers, and related guides.",
+      },
+      {
+        slug: "honesty",
+        title: "Honesty map",
+        description: "Published non-goals and the endpoints that prove them.",
+      },
+      {
+        slug: "receipts",
+        title: "Signed receipts",
+        description: "X-Ohm-Receipt, JWKS verification, tree claims.",
+      },
+    ],
+  },
+  {
     id: "operative",
     title: "Operative",
     docs: [

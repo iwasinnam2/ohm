@@ -286,7 +286,106 @@ pre {
   font-weight: 500;
 }
 
+.site-header__mega {
+  position: relative;
+}
+
+.site-header__mega-trigger {
+  display: inline-block;
+}
+
+.site-header__mega-panel {
+  display: none;
+  position: absolute;
+  top: calc(100% + 0.65rem);
+  left: 50%;
+  transform: translateX(-35%);
+  z-index: 40;
+  width: min(22rem, 80vw);
+  padding: var(--space-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  background: color-mix(in srgb, var(--bg-elevated) 94%, #000);
+  box-shadow: var(--shadow-card);
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.site-header__mega:hover .site-header__mega-panel,
+.site-header__mega:focus-within .site-header__mega-panel {
+  display: flex;
+}
+
+.site-header__mega-panel a {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: var(--space-2);
+  border-radius: var(--radius);
+  color: var(--fg);
+}
+
+.site-header__mega-panel a:hover {
+  background: var(--accent-soft);
+  color: var(--fg);
+}
+
+.site-header__mega-title {
+  font-family: var(--font-display);
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+.site-header__mega-desc {
+  font-size: var(--text-xs);
+  color: var(--muted);
+  line-height: 1.35;
+}
+
+.site-header__mega-all {
+  margin-top: var(--space-1);
+  border-top: 1px solid var(--line);
+  border-radius: 0;
+  color: var(--accent) !important;
+  font-weight: 600;
+}
+
+.site-header__util {
+  display: inline-block;
+  width: 1px;
+  height: 1rem;
+  background: var(--line);
+  margin: 0 var(--space-1);
+}
+
+.site-header__util-link {
+  font-size: var(--text-xs);
+  letter-spacing: var(--tracking-nav);
+}
+
+.site-header__cta {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.45rem 0.85rem;
+  border-radius: var(--radius);
+  background: var(--accent);
+  color: var(--accent-ink) !important;
+  font-weight: 600;
+  font-size: var(--text-xs);
+}
+
+.site-header__cta:hover {
+  background: var(--accent-hover);
+  color: var(--accent-ink) !important;
+}
+
 /* Phone header: brand row + nav row, comfortable tap targets */
+@media (max-width: 900px) {
+  .site-header__mega-panel {
+    display: none !important;
+  }
+}
+
 @media (max-width: 560px) {
   .site-header {
     flex-direction: column;
@@ -304,6 +403,10 @@ pre {
 
   .site-header__nav a {
     padding: var(--space-1) 0;
+  }
+
+  .site-header__util {
+    display: none;
   }
 }
 
@@ -2946,6 +3049,95 @@ pre {
   .dual-aid__bar {
     width: 4.5rem;
   }
+}
+
+/* Marketing longforms — Product / Use-cases */
+.marketing-article {
+  max-width: var(--measure-wide);
+  padding-bottom: var(--space-7);
+}
+
+.marketing-article__eyebrow {
+  margin: 0 0 var(--space-2);
+  font-family: var(--font-display);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.marketing-article__cta {
+  margin-top: var(--space-4);
+}
+
+.marketing-article__body {
+  margin-top: var(--space-5);
+}
+
+.marketing-article__body .ohm-flow,
+.marketing-article__body .dual-aid {
+  margin-left: 0;
+  margin-right: 0;
+}
+
+.marketing-article__back {
+  margin: var(--space-6) 0 0;
+  font-size: var(--text-sm);
+}
+
+.marketing-article__back a {
+  color: var(--accent);
+}
+
+.marketing-index {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.pricing-page {
+  max-width: var(--measure-wide);
+  padding-bottom: var(--space-8);
+}
+
+.pricing-page__matrix {
+  width: 100%;
+  margin: var(--space-5) 0;
+  border-collapse: collapse;
+  font-size: var(--text-sm);
+}
+
+.pricing-page__matrix th,
+.pricing-page__matrix td {
+  border-bottom: 1px solid var(--line);
+  padding: var(--space-3) var(--space-2);
+  text-align: left;
+  vertical-align: top;
+}
+
+.pricing-page__matrix th {
+  font-family: var(--font-display);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.pricing-page__faq {
+  margin: var(--space-6) 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.pricing-page__faq h3 {
+  margin: 0 0 var(--space-1);
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+}
+
+.pricing-page__faq p {
+  margin: 0;
+  color: var(--muted);
 }
 
 /* Cache trees flowchart (docs + homepage visual aid) */
