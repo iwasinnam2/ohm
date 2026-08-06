@@ -28,6 +28,8 @@ locals {
   www_fqdn = replace(var.domain_name, "api.", "www.")
 }
 
+# measure_latency adds ~$1/check/mo and is unused by our alarms (status only).
+# Changing this forces recreate of the health check — expected on apply.
 resource "aws_route53_health_check" "api" {
   provider          = aws.leader
   type              = "HTTPS"
@@ -36,7 +38,7 @@ resource "aws_route53_health_check" "api" {
   resource_path     = "/health"
   request_interval  = 30
   failure_threshold = 3
-  measure_latency   = true
+  measure_latency   = false
   tags              = { Name = "ohm-api-health", Project = var.project }
 }
 
@@ -48,7 +50,7 @@ resource "aws_route53_health_check" "www" {
   resource_path     = "/"
   request_interval  = 30
   failure_threshold = 3
-  measure_latency   = true
+  measure_latency   = false
   tags              = { Name = "ohm-www-health", Project = var.project }
 }
 

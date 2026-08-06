@@ -1,76 +1,74 @@
-# AWS cost freeze (pre-revenue)
+# AWS cost slim (pre-revenue) — keep the architecture
 
-You are not being robbed by email. SNS email is cents. A ~**$100–210/mo**
-bill with the current single-region API up is the EKS + Redis + NAT + NLB
-floor. Mesh used to be **$1.5–2k/mo**; that is already torn down.
+No teardown. EKS, Redis, NAT, NLB, VPC stay. We only **right-size** and
+drop unused HA / metering fat. Mesh used to be **$1.5–2k/mo**; that is
+already gone. A ~**$100** bill with the API up is mostly the always-on floor.
 
 ## Where the money goes (us-east-1, API live)
 
-| Line | Approx/mo | Required for `api.withohm.dev`? |
-|------|-----------|----------------------------------|
-| EKS control plane | ~$73 | Yes while cluster exists |
-| 1× `t3.medium` node | ~$30 | Yes (pods need a node) |
-| Redis 2× `cache.t4g.small` Multi-AZ | ~$46 | Yes (hot path) |
-| NAT Gateway + EIP + data | ~$33+ | Yes with current private nodes |
-| NLB | ~$16–25 | Yes (public edge) |
-| Route53 health checks ×2 | ~$1–4 | No (alarms only) |
-| Amplify (`www` / `fetch` / `status`) | low tens | Marketing only |
-| Global Accelerator | **$0 if destroyed** | No — DNS should hit NLB |
-| Edge mesh (`enable_edges`) | **$0 if false** | No |
+| Line | Approx/mo | Slimmed how? |
+|------|-----------|--------------|
+| EKS control plane | ~$73 | Keep (architecture) |
+| 1× `t3.medium` node | ~$30 | Keep desired=1; do **not** drop to 2 GiB (`t3.small`) — OOM risk |
+| Redis | ~$23–46 | **1× `t4g.small`** (~half of Multi-AZ); see below |
+| NAT Gateway + EIP + data | ~$33+ | Keep (1 NAT already) |
+| NLB | ~$16–25 | Keep |
+| Route53 health checks | ~$1–3 | Latency metering **off** |
+| Amplify | low tens | Master-only; kill feature-branch apps in console |
+| Global Accelerator / edges | $0 | Keep `anycast_enabled=false`, `enable_edges=false` |
 
-Documented target with API up: **~$190–210/mo**
-([SINGLE_REGION.md](SINGLE_REGION.md)). A **~$106** month is already leaner
-than that table (partial month, credits, or GA already gone) — open **Cost
-Explorer → Group by Service** before cutting further so you kill the real line.
+Neon Postgres is a **separate** Neon invoice — see [NEON.md](NEON.md).
 
-Neon Postgres is a **separate** Neon invoice, not this AWS account.
+## Terraform slim defaults (this PR)
 
-## Already off — do not turn back on
+| Knob | Pre-revenue value | Resume later |
+|------|-------------------|--------------|
+| `redis_num_cache_clusters` | `1` (no Multi-AZ / failover) | `2` |
+| `redis_node_type` | `cache.t4g.small` | `cache.r6g.large` only for mesh |
+| `redis_snapshot_retention_days` | `3` | `7` |
+| `eks_desired_nodes` | `1` | scale up with traffic |
+| Route53 `measure_latency` | `false` | optional |
+| ECR lifecycle | keep last **15** images | raise if needed |
 
-- `enable_edges = false` (two more EKS + NAT + Redis regions)
-- `anycast_enabled = false` (Global Accelerator)
-- SNS email paused — [EMAIL_ALERTS.md](EMAIL_ALERTS.md) / PR for mailbox only (~$0)
+Apply after merge (`infra/terraform`):
+
+```powershell
+cd infra/terraform
+terraform plan
+# Expect: Redis replica removal / Multi-AZ off, snapshot retention 3,
+# health-check replace (latency off), ECR lifecycle create.
+terraform apply
+```
+
+Redis 2→1 is a **modify**, not a destroy of the replication group. Accept the
+tradeoff: one AZ/node loss means restore from ElastiCache snapshot until you
+set `redis_num_cache_clusters = 2` again.
+
+## Operator console (no TF)
+
+1. **Cost Explorer → Group by Service** — confirm no leftover
+   `AWSGlobalAccelerator` / edge-region EKS/NAT.
+2. **Amplify** — delete feature-branch apps; keep `master` / production only
+   (`AMPLIFY_SITE.md` still lists old preview URLs).
+3. **SNS email** — unsubscribe mailbox delivery ([EMAIL_ALERTS.md](EMAIL_ALERTS.md) if merged).
+4. **Neon** — turn on scale-to-zero; do not buy snapshot schedules yet ([NEON.md](NEON.md)).
+
+## Do not do (architecture destroy / high risk)
+
+- `enable_eks = false`, destroy Redis / NAT / NLB / VPC
+- EKS `t3.small` / `t4g.small` (2 GiB) — pod requests already crowded
+- EKS `t4g.medium` until images are multi-arch (CI builds amd64 only today)
+- `redis_node_type = cache.t4g.micro` without a memory headroom check
+- Re-enable `enable_edges` / `anycast_enabled` / `cache.r6g.large` pre-revenue
 
 ## Footguns that recreate a fat bill
 
-- Applying with `redis_node_type = cache.r6g.large` (old example default) →
-  Redis alone ~$360+/mo. Repo default is now `cache.t4g.small`.
-- `eks_desired_nodes = 2` → second node. Default is now `1`.
-- Setting `enable_edges = true` without paid traffic.
-
-## Soft cuts (API stays up)
-
-1. Cost Explorer → confirm no `AWSGlobalAccelerator` / leftover edge regions.
-   If GA still exists after DNS → NLB, destroy it (`anycast_enabled=false` apply).
-2. Amplify: disable PR/feature-branch apps; keep `master` only.
-3. Unsubscribe SNS email (pennies; still do it — [EMAIL_ALERTS.md](EMAIL_ALERTS.md)).
-4. Delete Route53 health checks + alarms if you do not care about AWS uptime
-   mail/Slack (small $).
-
-## Hard freeze (API goes dark — real savings)
-
-Only when you accept `api.withohm.dev` being down until revive:
-
-```powershell
-# Scale workers to zero (EKS control plane STILL bills ~$73)
-aws eks update-nodegroup-config --cluster-name at-utility-eks `
-  --nodegroup-name <nodegroup> --scaling-config minSize=0,maxSize=1,desiredSize=0 `
-  --region us-east-1
-```
-
-To drop most of the bill you must **destroy** (painful revive):
-
-1. Scale node group desired/min → 0, drain workloads.
-2. `enable_eks = false` → apply (drops ~$73 CP + node).
-3. Destroy Redis replication group + NAT + NLB (Terraform or console).
-4. Leave Amplify up if you still want the marketing site.
-
-There is no scale-to-zero path that keeps the live API: HPA minReplicas=1,
-node group min=1, EKS CP always-on.
+- Applying with `redis_node_type = cache.r6g.large`
+- `eks_desired_nodes = 2` or `redis_num_cache_clusters = 2` without need
+- `enable_edges = true`
 
 ## Resume after revenue
 
-1. Keep `redis_node_type = cache.t4g.small`, `eks_desired_nodes = 1`,
-   `enable_edges = false`, `anycast_enabled = false`.
-2. Re-apply / re-create EKS + Redis + NAT only when you need the API.
-3. Mesh / GA / `r6g.large` only after paid traffic justifies [MESH_PHASE3_5.md](MESH_PHASE3_5.md).
+1. `redis_num_cache_clusters = 2` → Multi-AZ + failover back on.
+2. `redis_snapshot_retention_days = 7`.
+3. Mesh / GA / `r6g.large` only with paid traffic — [MESH_PHASE3_5.md](MESH_PHASE3_5.md).
