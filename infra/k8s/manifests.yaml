@@ -16,6 +16,8 @@ data:
   AT_COMPLIANCE_ENFORCE: "true"
   AT_BYOK_ALLOW_ENV_FALLBACK: "false"
   AT_ENV: "production"
+  # Web Bot Auth key directory URL sent as Signature-Agent on OhmBot fetches.
+  AT_WEB_BOT_AUTH_SIGNATURE_AGENT: "https://api.withohm.dev/.well-known/http-message-signatures-directory"
   INGEST_WORKER_URL: "http://ingest-worker:8090"
   OPENAI_BASE_URL: "https://api.openai.com/v1"
   # Stripe live catalog — rate card v2 (created 2026-07-31 by
@@ -230,6 +232,20 @@ spec:
           env:
             - name: WORKER_PORT
               value: "8090"
+            # Web Bot Auth: OhmBot signs fetches when the seed is present
+            # (empty/missing => unsigned fetches, unchanged behavior).
+            - name: AT_WEB_BOT_AUTH_ED25519_SEED_B64
+              valueFrom:
+                secretKeyRef:
+                  name: at-utility-secrets
+                  key: AT_WEB_BOT_AUTH_ED25519_SEED_B64
+                  optional: true
+            - name: AT_WEB_BOT_AUTH_SIGNATURE_AGENT
+              valueFrom:
+                configMapKeyRef:
+                  name: at-utility-config
+                  key: AT_WEB_BOT_AUTH_SIGNATURE_AGENT
+                  optional: true
           readinessProbe:
             httpGet:
               path: /health

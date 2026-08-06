@@ -77,7 +77,10 @@ design, not by accident:
    Kubernetes secret. For the live Stripe key specifically: roll it in the
    dashboard, then run `scripts/rotate_stripe_key.ps1` (hidden prompt — the
    key never touches chat, shell history, or disk; verifies against Stripe,
-   patches the cluster, restarts, and smoke-tests live checkout).
+   patches the cluster, restarts, and smoke-tests live checkout). Trust
+   seeds (`AT_RECEIPT_ED25519_SEED_B64`, `AT_WEB_BOT_AUTH_ED25519_SEED_B64`)
+   follow `infra/runbooks/VERIFIED_BOT.md` — patch `at-utility-secrets`, then
+   restart; Deploy API does not write secrets.
    For admin API keys: `scripts/issue_admin_key.ps1` mints one into
    `AT_ADMIN_API_KEYS` (append, never replace), rolls the gateway, and verifies
    it against `/v1/admin/ops`; `-Revoke` takes one back out. Issue a dedicated

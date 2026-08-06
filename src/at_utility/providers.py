@@ -129,16 +129,25 @@ class MockProvider:
 
 
 class OpenAIProvider:
+    """OpenAI-compatible /chat/completions backend (OpenAI or any compat vendor)."""
+
     name = "openai"
 
-    def __init__(self, api_key: str, base_url: str, client: Optional[httpx.AsyncClient] = None):
+    def __init__(
+        self,
+        api_key: str,
+        base_url: str,
+        client: Optional[httpx.AsyncClient] = None,
+        name: str = "openai",
+    ):
         self._api_key = api_key
         self._base_url = base_url.rstrip("/")
         self._client = client or httpx.AsyncClient(timeout=120.0)
+        self.name = name
 
     def with_api_key(self, api_key: str) -> "OpenAIProvider":
         """BYOK: reuse HTTP client + base URL with a customer upstream key."""
-        return OpenAIProvider(api_key, self._base_url, client=self._client)
+        return OpenAIProvider(api_key, self._base_url, client=self._client, name=self.name)
 
     async def chat_completion(
         self,
@@ -318,6 +327,45 @@ class AnthropicProvider:
         return gen()
 
 
+# OpenAI-compatible vendor registry: (vendor, model prefixes, default base URL).
+# One X-Ohm-Upstream-Key BYOK header routes to whichever vendor the prefix
+# resolves to; env keys ({VENDOR}_API_KEY) are dev fallback / managed pool only.
+OPENAI_COMPAT_VENDORS: tuple[tuple[str, tuple[str, ...], str], ...] = (
+    ("gemini", ("gemini-",), "https://generativelanguage.googleapis.com/v1beta/openai"),
+    ("deepseek", ("deepseek-",), "https://api.deepseek.com/v1"),
+    ("moonshot", ("kimi-", "moonshot-"), "https://api.moonshot.ai/v1"),
+    ("zai", ("glm-",), "https://api.z.ai/api/paas/v4"),
+    ("qwen", ("qwen",), "https://dashscope-intl.aliyuncs.com/compatible-mode/v1"),
+    ("xai", ("grok-",), "https://api.x.ai/v1"),
+)
+
+
+def compat_vendor_for_model(model: str) -> Optional[str]:
+    """Vendor id for an OpenAI-compatible model prefix, or None."""
+    m = (model or "").lower()
+    for vendor, prefixes, _base in OPENAI_COMPAT_VENDORS:
+        if any(m.startswith(p) for p in prefixes):
+            return vendor
+    return None
+
+
+def compat_default_base_url(vendor: str) -> str:
+    for v, _prefixes, base in OPENAI_COMPAT_VENDORS:
+        if v == vendor:
+            return base
+    raise KeyError(vendor)
+
+
+def build_compat_shells(settings: Any) -> dict[str, OpenAIProvider]:
+    """Construct per-vendor OpenAI-compatible shells (BYOK clones from these)."""
+    shells: dict[str, OpenAIProvider] = {}
+    for vendor, _prefixes, default_base in OPENAI_COMPAT_VENDORS:
+        key = getattr(settings, f"{vendor}_api_key", "") or ""
+        base = getattr(settings, f"{vendor}_base_url", "") or default_base
+        shells[vendor] = OpenAIProvider(key, base, name=vendor)
+    return shells
+
+
 def resolve_provider(
     model: str,
     *,
@@ -327,10 +375,11 @@ def resolve_provider(
     fallback: str,
     upstream_key: str = "",
     allow_env_fallback: bool = True,
+    compat: Optional[dict[str, OpenAIProvider]] = None,
 ) -> tuple[ModelProvider, str]:
     """
-    Pick a backend. Prefer BYOK `upstream_key` for gpt/claude; else env-backed
-    providers when allow_env_fallback; else mock for mock/auto.
+    Pick a backend. Prefer BYOK `upstream_key` for gpt/claude/compat vendors;
+    else env-backed providers when allow_env_fallback; else mock for mock/auto.
     """
     m = (model or "").lower()
     key = (upstream_key or "").strip()
@@ -349,6 +398,17 @@ def resolve_provider(
             return base.with_api_key(key) if anthropic else AnthropicProvider(key), model
         if allow_env_fallback and anthropic and anthropic._api_key:
             return anthropic, model
+        return mock, "mock"
+
+    vendor = compat_vendor_for_model(m)
+    if vendor is not None:
+        shell = (compat or {}).get(vendor) or OpenAIProvider(
+            "", compat_default_base_url(vendor), name=vendor
+        )
+        if key:
+            return shell.with_api_key(key), model
+        if allow_env_fallback and shell._api_key:
+            return shell, model
         return mock, "mock"
 
     if m in ("mock", "", "auto"):
@@ -384,6 +444,7 @@ def provider_key_available(
     openai: Optional[OpenAIProvider],
     anthropic: Optional[AnthropicProvider],
     allow_env_fallback: bool,
+    compat: Optional[dict[str, OpenAIProvider]] = None,
 ) -> bool:
     if not model_needs_upstream(model):
         return True
@@ -394,4 +455,8 @@ def provider_key_available(
     m = (model or "").lower()
     if m.startswith("claude"):
         return bool(anthropic and anthropic._api_key)
+    vendor = compat_vendor_for_model(m)
+    if vendor is not None:
+        shell = (compat or {}).get(vendor)
+        return bool(shell and shell._api_key)
     return bool(openai and openai._api_key)

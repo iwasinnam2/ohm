@@ -1,8 +1,9 @@
 # withohm-mcp
 
-Slim stdio MCP server for [withOhm](https://www.withohm.dev): prompt cache
+Slim MCP server for [withOhm](https://www.withohm.dev): prompt cache
 replay, dynamic model switching (BYOK), and compliant public-web fetch as
-Cursor tools — without installing the full gateway stack.
+Cursor tools — without installing the full gateway stack. Runs over stdio
+(default) or as a stateless remote streamable-HTTP server.
 
 ## Install
 
@@ -39,11 +40,22 @@ Get a key from the $0 Intermediate seat at
 - `ohm_providers` — upstream provider and failover status.
 - `ohm_policy` — compliance policy: allowed web-fetch purposes and limits.
 
+## Remote (stateless streamable HTTP)
+
+```bash
+OHM_MCP_TRANSPORT=http ohm-mcp   # or: ohm-mcp-http — serves POST /mcp on :8091
+```
+
+Auth is per-request: clients send `Authorization: Bearer sk-at-*` (and
+optional `X-Ohm-Upstream-Key`) on the MCP HTTP request; `OHM_API_KEY` env is
+the stdio/local fallback. Knobs: `OHM_MCP_HOST`, `OHM_MCP_PORT`,
+`OHM_MCP_ALLOWED_HOSTS` / `OHM_MCP_ALLOWED_ORIGINS`, `OHM_MCP_JSON_RESPONSE`.
+
 ## Env
 
 | Variable | Required | Purpose |
 |---|---|---|
-| `OHM_API_KEY` | yes | Your withOhm tenant key (`sk-at-…`) |
+| `OHM_API_KEY` | stdio: yes | Your withOhm tenant key (`sk-at-…`); HTTP mode can use per-request `Authorization` instead |
 | `OHM_BASE_URL` | no | Defaults to `https://api.withohm.dev/v1` |
 | `OHM_UPSTREAM_KEY` | no | BYOK provider key for cache-miss model calls |
 

@@ -1,6 +1,6 @@
 # Streaming / failover contract
 
-Honest limits for Ohm’s edge. Mid-stream provider handoff without a client reconnect is **not** shipped.
+Honest limits for Ohm’s edge. **Pre-first-byte failover is shipped** on both planes; mid-stream provider handoff without a client reconnect is **not** shipped.
 
 ## Non-streaming completions
 
@@ -18,7 +18,10 @@ Failover for non-streaming is **before** a committed successful response body. I
 - **Anthropic**: Python translates `content_block_delta` / lifecycle events into OpenAI `chat.completion.chunk` frames on the fly (no full-buffer fake stream). Input tokens come from `message_start`; output tokens from `message_delta`; a final usage chunk is emitted before `data: [DONE]`.
 - **Metering**: prefer parsed `usage.total_tokens` from the stream; fall back to a char/`4` estimate only if no usage frame arrived.
 - **Cache replay (v2)**: streamed responses populate the same Redis entry as the JSON path. On a streamed MISS, Python assembles the completed stream (only if a `finish_reason` arrived — truncated streams are never cached) and stores it under the shared cache key. On a HIT with `stream=true`, the cached completion is replayed as synthesized SSE chunks (`X-AT-Cache: HIT`), metered exactly like a JSON hit. See `tests/test_stream_replay.py`.
-- If the upstream drops mid-stream, the client may see a truncated stream. **Mid-stream handoff to a second provider without client reconnect is not implemented.** Prefer non-streaming for critical paths until that work ships.
+- **Pre-first-byte failover (shipped)**:
+  - *Python*: the gateway eagerly pulls the first SSE line before returning the `StreamingResponse`. If the provider fails before emitting anything (connect error or upstream HTTP error), it retries once on a fresh connection; a second failure returns an honest HTTP error status — never a `200` stream carrying only an error frame. Header: `X-Ohm-Stream-Failover: pre-first-byte`.
+  - *Rust*: pass-through requests fail over to `AT_RS_FALLBACK` on connect error **or** a 5xx status read before any body byte is forwarded, and the body is piped through unbuffered (SSE tokens reach the client as the provider emits them).
+- If the upstream drops **after** the first byte, the client may see a truncated stream. **Mid-stream handoff to a second provider without client reconnect is not implemented.** Prefer non-streaming for critical paths until that work ships.
 
 ## Operator rule
 

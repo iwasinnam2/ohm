@@ -23,6 +23,7 @@ Source = "https://github.com/iwasinnam2/ohm"
 
 [project.scripts]
 ohm-mcp = "ohm_mcp:main"
+ohm-mcp-http = "ohm_mcp:main_http"
 
 [tool.setuptools.packages.find]
 where = ["src"]

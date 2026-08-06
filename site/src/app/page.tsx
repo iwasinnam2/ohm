@@ -1,6 +1,25 @@
 import Link from "next/link";
 import { OhmMark } from "@/components/OhmMark";
 
+const PILLARS = [
+  {
+    title: "Zero-token replay",
+    body: "Exact-replay hits answer from Redis and cost zero upstream tokens — identical requests never pay the provider twice.",
+  },
+  {
+    title: "Cross-provider consistency",
+    body: "One OpenAI-shaped pipe across OpenAI, Anthropic, Gemini, DeepSeek, Kimi, GLM, Qwen, and Grok. Keep your keys — BYOK.",
+  },
+  {
+    title: "Locality and latency",
+    body: "Cache reads on the nearest Redis edge replica; pre-first-byte failover keeps streams honest under provider wobble.",
+  },
+  {
+    title: "Replay and audit value",
+    body: "Every hit is an auditable identical-request replay with a meter you can read — never a training corpus.",
+  },
+];
+
 const BOARD = [
   {
     href: "/workbench",
@@ -75,6 +94,14 @@ export default function HomePage() {
             Enterprise
           </Link>
         </div>
+        <ul className="hero__pillars">
+          {PILLARS.map((pillar) => (
+            <li key={pillar.title} className="hero__pillar">
+              <strong className="hero__pillar-title">{pillar.title}</strong>
+              <span className="hero__pillar-body">{pillar.body}</span>
+            </li>
+          ))}
+        </ul>
       </section>
       <section className="board" aria-labelledby="board-label">
         <p className="board__label" id="board-label">
