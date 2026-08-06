@@ -512,12 +512,33 @@ pre {
   }
 }
 
+/* Copy plate — keeps brand / slogan / promise legible over the pipe field */
+.hero__copy {
+  width: fit-content;
+  max-width: min(42rem, 100%);
+  margin: 0 0 var(--space-5);
+  padding: var(--space-5) var(--space-5) var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  background:
+    linear-gradient(
+      165deg,
+      color-mix(in srgb, var(--bg-elevated) 92%, #000) 0%,
+      color-mix(in srgb, var(--bg) 88%, #000) 100%
+    );
+  box-shadow:
+    inset 0 1px 0 rgba(242, 235, 224, 0.05),
+    0 18px 48px -28px rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
 .hero__lockup {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   gap: var(--space-1);
-  margin-bottom: var(--space-4);
+  margin-bottom: var(--space-3);
 }
 
 .hero__mark {
@@ -547,11 +568,11 @@ pre {
 }
 
 .hero__promise {
-  max-width: min(42rem, 100%);
+  max-width: none;
   font-size: clamp(var(--text-md), 2.4vw, var(--text-lg));
   line-height: var(--leading-body);
   color: var(--muted);
-  margin: 0 0 var(--space-5);
+  margin: 0;
   animation: rise-in var(--dur-slow) var(--ease-out) 0.32s both;
 }
 
@@ -2334,6 +2355,17 @@ pre {
   letter-spacing: var(--tracking-nav);
   text-transform: uppercase;
   color: var(--accent);
+}
+
+.hero__copy .hero__strapline {
+  margin-top: 0;
+}
+
+@media (max-width: 560px) {
+  .hero__copy {
+    padding: var(--space-4);
+    max-width: 100%;
+  }
 }
 
 /* --- Public savings receipt (/r/[token]) --- */

@@ -71,17 +71,19 @@ export default function HomePage() {
   return (
     <>
       <section className="hero">
-        <div className="hero__lockup">
-          <OhmMark className="hero__mark" />
-          <h1 className="hero__brand">withOhm</h1>
+        <div className="hero__copy">
+          <div className="hero__lockup">
+            <OhmMark className="hero__mark" />
+            <h1 className="hero__brand">withOhm</h1>
+          </div>
+          <p className="hero__strapline">Interconnectedness and accessibility.</p>
+          <p className="hero__promise">
+            Model switching, prompt caching, and compliant web browsing — one
+            OpenAI-compatible pipe. Connect Cursor, Claude Code, VS Code, and
+            more; bring your own provider keys (BYOK); pay metered rates on a $0
+            Intermediate seat. Or open the Agent Shell and stay on the pipe.
+          </p>
         </div>
-        <p className="hero__strapline">Interconnectedness and accessibility.</p>
-        <p className="hero__promise">
-          Model switching, prompt caching, and compliant web browsing — one
-          OpenAI-compatible pipe. Connect Cursor, Claude Code, VS Code, and
-          more; bring your own provider keys (BYOK); pay metered rates on a $0
-          Intermediate seat. Or open the Agent Shell and stay on the pipe.
-        </p>
         <div className="hero__cta cta-row">
           <Link href="/billing/intermediate" className="btn btn--primary">
             Start now — $0 seat
