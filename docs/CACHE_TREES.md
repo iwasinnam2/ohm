@@ -3,6 +3,8 @@
 Branchable **exact-replay** inventory for withOhm. Complements Neon (data branches);
 does not clone Postgres branching.
 
+Parent architecture (Neon-grammar overview): [ARCHITECTURE.md](ARCHITECTURE.md).
+
 ## Dual containers
 
 | Ephemeral Side | Pipeline System |
