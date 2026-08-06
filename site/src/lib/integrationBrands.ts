@@ -96,9 +96,9 @@ export const INTEGRATION_BRANDS: BrandTile[] = [
     id: "neon",
     name: "Neon",
     kind: "pipe",
-    blurb: "Serverless Postgres for agents",
+    blurb: "State branch + Ohm tip compose",
     href: "https://neon.tech",
-    setupHref: "/connections#neon",
+    setupHref: "/docs/compose-neon",
   },
   {
     id: "shell",

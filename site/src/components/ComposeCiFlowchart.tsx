@@ -1,16 +1,16 @@
-/** CI job: Ohm cache tree + optional DB preview peer. */
+/** CI job: Ohm cache tree + optional DB preview peer. Middleware governance. */
 
 export function ComposeCiFlowchart() {
   return (
     <figure className="ohm-flow" aria-labelledby="ohm-flow-compose-title">
       <figcaption id="ohm-flow-compose-title" className="ohm-flow__title">
-        Same PR. Inventory tip + optional state preview.
+        withOhm — middleware governance
       </figcaption>
       <svg
         className="ohm-flow__svg"
         viewBox="0 0 720 280"
         role="img"
-        aria-label="CI job sets X-Ohm-Cache-Tree and optionally a database preview branch"
+        aria-label="CI job sets X-Ohm-Cache-Tree and optionally a Neon database preview branch"
       >
         <rect className="ohm-flow__panel" x="260" y="16" width="200" height="40" rx="10" />
         <text className="ohm-flow__panel-label" x="360" y="42" textAnchor="middle">
@@ -40,10 +40,10 @@ export function ComposeCiFlowchart() {
           rx="14"
         />
         <text className="ohm-flow__panel-label" x="530" y="120" textAnchor="middle">
-          DB preview
+          Neon preview
         </text>
         <text className="ohm-flow__caption" x="530" y="140" textAnchor="middle">
-          optional · your state branch
+          DB + AI Gateway beta
         </text>
         <rect className="ohm-flow__chip" x="430" y="160" width="200" height="28" rx="8" />
         <text className="ohm-flow__chip-text" x="530" y="178" textAnchor="middle">
@@ -51,15 +51,15 @@ export function ComposeCiFlowchart() {
         </text>
 
         <g className="ohm-flow__callout">
-          <rect x="200" y="230" width="320" height="32" rx="14" />
+          <rect x="160" y="230" width="400" height="32" rx="14" />
           <text x="360" y="250" textAnchor="middle">
-            One workflow. Keep the nouns straight.
+            Same slug. Compose peers. Promote on merge.
           </text>
         </g>
       </svg>
       <p className="ohm-flow__note">
-        Lead with the Ohm tree. A database preview is a peer when you already use
-        one.
+        Neon branches state (and, in beta, the model path). withOhm branches
+        exact-replay inventory — middleware governance on mechanical repeats.
       </p>
     </figure>
   );
