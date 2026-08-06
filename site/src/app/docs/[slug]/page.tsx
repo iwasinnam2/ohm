@@ -1,7 +1,8 @@
 import Link from "next/link";
 import type { Metadata } from "next";
+import type { ReactNode } from "react";
 import { notFound } from "next/navigation";
-import { Markdown } from "@/components/Markdown";
+import { DocsMarkdown } from "@/components/DocsMarkdown";
 import { IntegrationBrandBoard } from "@/components/IntegrationBrandBoard";
 import { CacheTreesFlowchart } from "@/components/CacheTreesFlowchart";
 import {
@@ -40,6 +41,13 @@ export default async function DocPage({ params }: Props) {
     notFound();
   }
 
+  const cleaned = source.replaceAll(CACHE_TREES_FLOW_MARK, "\n");
+
+  const sectionMedia: Record<string, ReactNode> | undefined =
+    slug === "cache-trees"
+      ? { "": <CacheTreesFlowchart /> }
+      : undefined;
+
   return (
     <div className="doc-layout">
       <aside className="doc-nav" aria-label="Docs">
@@ -65,15 +73,7 @@ export default async function DocPage({ params }: Props) {
         {slug === "integrations" ? (
           <IntegrationBrandBoard showIntro />
         ) : null}
-        {slug === "cache-trees" && source.includes(CACHE_TREES_FLOW_MARK) ? (
-          <>
-            <Markdown source={source.split(CACHE_TREES_FLOW_MARK)[0] ?? ""} />
-            <CacheTreesFlowchart />
-            <Markdown source={source.split(CACHE_TREES_FLOW_MARK)[1] ?? ""} />
-          </>
-        ) : (
-          <Markdown source={source} />
-        )}
+        <DocsMarkdown source={cleaned} sectionMedia={sectionMedia} />
       </div>
     </div>
   );
