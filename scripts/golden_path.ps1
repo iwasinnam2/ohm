@@ -61,7 +61,7 @@ Step "subscriptions 200 + published pricing (rate card v2)" {
   $r = Get-Page "$SiteUrl/subscriptions"
   if ($r.StatusCode -ne 200) { throw "status $($r.StatusCode)" }
   # Commit amounts render as "$29.00" + "/mo" (React may insert <!-- --> between).
-  foreach ($phrase in @("2,500", "`$0", "Commit tiers", "`$29.00", "`$99.00", "`$499.00")) {
+  foreach ($phrase in @("Contact us", "`$0", "Commit tiers", "`$29.00", "`$99.00", "`$499.00")) {
     if ($r.Content -notmatch [regex]::Escape($phrase)) { throw "missing pricing '$phrase'" }
   }
   if ($r.Content -notmatch "/mo") { throw "missing pricing '/mo' suffix" }

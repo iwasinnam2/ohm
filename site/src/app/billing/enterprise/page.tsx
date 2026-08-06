@@ -5,7 +5,7 @@ import { EnterpriseApplicationForm } from "@/components/EnterpriseApplicationFor
 export const metadata: Metadata = {
   title: "Enterprise at withOhm",
   description:
-    "Enterprise chaos governor — SSO, clean ledger, org policy, Agent Shell, managed keys from $2,500/month.",
+    "Enterprise chaos governor — SSO, clean ledger, org policy, Agent Shell, managed keys. Contact us.",
 };
 
 export default function EnterpriseBillingPage() {
@@ -15,9 +15,10 @@ export default function EnterpriseBillingPage() {
         <h1>Enterprise at withOhm</h1>
         <p>
           The control plane for enterprise AI chaos: SSO tenancy, cost-center
-          ledger, compliance policy, audit logs, and the Ohm Agent Shell —
-          from <strong>$2,500/month</strong>. Connect the agents your teams
-          already use; govern the entropy; rent the plumbing.
+          ledger, compliance policy, audit logs, and the Ohm Agent Shell.
+          Pricing is <strong>contact us</strong> — negotiated for your volume.
+          Connect the agents your teams already use; govern the entropy; rent
+          the plumbing.
         </p>
         <ul className="tier__pros">
           <li>OIDC SSO + SCIM user provisioning</li>

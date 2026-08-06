@@ -43,7 +43,7 @@ Live numbers: `GET /v1/enterprise/skus` and `GET /v1/usage`.
 
 ## Enterprise
 
-Monthly dedicated / managed-capacity SKU with negotiated **transaction usage agreements** (fixed monthly for cache hits, misses, and web fetches). Design-partner rank includes weekly usage-budget reports, personal admin contact, and forum access. Contractual uptime SLA is published only under Enterprise agreements.
+**Contact us** — monthly dedicated / managed-capacity SKU with negotiated **transaction usage agreements** (fixed monthly for cache hits, misses, and web fetches). Design-partner rank includes weekly usage-budget reports, personal admin contact, and forum access. Contractual uptime SLA is published only under Enterprise agreements. Apply at [/billing/enterprise](/billing/enterprise).
 
 ## Self-serve
 
