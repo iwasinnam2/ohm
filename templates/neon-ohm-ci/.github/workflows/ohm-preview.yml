@@ -1,0 +1,29 @@
+# withOhm — middleware governance
+# PR preview: ensure tip pr-N exists, smoke chat with X-Ohm-Cache-Tree.
+#
+# Copy this file + ../scripts into your app repo, or run from the ohm monorepo
+# with working-directory set to templates/neon-ohm-ci.
+name: ohm-preview
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  tip-smoke:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: templates/neon-ohm-ci
+    env:
+      OHM_API_URL: ${{ vars.OHM_API_URL || 'https://api.withohm.dev' }}
+      OHM_API_KEY: ${{ secrets.OHM_API_KEY }}
+      OHM_TIP: pr-${{ github.event.pull_request.number }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Ensure Ohm tip
+        run: bash scripts/ensure-tip.sh
+
+      - name: Smoke chat on tip
+        run: bash scripts/chat-once.sh

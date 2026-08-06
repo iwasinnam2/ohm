@@ -200,23 +200,23 @@ export function ConnectionsClient() {
             apps and agents.
           </p>
           <p className="connect-stack__body">
-            Neon holds application state. Agents that create branches and run
-            previews are also a sink for inference. withOhm meters exact-match
-            replay on those loops — complementary, not competing. State in
-            Neon; repeat prompts through the Ohm pipe.
+            Neon holds application state (and, in beta, a branch-scoped AI
+            Gateway). withOhm is middleware governance on mechanical repeats —
+            exact-replay tips on the same PR slug, Promote-on-merge, HIT
+            meters. Complementary, not competing.
           </p>
           <div className="cta-row">
+            <Link className="btn btn--primary" href="/docs/compose-neon">
+              Compose with Neon
+            </Link>
             <a
-              className="btn btn--primary"
+              className="btn"
               href="https://neon.tech"
               target="_blank"
               rel="noopener noreferrer"
             >
               neon.tech
             </a>
-            <Link className="btn" href="/demo">
-              Hit ratio demo
-            </Link>
           </div>
         </div>
       </section>

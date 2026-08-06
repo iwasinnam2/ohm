@@ -55,7 +55,7 @@ On green:
 
 ```bash
 # Promote the tip onto main (API shape — see docs for auth)
-curl -sS -X POST "https://api.withohm.dev/v1/cache-trees/${OHM_TIP}/promote" \
+curl -sS -X POST "https://api.withohm.dev/v1/cache/trees/${OHM_TIP}/promote" \
   -H "Authorization: Bearer $OHM_KEY" \
   -H "Content-Type: application/json" \
   -d '{"target":"main"}'

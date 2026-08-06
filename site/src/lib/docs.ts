@@ -56,7 +56,7 @@ export const DOC_GROUPS: DocGroup[] = [
         slug: "compose-neon",
         title: "Compose with Neon",
         description:
-          "State branch + inventory tip in one CI job — keep the nouns straight.",
+          "Middleware governance beside Neon AI Gateway beta — same PR slug, tip + Promote.",
       },
       {
         slug: "api",

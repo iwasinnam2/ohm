@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { DocsMarkdown } from "@/components/DocsMarkdown";
 import { IntegrationBrandBoard } from "@/components/IntegrationBrandBoard";
 import { CacheTreesFlowchart } from "@/components/CacheTreesFlowchart";
+import { ComposeCiFlowchart } from "@/components/ComposeCiFlowchart";
 import {
   DOC_GROUPS,
   getDocMeta,
@@ -13,6 +14,7 @@ import {
 } from "@/lib/docs";
 
 const CACHE_TREES_FLOW_MARK = "<!-- ohm:cache-trees-flowchart -->";
+const COMPOSE_CI_MARK = "<!-- ohm:compose-ci -->";
 
 type Props = {
   params: Promise<{ slug: string }>;
@@ -41,12 +43,16 @@ export default async function DocPage({ params }: Props) {
     notFound();
   }
 
-  const cleaned = source.replaceAll(CACHE_TREES_FLOW_MARK, "\n");
+  const cleaned = source
+    .replaceAll(CACHE_TREES_FLOW_MARK, "\n")
+    .replaceAll(COMPOSE_CI_MARK, "\n");
 
   const sectionMedia: Record<string, ReactNode> | undefined =
     slug === "cache-trees"
       ? { "": <CacheTreesFlowchart /> }
-      : undefined;
+      : slug === "compose-neon"
+        ? { "": <ComposeCiFlowchart /> }
+        : undefined;
 
   return (
     <div className="doc-layout">

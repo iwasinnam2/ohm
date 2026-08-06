@@ -1,0 +1,24 @@
+# withOhm — middleware governance
+# When a PR merges: Promote tip inventory into main.
+name: ohm-promote-on-merge
+
+on:
+  pull_request:
+    types: [closed]
+
+jobs:
+  promote:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: templates/neon-ohm-ci
+    env:
+      OHM_API_URL: ${{ vars.OHM_API_URL || 'https://api.withohm.dev' }}
+      OHM_API_KEY: ${{ secrets.OHM_API_KEY }}
+      OHM_TIP: pr-${{ github.event.pull_request.number }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Promote tip pr-N → main
+        run: bash scripts/promote-tip.sh
