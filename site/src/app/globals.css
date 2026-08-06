@@ -5,25 +5,25 @@
 
 :root {
   /* --- Primitives: color --- */
-  --color-ink-950: #0a0a0c;
-  --color-ink-900: #111115;
-  --color-ink-850: #0c0c0f;
-  --color-ink-800: #050506;
+  --color-ink-950: #050507;
+  --color-ink-900: #0b0b0f;
+  --color-ink-850: #070709;
+  --color-ink-800: #020203;
   --color-paper-50: #f2ebe0;
   --color-paper-400: #9b9690;
   --color-violet-400: #c084fc;
   --color-violet-500: #a855f7;
   --color-violet-700: #7e22ce;
-  --color-violet-ink: #0a0a0c;
+  --color-violet-ink: #050507;
   /* Legacy copper aliases → violet (OG chrome now purple) */
   --color-copper-400: var(--color-violet-400);
   --color-copper-500: var(--color-violet-500);
   --color-copper-700: var(--color-violet-700);
   --color-copper-ink: var(--color-violet-ink);
-  --color-graphite-400: #29262e;
-  --color-graphite-500: #222028;
-  --color-graphite-600: #1b1a20;
-  --color-slate-500: #29272d;
+  --color-graphite-400: #16151a;
+  --color-graphite-500: #121116;
+  --color-graphite-600: #0e0d12;
+  --color-slate-500: #1a191f;
 
   /* --- Primitives: space (8px grid) --- */
   --space-1: 0.25rem; /* 4 */
@@ -129,6 +129,8 @@ body {
   line-height: var(--leading-body);
   background: var(--bg);
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: geometricPrecision;
 }
 
 a {
@@ -152,7 +154,7 @@ pre {
   font-family: var(--font-mono);
 }
 
-/* Atmosphere — black field, static purple wash, upscaled velvet grain */
+/* Atmosphere — deeper ink field, no purple wash; grain + pipes carry the vibe */
 .atmosphere {
   position: fixed;
   inset: 0;
@@ -160,59 +162,27 @@ pre {
   pointer-events: none;
   overflow: hidden;
   background:
-    radial-gradient(ellipse 100% 72% at 6% -8%, rgba(168, 85, 247, 0.28), transparent 58%),
-    radial-gradient(ellipse 70% 50% at 94% 8%, rgba(192, 132, 252, 0.16), transparent 52%),
-    radial-gradient(ellipse 55% 42% at 48% 88%, rgba(168, 85, 247, 0.1), transparent 62%),
-    linear-gradient(165deg, var(--color-ink-850) 0%, var(--bg) 42%, var(--color-ink-800) 100%);
+    radial-gradient(ellipse 90% 70% at 50% -20%, rgba(255, 255, 255, 0.02), transparent 55%),
+    linear-gradient(180deg, var(--color-ink-850) 0%, var(--bg) 45%, var(--color-ink-800) 100%);
 }
 
-/* Static wash only — no sweeping shine band */
+/* Kept in DOM for layout compatibility — visually off (purple accents removed) */
 .atmosphere__current {
-  position: absolute;
-  inset: -10% -8%;
-  opacity: 0.28;
-  background:
-    linear-gradient(
-      115deg,
-      transparent 0%,
-      transparent 38%,
-      rgba(168, 85, 247, 0.08) 46%,
-      rgba(192, 132, 252, 0.12) 50%,
-      rgba(168, 85, 247, 0.08) 54%,
-      transparent 62%,
-      transparent 100%
-    );
-  animation: none;
+  display: none;
 }
 
-/* Quiet dust field — no screen-blend shimmer */
 .atmosphere__particles {
-  position: absolute;
-  inset: 0;
-  opacity: 0.32;
-  background-image:
-    radial-gradient(1.5px 1.5px at 12% 18%, rgba(192, 132, 252, 0.4), transparent),
-    radial-gradient(1px 1px at 28% 62%, rgba(168, 85, 247, 0.32), transparent),
-    radial-gradient(1.5px 1.5px at 44% 30%, rgba(242, 235, 224, 0.1), transparent),
-    radial-gradient(1px 1px at 58% 78%, rgba(192, 132, 252, 0.28), transparent),
-    radial-gradient(1.5px 1.5px at 72% 22%, rgba(168, 85, 247, 0.35), transparent),
-    radial-gradient(1px 1px at 86% 54%, rgba(192, 132, 252, 0.25), transparent),
-    radial-gradient(1px 1px at 18% 88%, rgba(168, 85, 247, 0.28), transparent),
-    radial-gradient(1.5px 1.5px at 63% 12%, rgba(192, 132, 252, 0.3), transparent),
-    radial-gradient(1px 1px at 91% 84%, rgba(168, 85, 247, 0.25), transparent),
-    radial-gradient(1px 1px at 37% 46%, rgba(242, 235, 224, 0.08), transparent);
-  background-size: 100% 100%;
-  animation: none;
+  display: none;
 }
 
-/* Upscaled velvet grain — coarser turbulence, larger tile */
+/* Sharper velvet grain — higher contrast, tighter tile */
 .atmosphere::after {
   content: "";
   position: absolute;
   inset: 0;
-  opacity: 0.55;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.32' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.7'/%3E%3C/svg%3E");
-  background-size: 420px 420px;
+  opacity: 0.48;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.45' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.85'/%3E%3C/svg%3E");
+  background-size: 280px 280px;
   mix-blend-mode: soft-light;
 }
 
@@ -629,10 +599,10 @@ pre {
       color-mix(in srgb, var(--bg) 88%, #000) 100%
     );
   box-shadow:
-    inset 0 1px 0 rgba(242, 235, 224, 0.05),
-    0 18px 48px -28px rgba(0, 0, 0, 0.85);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+    inset 0 1px 0 rgba(242, 235, 224, 0.06),
+    0 18px 48px -28px rgba(0, 0, 0, 0.9);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
 }
 
 .hero__lockup {
@@ -2960,11 +2930,10 @@ pre {
   border-color: currentColor;
 }
 
-/* Graphite tube network — continuous runs, no joint spheres */
+/* Graphite tube network — dark silent runs; payloads carry the light */
 .pipe-network {
   position: absolute;
   inset: 0;
-  opacity: 0.72;
   overflow: hidden;
 }
 
@@ -2977,28 +2946,54 @@ pre {
 
 .pipe-network__run {
   fill: none;
-  stroke: var(--color-graphite-600);
-  stroke-width: 9;
+  stroke: #0a090e;
+  stroke-width: 8;
   stroke-linecap: round;
   stroke-linejoin: round;
+  opacity: 0.55;
 }
 
 .pipe-network__run--soft {
-  stroke: var(--color-graphite-500);
-  stroke-width: 6.5;
-  opacity: 0.85;
+  stroke: #08070b;
+  stroke-width: 5.5;
+  opacity: 0.4;
 }
 
-/* Capsule payload — oriented along the tube via rotate="auto" */
+/* Capsule payload — only fully visible purple on the field */
 .pipe-network__payload {
   fill: var(--color-violet-400);
   opacity: 0;
-  filter: drop-shadow(0 0 2.5px rgba(168, 85, 247, 0.55));
+  filter: drop-shadow(0 0 3px rgba(168, 85, 247, 0.7));
+}
+
+/* Thin purple page-border tubing — constant accent rails */
+.pipe-border {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  z-index: 1;
+}
+
+.pipe-border__run {
+  fill: none;
+  stroke: var(--color-violet-500);
+  stroke-width: 1.35px;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+  opacity: 0.82;
 }
 
 @media (max-width: 720px) {
-  .pipe-network {
-    opacity: 0.4;
+  .pipe-network__run {
+    opacity: 0.35;
+  }
+
+  .pipe-border__run {
+    stroke-width: 1px;
+    opacity: 0.65;
   }
 
   .pipe-network__payload {
