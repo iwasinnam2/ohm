@@ -38,7 +38,7 @@ is who signs the MSA.
 | [Org console](/org) | Members, cost centers, policy, ledger / month CSV |
 | [Agent Shell](/workbench) | Thin workbench that only talks through Ohm |
 | [Integrations](/docs/integrations) | Cursor, Claude Code, VS Code, Windsurf, Zed, and the pipe stack |
-| [Enterprise apply](/billing/enterprise) | Dedicated-pool SKU from $2,500/mo |
+| [Enterprise apply](/billing/enterprise) | Dedicated-pool SKU — contact us |
 
 ## API (short)
 

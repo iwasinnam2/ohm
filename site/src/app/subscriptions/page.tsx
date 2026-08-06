@@ -37,7 +37,7 @@ const TIERS = [
     id: "enterprise",
     name: "Enterprise",
     featured: false,
-    price: "From $2,500/mo",
+    price: "Contact us",
     priceNote:
       "Fixed monthly bundles for large-scale operations. Negotiated transaction usage agreements.",
     pros: [

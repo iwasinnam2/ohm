@@ -1,6 +1,6 @@
 # Enterprise product pack
 
-Commercial + technical delivery for `enterprise-dedicated-pool` ($2,500/mo).
+Commercial + technical delivery for `enterprise-dedicated-pool` (listed as contact us; negotiated).
 Thesis: [ENTERPRISE_CHAOS.md](ENTERPRISE_CHAOS.md).
 
 ## Delivered in product
