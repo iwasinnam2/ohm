@@ -4,7 +4,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Security",
   description:
-    "withOhm security — identical-request-replay cache purpose, hashed keys, signed receipts, honesty map, and compliance links.",
+    "withOhm security — identical-request-replay cache purpose, hashed keys, account profiles, and compliance links.",
 };
 
 export default function SecurityMarketingPage() {
@@ -21,11 +21,11 @@ export default function SecurityMarketingPage() {
           <Link href="/docs/security" className="btn btn--primary">
             Security docs
           </Link>
-          <Link href="/docs/honesty" className="link-quiet">
-            Honesty map
+          <Link href="/product/waste-demo" className="link-quiet">
+            Waste demo
           </Link>
-          <Link href="/product/trust" className="link-quiet">
-            Trust product
+          <Link href="/product" className="link-quiet">
+            Product
           </Link>
         </div>
       </header>

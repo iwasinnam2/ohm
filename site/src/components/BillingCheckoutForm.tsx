@@ -9,6 +9,8 @@ const FORM_STORAGE = "ohm_checkout_form";
 export function BillingCheckoutForm({ commit = "" }: { commit?: string }) {
   const [organisation, setOrganisation] = useState("");
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [passwordConfirm, setPasswordConfirm] = useState("");
   const [termsAck, setTermsAck] = useState(false);
   const [dpaAck, setDpaAck] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -48,6 +50,14 @@ export function BillingCheckoutForm({ commit = "" }: { commit?: string }) {
     e.preventDefault();
     setError(null);
     setRateLimited(false);
+    if (password.length < 8) {
+      setError("Password must be at least 8 characters.");
+      return;
+    }
+    if (password !== passwordConfirm) {
+      setError("Passwords do not match.");
+      return;
+    }
     setBusy(true);
     try {
       const res = await fetch("/api/billing/checkout", {
@@ -58,6 +68,7 @@ export function BillingCheckoutForm({ commit = "" }: { commit?: string }) {
           commit,
           label: organisation,
           email,
+          password,
           terms_ack: termsAck,
           dpa_ack: dpaAck,
           cancel_url: `${window.location.origin}/billing/cancel`,
@@ -121,6 +132,32 @@ export function BillingCheckoutForm({ commit = "" }: { commit?: string }) {
           disabled={busy}
         />
       </label>
+      <label className="billing-form__field">
+        <span>Password</span>
+        <input
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          placeholder="At least 8 characters"
+          autoComplete="new-password"
+          minLength={8}
+          required
+          disabled={busy}
+        />
+      </label>
+      <label className="billing-form__field">
+        <span>Confirm password</span>
+        <input
+          type="password"
+          value={passwordConfirm}
+          onChange={(e) => setPasswordConfirm(e.target.value)}
+          placeholder="Repeat password"
+          autoComplete="new-password"
+          minLength={8}
+          required
+          disabled={busy}
+        />
+      </label>
       <label className="billing-form__check">
         <input
           type="checkbox"
@@ -160,15 +197,20 @@ export function BillingCheckoutForm({ commit = "" }: { commit?: string }) {
       <button
         type="submit"
         className="btn btn--primary"
-        disabled={busy || !termsAck || !dpaAck}
+        disabled={
+          busy ||
+          !termsAck ||
+          !dpaAck ||
+          password.length < 8 ||
+          password !== passwordConfirm
+        }
       >
         {busy ? "Redirecting to Stripe…" : "Continue to Stripe"}
       </button>
       <p className="billing-form__note">
-        Card on file activates the seat. Your <code>sk-at-…</code> key appears
-        on the success page and under{" "}
-        <Link href="/keys">API keys</Link> — only after you subscribe. Already
-        a subscriber? Mint more keys there without checking out again.
+        Card on file activates the seat. Choose a password now — after Stripe,
+        log in with email. Your <code>sk-at-…</code> pipe key is also shown once
+        on success and under <Link href="/keys">API keys</Link>.
       </p>
     </form>
   );

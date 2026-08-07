@@ -16,7 +16,7 @@ Agents multiply **identical** work: retries, evaluator loops, CI prompt packs. B
 
 - No HIT inventory → every retry pays prefill again
 - No org ledger → shadow AI spend
-- No honesty map → marketing outruns the system
+- No shared inventory hygiene → preview pollution on `main`
 
 ## How withOhm wins
 
@@ -26,7 +26,7 @@ Agents multiply **identical** work: retries, evaluator loops, CI prompt packs. B
 
 ## Trust fence
 
-Replay inventory is never a training corpus. Non-goals: [Honesty](/docs/honesty).
+Replay inventory is never a training corpus. Prove the loop: [Waste demo](/product/waste-demo).
 
 ## Next
 

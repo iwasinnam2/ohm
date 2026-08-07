@@ -17,9 +17,6 @@ You will notice the same request shape you already use. What changes is where re
 
 Labs (BYOK or managed pool) remain outside both containers. Public web enters only through the Pipeline’s compliance gate. Exact-replay inventory never becomes a training corpus.
 
-> **Note — Neon and withOhm**  
-> Neon branches **database state**. withOhm branches **exact-replay inventory**. They are complementary: compose them in CI with a preview connection string and `X-Ohm-Cache-Tree`. Do not treat cache trees as Postgres branches, and do not expect a database preview to isolate mechanical prompt inventory. See [Compose with Neon](/docs/compose-neon).
-
 ## Resource hierarchy
 
 While the sections below describe the runtime split, withOhm organizes customer resources roughly as:
@@ -27,6 +24,7 @@ While the sections below describe the runtime split, withOhm organizes customer 
 | Concept | Description | Relationship |
 | --- | --- | --- |
 | Organization | SSO, members, policy, FinOps export | Contains tenants / keys |
+| Account profile | Email + password hash beside apikey SHA-256 | Login restores Intermediate bearer |
 | Tenant | Billing and meter identity | Owns cache trees and ledger events |
 | Cache tree | Named exact-replay inventory (`main`, `pr-842`, …) | Holds digests → blobs |
 | API key | Auth material (`sk-at-*` / Ohm keys) | Bound to a tenant (and optionally an org) |
@@ -66,11 +64,11 @@ If the Ephemeral Side is responsible for replay inventory, the Pipeline System i
 
 Rather than one monolith “proxy brain,” governance is composed of clear roles:
 
-- **Auth / tenancy** — API keys, org SSO, suspension and caps
+- **Auth / tenancy** — email/password account profiles, API keys, org SSO, suspension and caps
 - **Meters → ledger → Stripe** — HIT / MISS / fetch; clean ledger; seat checkout
 - **Compliance ingest** — purpose, robots, SSRF, PII, Web Bot Auth — before bytes reach a model
 - **Provider route** — multi-vendor BYOK; pre-first-byte failover honesty (no mid-stream magic)
-- **Trust** — JWKS directory, HIT receipts, published honesty map
+- **Trust** — meters, waste demo, JWKS where receipts are enabled
 - **Org policy / audit / FinOps** — allowlists, spend caps, export
 
 ### Correctness of claims
@@ -81,11 +79,7 @@ A HIT is not free magic. It is:
 2. A metered pipe event
 3. Optionally a signed receipt verifiable against the public key directory
 
-Savings endpoints stay `estimate_only`. The honesty map publishes non-goals so marketing cannot outrun the pipe:
-
-```bash
-curl -sS https://api.withohm.dev/v1/public/honesty
-```
+Savings endpoints stay `estimate_only`. Marketing claims must stay inside the metered pipe — prove it with the [Waste demo](/product/waste-demo) and `/v1/savings`.
 
 ## HIT path: replaying without the lab
 
@@ -96,7 +90,7 @@ When inventory already holds the answer, the crossing stays on the Ephemeral Sid
 3. **Pipeline gate** records HIT meter and may mint `X-Ohm-Receipt`.
 4. **Return** the blob. No upstream tokens.
 
-You should see `X-AT-Cache: HIT` on the response. If a receipt is present, verify it yourself — [Signed receipts](/docs/receipts).
+You should see `X-AT-Cache: HIT` on the response. Prove the loop with the [Waste demo](/product/waste-demo).
 
 ## MISS path: ask the model, then store
 
@@ -130,7 +124,7 @@ This design turns traditionally wasteful AI operations — re-paying identical a
 - **Promote as index work** — bring new digests to `main` without rewriting history as a bulk export.
 - **Compose with a database preview** — state branch + replay tip in one CI job; complementary peers.
 - **Governed browse** — public web through robots / PII / SSRF before model contact.
-- **Auditable claims** — receipts and honesty map bind marketing to machinery.
+- **Auditable claims** — meters and the waste demo bind marketing to machinery.
 
 ## In short
 
@@ -149,5 +143,5 @@ The result is infrastructure that makes mechanical AI traffic cheap to repeat, h
 - [Edge & Redis locality](/docs/edge) — hot-path GETs and mesh posture
 - [Compose with Neon](/docs/compose-neon) — state branch + inventory tip
 - [Streaming & failover](/docs/streaming) — pre-first-byte honesty
-- [Honesty map](/docs/honesty) · [Signed receipts](/docs/receipts)
+- [Waste demo](/docs/receipts) · [Product waste demo](/product/waste-demo)
 - [Product — Architecture](/product/architecture) — narrative deep dive with schematics
