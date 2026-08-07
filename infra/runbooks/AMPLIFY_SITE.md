@@ -43,7 +43,9 @@ After first green deploy on `https://master.<appId>.amplifyapp.com` or the featu
 3. `fetch.withohm.dev` → same Amplify app (middleware rewrites `/` → `/fetch`)
 4. See [APEX_CUTOVER.md](runbooks/APEX_CUTOVER.md) (replace Vercel targets)
 
-Optional env: `OHM_DEMO_API_KEY` — public `/api/public-fetch` uses the live Ohm pipe when set.
+Optional env: `OHM_DEMO_API_KEY` — dedicated public-proof tenant key. Powers
+`/api/public-fetch` (live Ohm pipe) and `/api/demo-session` (zero-friction
+`/demo` waste check, mock-only). Do not use a paying customer key.
 
 ## Cost (ballpark)
 

@@ -1,53 +1,53 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { AgentShellClient } from "@/components/AgentShellClient";
+import { WasteCheckClient } from "@/components/WasteCheckClient";
 
 export const metadata: Metadata = {
-  title: "Agent Shell demo",
+  title: "Waste check — miss → HIT",
   description:
-    "Try the withOhm Agent Shell — PowerShell CLI for MCP skills on the pipe.",
+    "Hit your Cursor limit mid-month? Watch why: identical agent call twice — first MISS (paid), second HIT (replay, no upstream tokens).",
 };
 
 export default function DemoPage() {
   return (
     <>
       <header className="page-head">
-        <h1>Agent Shell — try the pipe</h1>
+        <h1>Hit your Cursor limit mid-month? Watch why.</h1>
         <p>
-          Same PowerShell CLI as the{" "}
-          <Link href="/workbench">Agent Shell</Link>. Path defaults to{" "}
-          <code>self-proof</code> for this demo session.
+          Your agent asked the same thing twice. The IDE billed you twice.
+          withOhm answers the second from cache —{" "}
+          <strong>no upstream tokens on the HIT</strong>.
         </p>
-        <ol className="demo-steps">
+        <p>
+          Identical agent call twice: first <code>MISS</code> (paid), second{" "}
+          <code>HIT</code> (replay). Mock proves the mechanics; your real models
+          work the same through the pipe.
+        </p>
+        <ul className="page-head__list">
           <li>
-            Paste your key:{" "}
-            <code>Set-OhmKey -Key sk-at-…</code> (from{" "}
-            <Link href="/keys">API keys</Link> or{" "}
-            <Link href="/billing/intermediate">Intermediate</Link>).
+            Retries, research loops, and identical prompts stop re-buying the
+            model.
           </li>
+          <li>BYOK — your OpenAI / Anthropic keys stay yours.</li>
           <li>
-            Chat on the pipe:{" "}
-            <code>Invoke-OhmChat -Prompt &quot;ohm-self-proof-v1&quot;</code>{" "}
-            — run it twice and read the <code>[MISS]</code> / <code>[HIT]</code>{" "}
-            prefix.
+            $0 Intermediate seat + MCP attach in two minutes (
+            <Link href="/i">/i</Link>).
           </li>
-          <li>
-            Inspect meters: <code>Get-OhmUsage</code> ·{" "}
-            <code>Get-OhmSaving</code> · <code>New-OhmReceipt</code>
-          </li>
-          <li>
-            List MCP skills: <code>Get-OhmSkill</code> · full help:{" "}
-            <code>Get-Help</code>
-          </li>
-        </ol>
+        </ul>
       </header>
-      <AgentShellClient variant="demo" />
+
+      <WasteCheckClient />
+
       <p className="receipt__foot">
+        <Link href="/i">Attach in Cursor</Link>
+        {" · "}
+        <Link href="/bounty">$35 artifact bounty</Link>
+        {" · "}
+        <Link href="/billing/intermediate">$0 seat</Link>
+        {" · "}
         <Link href="/workbench">Agent Shell</Link>
         {" · "}
-        <Link href="/docs/cursor">MCP skills</Link>
-        {" · "}
-        <Link href="/org">Analytics</Link>
+        <Link href="/use-cases/enterprise-chaos">Enterprise / team chaos</Link>
       </p>
     </>
   );

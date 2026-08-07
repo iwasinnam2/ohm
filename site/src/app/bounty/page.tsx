@@ -4,8 +4,7 @@ import Link from "next/link";
 export const metadata: Metadata = {
   title: "Artifact bounty",
   description:
-    "Earn a $35 withOhm metered-usage credit by sharing a public savings receipt, or by publishing a Cursor skill, rule, or template that requires Ohm and carries the savings badge.",
-  robots: { index: false, follow: false },
+    "Earn a $35 withOhm metered-usage credit by sharing a public savings receipt from the waste check, or by publishing a Cursor skill that requires Ohm.",
 };
 
 export default function BountyPage() {
@@ -16,8 +15,9 @@ export default function BountyPage() {
         <p>
           We pay for <strong>distribution acts</strong>, not attention. The
           incentive and the share are the same event: publish proof that the
-          pipe saves you money, get a <strong>$35 metered-usage credit</strong>{" "}
-          (one c29 cycle&apos;s included usage, on us).
+          pipe stops re-buying identical calls, get a{" "}
+          <strong>$35 metered-usage credit</strong> (one c29 cycle&apos;s
+          included usage, on us).
         </p>
       </header>
 
@@ -27,11 +27,12 @@ export default function BountyPage() {
         </p>
         <ol className="bounty-steps">
           <li>
-            <strong>Share a savings receipt.</strong> Ask your agent for{" "}
-            <code>ohm_receipt</code> (or <code>POST /v1/savings/receipt</code>)
-            once cache hits accrue. Post the public receipt link
-            (withohm.dev/r/…) on X, LinkedIn, HN, or a dev community you
-            actually belong to — no spam.
+            <strong>Share a savings receipt.</strong> Run the{" "}
+            <Link href="/demo">waste check</Link> (MISS → HIT), mint a public
+            receipt under <em>your</em> $0 seat key, then post the{" "}
+            <code>withohm.dev/r/…</code> link on X, LinkedIn, HN, or a community
+            you belong to — no spam. (MCP path: <code>ohm_receipt</code> /{" "}
+            <code>POST /v1/savings/receipt</code> after cache hits accrue.)
           </li>
           <li>
             <strong>Ship a badged artifact.</strong> Publish a public Cursor
@@ -54,7 +55,10 @@ export default function BountyPage() {
           your receipt or artifact in the steal-kit.
         </p>
         <p className="partner__cta cta-row">
-          <Link className="btn btn--primary" href="/i">
+          <Link className="btn btn--primary" href="/demo">
+            Run the waste check
+          </Link>
+          <Link className="link-quiet" href="/i">
             Install withOhm
           </Link>
           <Link className="link-quiet" href="/templates">
