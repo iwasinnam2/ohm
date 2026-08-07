@@ -73,7 +73,7 @@ Edge Redis GET skips `stream=true` requests; stream HITs are served by the contr
 
 ## Metering
 
-Prefer parsed `usage.total_tokens` from the stream. Fall back to a char/`4` estimate only if no usage frame arrived. Receipts and ledger rows stay estimate-honest — see [Trust](/docs/trust) and [Honesty](/docs/honesty).
+Prefer parsed `usage.total_tokens` from the stream. Fall back to a char/`4` estimate only if no usage frame arrived. Savings stay `estimate_only` — see [Trust](/docs/trust) and the [Waste demo](/product/waste-demo).
 
 ## Headers you’ll see
 
@@ -107,6 +107,6 @@ Look for `pre_first_byte_stream_failover` / mid-stream refusals on the honesty m
 
 - [Locality & edge](/product/locality) — product narrative for HIT locality + honest failover
 - [Edge & Redis locality](/docs/edge) — key layout and mesh posture
-- [Honesty map](/docs/honesty) — published non-goals
-- [Status & limits](/docs/status)
+- [Waste demo](/docs/receipts) — MISS then HIT proof
+- [Architecture](/docs/architecture)
 - [Variable load](/use-cases/variable-load)

@@ -33,7 +33,7 @@ For the subscription term; cache entries expire per configured TTL unless `cache
 
 ## Categories of data
 
-Determined by Customer. May include identifiers, message content, and URLs. withOhm applies technical minimisation on web ingest (PII redaction, excerpt caps).
+Determined by Customer. May include account email, message content, and URLs. Account passwords are stored only as irreversible hashes. withOhm applies technical minimisation on web ingest (PII redaction, excerpt caps).
 
 ## Subprocessors
 
@@ -50,7 +50,12 @@ If Customer Content leaves the UK/EEA, the operator documents the transfer mecha
 
 ## Security
 
-Hashed API keys at rest; tenant isolation by cache key prefix; compliance gates on ingest. See [Security](./security).
+- Hashed Intermediate API keys at rest
+- Account profiles (email + password hash) beside each apikey SHA-256 index; passwords never stored plaintext; wrapped key material used only to restore the bearer after email login
+- Tenant isolation by cache key prefix
+- Compliance gates on ingest
+
+See [Security](./security).
 
 ## Customer instructions
 

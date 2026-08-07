@@ -30,6 +30,7 @@ export async function POST(req: NextRequest) {
     commit,
     label: typeof body.label === "string" ? body.label : "",
     email: typeof body.email === "string" ? body.email : "",
+    password: typeof body.password === "string" ? body.password : "",
     terms_ack: Boolean(body.terms_ack),
     dpa_ack: Boolean(body.dpa_ack),
     success_url:

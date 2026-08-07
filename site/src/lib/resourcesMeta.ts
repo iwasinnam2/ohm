@@ -42,7 +42,7 @@ export const RESOURCES_INDEX: ResourceMeta[] = [
     slug: "security",
     href: "/security",
     title: "Security",
-    description: "Cache purpose, keys, receipts, honesty map — compliance without theatre.",
+    description: "Waste demo, meters, keys, and compliance without theatre.",
     eyebrow: "Trust",
   },
   {

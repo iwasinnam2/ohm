@@ -143,7 +143,7 @@ export default function PricingPage() {
           <h3>Are savings figures guaranteed?</h3>
           <p>
             No. <code>/v1/savings</code> is always <code>estimate_only</code>. See{" "}
-            <Link href="/docs/honesty">Honesty</Link>.
+            <Link href="/product/waste-demo">Waste demo</Link>.
           </p>
         </div>
         <div>
