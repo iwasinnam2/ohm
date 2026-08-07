@@ -204,10 +204,10 @@ function BillingSuccessInner() {
       ) : null}
 
       <p className="postpay__cta-note">
-        Once cache hits accrue, mint a public receipt via{" "}
-        <code>ohm_receipt</code> or the API — see{" "}
-        <Link href="/docs/quickstart">Quickstart</Link>. Sharing one qualifies
-        for the <Link href="/bounty">$35 artifact bounty</Link>.
+        Once cache hits accrue, mint a public receipt, post it with a clear
+        headline (e.g. &quot;My monthly savings simply from choosing
+        withOhm&quot;), then email the <em>social post URL</em> for the{" "}
+        <Link href="/bounty">$100 artifact bounty</Link>.
       </p>
 
       <p className="postpay__cta-note">

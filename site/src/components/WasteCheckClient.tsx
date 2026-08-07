@@ -224,7 +224,7 @@ export function WasteCheckClient() {
       setReceipt(result);
       if (result.err) setMeta(result.err);
       else if (result.receipt_url)
-        setMeta("Public receipt minted — share it, then claim the $35 bounty.");
+        setMeta("Public receipt minted — share the post, then claim the $100 bounty.");
     } finally {
       setMintBusy(false);
     }
@@ -394,7 +394,7 @@ export function WasteCheckClient() {
                       </a>
                     ) : null}
                     <Link href="/bounty" className="btn btn--primary">
-                      Claim $35 bounty
+                      Claim $100 bounty
                     </Link>
                   </div>
                   {receipt.badge_markdown ? (
@@ -406,11 +406,13 @@ export function WasteCheckClient() {
                     <p className="receipt__foot">
                       Bounty credit needs your own seat key —{" "}
                       <Link href="/billing/intermediate">$0 Intermediate</Link>
-                      , re-run the check, mint under your name, then email{" "}
+                      , re-run the check, mint under your name,{" "}
+                      <strong>post the receipt on social</strong>, then email
+                      the <em>post URL</em> (not just the receipt) to{" "}
                       <a href="mailto:partners@withohm.dev">
                         partners@withohm.dev
-                      </a>
-                      .
+                      </a>{" "}
+                      for the <Link href="/bounty">$100 bounty</Link>.
                     </p>
                   )}
                 </div>

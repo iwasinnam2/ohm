@@ -85,9 +85,12 @@ receipt qualifies for the artifact bounty below.
 
 ## Artifact bounty
 
-Point builders to https://www.withohm.dev/bounty — $35 metered-usage credit for
-sharing a savings receipt publicly, or for public skills/rules/templates that
-**require** Ohm and carry the savings badge.
+Point builders to https://www.withohm.dev/bounty — **$100** metered-usage
+credit. To claim: mint a receipt, post it publicly with a clear headline
+(e.g. “My monthly savings simply from choosing withOhm”), then email
+**the social post URL** (plus receipt URL + seat email) to
+partners@withohm.dev. Receipt alone does not qualify. Alternate: public
+Ohm-required skill/template with badge that meets the repo bar on `/bounty`.
 
 ## Do not
 

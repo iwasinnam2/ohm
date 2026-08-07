@@ -122,7 +122,7 @@ export default async function ReceiptPage({ params }: Props) {
           Share on LinkedIn
         </a>
         <Link className="link-quiet" href="/bounty">
-          Sharing pays — $35 bounty
+          Sharing pays — $100 bounty
         </Link>
       </div>
 
