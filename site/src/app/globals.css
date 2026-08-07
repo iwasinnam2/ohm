@@ -1608,6 +1608,90 @@ body:has(.doc-layout) .site-footer {
   border-bottom: 1px solid var(--line);
 }
 
+/* Classic log-in / sign-up gate — maps to key restore + Intermediate checkout */
+.auth-gate {
+  max-width: min(28rem, 100%);
+  margin: 0 auto;
+  padding-block: var(--space-4) var(--space-6);
+}
+
+.auth-gate__brand {
+  text-align: center;
+  margin-bottom: var(--space-4);
+}
+
+.auth-gate__brand h1 {
+  margin-bottom: var(--space-2);
+}
+
+.auth-gate__eyebrow {
+  margin: 0 0 var(--space-2);
+  font-family: var(--font-display, var(--font-space-grotesk), sans-serif);
+  font-size: clamp(1.75rem, 4vw, 2.35rem);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: var(--fg);
+  line-height: 1.1;
+}
+
+.auth-gate__tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin-bottom: var(--space-4);
+  background: var(--bg-elevated);
+}
+
+.auth-gate__tab {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-weight: 500;
+  padding: var(--space-2) var(--space-3);
+  cursor: pointer;
+  transition: color 160ms ease, background 160ms ease;
+}
+
+.auth-gate__tab:hover {
+  color: var(--fg);
+}
+
+.auth-gate__tab--active {
+  background: color-mix(in srgb, var(--accent, #b166f8) 18%, transparent);
+  color: var(--fg);
+  box-shadow: inset 0 -2px 0 var(--accent, #b166f8);
+}
+
+.auth-gate__panel {
+  animation: auth-gate-in 280ms ease-out;
+}
+
+@keyframes auth-gate-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.auth-gate__form {
+  margin-top: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-gate__panel {
+    animation: none;
+  }
+}
+
 .billing-form {
   max-width: var(--measure);
   display: flex;
