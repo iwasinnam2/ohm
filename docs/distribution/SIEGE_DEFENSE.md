@@ -164,7 +164,8 @@ Facts these responses rest on (verified against code, 2026-07-31):
 - No encryption-at-rest claims for Redis until verified against the actual
   ElastiCache configuration.
 - No legal compliance guarantees — GDPR, CCPA, copyright. Controls and
-  verdicts, never certifications.
+  verdicts, never certifications. Point at `/docs/copyright` for excerpt-cap
+  posture (`controls_not_certification`).
 - No uptime or SLA numbers.
 - No "edge serves hits in production" — designed to, currently full-proxies,
   say it in that order.
