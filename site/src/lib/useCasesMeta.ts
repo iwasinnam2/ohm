@@ -32,7 +32,7 @@ export const USE_CASE_INDEX: UseCaseMeta[] = [
     slug: "enterprise-chaos",
     title: "Enterprise chaos",
     description:
-      "Govern shadow AI, repeat spend, browse risk, and FinOps without turning replay into training.",
+      "Govern shadow AI, repeat spend, browse risk, and FinOps on one OpenAI-compatible pipe.",
     eyebrow: "Enterprise",
   },
   {
