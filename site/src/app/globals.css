@@ -3155,6 +3155,108 @@ body:has(.doc-layout) .site-footer {
   margin-bottom: 0.4rem;
 }
 
+/* Waste-check demo — MISS → HIT proof */
+.waste-check {
+  max-width: 40rem;
+  margin: 0 auto 2rem;
+}
+
+.waste-check__session {
+  margin-bottom: 0.75rem;
+}
+
+.waste-check__key-note {
+  font-size: 0.95rem;
+  line-height: 1.45;
+  color: var(--muted, #5a6570);
+}
+
+.waste-check__actions {
+  margin: 1rem 0 1.25rem;
+}
+
+.demo-result {
+  margin: 1.25rem 0;
+  padding: 1rem 1.1rem;
+  border: 1px solid color-mix(in srgb, currentColor 14%, transparent);
+  border-radius: 8px;
+  background: color-mix(in srgb, currentColor 3%, transparent);
+}
+
+.demo-result__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1rem;
+}
+
+.demo-result__call {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 8rem;
+}
+
+.demo-result__label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  opacity: 0.7;
+}
+
+.demo-result__badge {
+  display: inline-block;
+  font-weight: 700;
+  font-size: 1.05rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+  width: fit-content;
+}
+
+.demo-result__badge--miss {
+  background: color-mix(in srgb, #c45c26 22%, transparent);
+}
+
+.demo-result__badge--hit {
+  background: color-mix(in srgb, #2a7a4b 28%, transparent);
+}
+
+.demo-result__billed {
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.85;
+}
+
+.demo-result__arrow {
+  font-size: 1.25rem;
+  opacity: 0.5;
+}
+
+.demo-result__punchline {
+  margin: 1rem 0 0;
+  font-size: 1rem;
+  line-height: 1.45;
+  font-weight: 500;
+}
+
+.demo-result__receipt {
+  margin-top: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.demo-result__share {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.demo-result__ledger {
+  font-size: 0.9rem;
+  opacity: 0.85;
+}
+
 /* Agent Shell — PowerShell-style terminal */
 .ps-shell {
   --ps-bg: #1a3a66;

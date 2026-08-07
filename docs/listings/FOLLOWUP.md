@@ -11,6 +11,7 @@ Cursor support (ticket **T-E60068**) deferred marketplace listing inquiries to
 3. Logo: `https://www.withohm.dev/ohm-icon-360.png`
 4. Repo: https://github.com/iwasinnam2/ohm
 5. Docs link: https://www.withohm.dev/docs/enterprise-chaos
+6. Demo (waste check): https://www.withohm.dev/demo
 
 ## Optional: legacy marketplace form
 
@@ -23,8 +24,9 @@ Do not treat marketplace-publishing@ as the growth path.
 .\scripts\external_smoke.ps1 -BaseUrl https://api.withohm.dev -ApiKey $env:OHM_API_KEY
 ```
 
-Exercise Agent Shell https://www.withohm.dev/workbench and org ledger
-https://www.withohm.dev/org — screenshots beat MCP-only demos for directory.
+Exercise waste check https://www.withohm.dev/demo (MISS→HIT), Agent Shell
+https://www.withohm.dev/workbench and org ledger https://www.withohm.dev/org —
+screenshots beat MCP-only demos for directory.
 
 ## If directory silent >14 days
 

@@ -10,6 +10,10 @@ export default function sitemap(): MetadataRoute.Sitemap {
   // noindex — neither belongs in the sitemap.
   const staticRoutes = [
     "",
+    "/demo",
+    "/bounty",
+    "/i",
+    "/workbench",
     "/subscriptions",
     "/pricing",
     "/product",

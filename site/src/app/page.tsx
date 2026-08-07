@@ -48,9 +48,9 @@ const BOARD = [
   {
     href: "/demo",
     eyebrow: "Proof",
-    title: "Hit ratio demo",
-    desc: "Identical prompt twice — MISS then HIT. That’s the inventory we meter.",
-    go: "Run the demo",
+    title: "Waste check",
+    desc: "Identical agent call twice — MISS then HIT. Second call does not re-buy the model.",
+    go: "Run the waste check",
   },
   {
     href: "/product/architecture",
@@ -79,19 +79,22 @@ export default function HomePage() {
           </div>
           <p className="hero__strapline">Interconnectedness and accessibility.</p>
           <p className="hero__promise">
-            Model switching, prompt caching, and compliant web browsing — one
-            OpenAI-compatible pipe. Connect Cursor, Claude Code, VS Code, and
-            more; bring your own provider keys (BYOK); pay metered rates on a $0
-            Intermediate seat. Or open the Agent Shell and stay on the pipe.
+            Agent loops re-buy the same tokens. withOhm replays identical calls
+            from cache — one OpenAI-compatible pipe, BYOK, $0 Intermediate seat.
+            Hit your Cursor limit mid-month? Run the waste check.
           </p>
         </div>
         <div className="hero__cta cta-row">
-          <StartOrProfileCta className="btn btn--primary" />
-          <Link href="/product" className="link-quiet">
-            Product
+          <Link href="/demo" className="btn btn--primary">
+            Run the waste check
           </Link>
-          <Link href="/use-cases" className="link-quiet">
-            Solutions
+          <StartOrProfileCta
+            className="link-quiet"
+            guestLabel="$0 seat"
+            seatedLabel="Profile"
+          />
+          <Link href="/i" className="link-quiet">
+            Attach in Cursor
           </Link>
           <Link href="/pricing" className="link-quiet">
             Pricing
