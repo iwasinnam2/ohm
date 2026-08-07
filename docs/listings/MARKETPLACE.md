@@ -3,13 +3,17 @@
 Paste / adapt into https://cursor.com/marketplace/publish
 
 **Reviewer note (Cursor employees):** this refresh positions withOhm as the
-metered pipe that cuts **repeat agent prefill waste** — exact-match Redis
-replay + compliant web fetch — without touching Cursor model billing. Full
-plan for employee review:  
+metered **pipe** that cuts **repeat agent prefill waste** — exact-match Redis
+replay + compliant web fetch — without touching Cursor model billing.
+
+**Audience split (do not mix in one sentence):** Marketplace / Cursor attach =
+indie + agent prefill waste (compat). cursor.directory / enterprise apply =
+**chaos governor** control plane ([CURSOR_DIRECTORY.md](CURSOR_DIRECTORY.md)).
+Full plan:  
 https://github.com/iwasinnam2/ohm/blob/master/docs/GEM_POSITION.md  
 BD one-pager:  
 https://github.com/iwasinnam2/ohm/blob/master/docs/distribution/CURSOR_BD_BRIEF.md
-
+CTA doctrine: [docs/BRAND.md](../BRAND.md).
 ## Name
 
 `ohm` (withOhm)

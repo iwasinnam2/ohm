@@ -1,6 +1,6 @@
 # Integrations
 
-withOhm connects to your tools; it does not ask your tools to come to it. Every host below speaks MCP (Model Context Protocol), and every host gets the same seven tools from one small stdio server.
+withOhm connects to your tools; it does not ask your tools to come to it. Every host below speaks MCP (Model Context Protocol), and every host gets the same eight tools from one small stdio server.
 
 Live version with pre-filled configs: [withohm.dev/connections](https://www.withohm.dev/connections). Site doc counterpart: `site/content/docs/integrations.md`.
 

@@ -1,6 +1,10 @@
-# Design-partner hit list — 20 rows, 5 outreaches/day
+# Design-partner hit list — template + 5 outreaches/day
 
 Tracking file: [partner_hit_list.csv](partner_hit_list.csv)
+
+**Honesty:** the CSV ships as a **TEMPLATE** (all `[fill]` placeholders). It is
+not a live roster of 20 partners. Replace rows with real public handles before
+counting them toward “done.”
 
 Front door: https://www.withohm.dev/design-partners · `partners@withohm.dev`
 
@@ -47,7 +51,7 @@ Use these *categories* to hunt candidates; add concrete handles when you find th
 | HN Who’s Hiring (agent / LLM infra) | news.ycombinator.com | Building agents, token cost |
 | YC / startup directories mentioning agents | company sites + careers | Agent loops, research fetch |
 | Awesome-MCP / agent framework issues | GitHub | Need compliant browse |
-| Your own Show HN / Reddit commenters | after they post | Exact-match / cache skepticism → convert to trial |
+| Warm Reddit / Forum commenters | after they post | Exact-match / cache skepticism → convert to trial (Show HN blocked) |
 
 Optional personalization: run [scripts/partner_research_fetch.ps1](../../scripts/partner_research_fetch.ps1) on `research_urls` (see [PARTNER_JSON_RESEARCH.md](PARTNER_JSON_RESEARCH.md)). Never use Ohm to harvest emails.
 
@@ -55,11 +59,13 @@ Optional personalization: run [scripts/partner_research_fetch.ps1](../../scripts
 
 ## Daily cadence
 
-1. Open the CSV; ensure ≥20 rows with `status=queued` or in flight.
+1. Open the CSV; keep ≥20 **slots**, but only outreach rows with a real
+   `person` + `pain_observed` (replace `[fill]` first).
 2. Send **5 personalized** outreaches (message skeleton below).
 3. Set `status=touched`, `date_touched=today`.
 4. Same-day key if they say yes → [PARTNER_ONBOARD.md](PARTNER_ONBOARD.md).
-5. On Show HN fire day: **pause** cold spray; only reply on HN.
+5. Show HN is **BLOCKED** (HN account banned) — do not attempt. Pause cold
+   spray only when a live public thread needs replies that day.
 
 ---
 
@@ -86,6 +92,7 @@ Shorter variants: [OUTREACH_TEMPLATES.md](../OUTREACH_TEMPLATES.md) §2–5.
 
 ## Done when
 
-- [ ] CSV has 20 real rows (person + pain + channel)
+- [ ] CSV is no longer all-template — ≥10 rows with real person + pain + channel
 - [ ] 5/day cadence running until ~10 partners keyed or pipeline full
 - [ ] Each keyed partner scheduled for day 5–7 quote ask
+- [ ] Template banner removed from CSV header once the roster is live

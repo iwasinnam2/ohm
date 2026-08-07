@@ -36,6 +36,8 @@ def upstash_cmd(url: str, token: str, cmd: list[Any]) -> Any:
 
 
 class CacheStore(Protocol):
+    backend: str
+
     async def get(self, key: str) -> Optional[str]: ...
     async def set(self, key: str, value: str, ttl_seconds: int) -> None: ...
     async def delete(self, key: str) -> None: ...
@@ -92,6 +94,7 @@ class RedisStore:
     ):
         write = write_url or read_url
         rl = rl_url or write
+        self.backend = "redis"
         self._read = aioredis.from_url(read_url, decode_responses=True)
         self._write = (
             self._read if write == read_url else aioredis.from_url(write, decode_responses=True)
@@ -166,7 +169,9 @@ class RedisStore:
 
 
 class MemoryStore:
-    """In-process fallback for tests / no Redis."""
+    """In-process fallback when Redis is unreachable at boot (dev/test only)."""
+
+    backend = "memory"
 
     def __init__(self) -> None:
         self._data: dict[str, str] = {}

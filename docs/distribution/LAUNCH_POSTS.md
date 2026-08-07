@@ -56,8 +56,9 @@ The architecture choice I'd defend: a cache hit is a billable event, so the
 hit path is built to billing-grade reliability — served from Redis with an
 idempotency-keyed meter event emitted before the response leaves. There's a
 Rust edge designed to serve hits without the Python control plane; in
-production it currently full-proxies while its Redis client grows TLS
-support (stated in the ops docs, not hidden). Caching is exact-match on a
+production it may full-proxy until cluster secrets point at ElastiCache
+over TLS (`rediss://` — client support is in-repo; stated in the ops docs,
+not hidden). Caching is exact-match on a
 canonicalized request — I deliberately did not do semantic caching, because
 serving an almost-right answer from cache is worse than paying for the call.
 Streamed responses replay too: the pipe assembles the stream on the way
@@ -164,8 +165,8 @@ What that forced:
 
 - Hits are served from Redis with an idempotency-keyed meter event emitted
   before the response leaves; a small Rust edge is built to serve hits
-  without the control plane, and full-proxies in production until its
-  Redis client grows TLS support (documented in the ops notes).
+  without the control plane, and may full-proxy in production until
+  secrets point at ElastiCache over TLS (`rediss://`; documented in ops).
 - Exact-match keys over canonicalized requests, not semantic similarity.
   Semantic caching reads great in a README and is a refund generator in
   production — "almost the same prompt" is not the same prompt.
@@ -473,8 +474,8 @@ What that constraint forced:
 - Hits are served from Redis with the meter event emitted, idempotency-
   keyed, before the response leaves. There's also a small Rust edge built
   to serve hits without touching the Python control plane at all; in
-  production today it full-proxies while its Redis client grows TLS
-  support — a degraded state the repo's operations doc states outright,
+  production it may full-proxy until secrets point at ElastiCache over
+  TLS (`rediss://`) — a degraded state the ops doc states outright,
   because a cache tier you can't audit is a cache tier you can't bill on.
 - Exact-match keys over canonicalized requests, not semantic similarity.
   Semantic caching reads great in a README and is a refund generator in

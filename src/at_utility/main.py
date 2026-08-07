@@ -623,9 +623,15 @@ async def http_message_signatures_directory(request: Request) -> Response:
 
 @app.get("/ready")
 async def ready() -> JSONResponse:
-    """Readiness: Redis ping. Prod omits exception strings and internal host hints."""
+    """Readiness: Redis ping. Prod omits exception strings and internal host hints.
+
+    In-process MemoryStore (boot fallback when Redis was down) reports
+    redis.ok=false in non-dev regions so orchestrators do not route traffic
+    to a split-brain node.
+    """
     redis_ok = False
     redis_error: str | None = None
+    backend = getattr(state.store, "backend", "unknown")
     try:
         pong = await state.store.ping()
         redis_ok = bool(pong)
@@ -633,12 +639,15 @@ async def ready() -> JSONResponse:
         redis_error = str(exc)
     region = (state.settings.at_region or "").lower()
     is_prod = region not in ("local", "dev", "test", "")
+    if backend == "memory" and is_prod:
+        redis_ok = False
+        redis_error = redis_error or "memory_store_fallback"
     body: dict[str, Any] = {
         "ok": redis_ok,
         "service": "ohm",
         "plane": "python",
         "region": state.settings.at_region,
-        "redis": {"ok": redis_ok},
+        "redis": {"ok": redis_ok, "backend": backend},
     }
     if not is_prod:
         body["redis"]["error"] = redis_error

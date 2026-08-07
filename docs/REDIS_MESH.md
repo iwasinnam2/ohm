@@ -7,18 +7,30 @@
 
 Source of truth for leader/replica/global distribution. Consistency rules: [CONSISTENCY.md](CONSISTENCY.md). Topology playbook: [infra/README.md](../infra/README.md).
 
-## Verdict
+## Verdict (live now)
 
-| Phase | Goal | In-repo | Live traffic |
-|-------|------|---------|--------------|
-| 0 | Single-region public deck Redis | Templates ready | **Live** — `v0.1.0-railgun` / public `api.withohm.dev` |
+| Phase | Goal | Status |
+|-------|------|--------|
+| 0–2 | Single-region leader Redis + reader/write split | **Live** — us-east-1 / public `api.withohm.dev` |
+| 4 (client) | Rust TLS RESP (`rediss://` / `AT_RS_REDIS_TLS`) | **In-repo** — edge HITs when secrets point at ElastiCache |
+
+## Archive — multi-region mesh (torn down Jul 2026)
+
+Retained as the re-enable playbook only. Do **not** read the Live/Charged
+column as current traffic.
+
+| Phase | Goal | In-repo | Was (pre-tear-down) |
+|-------|------|---------|---------------------|
+| 0 | Single-region public deck Redis | Templates ready | Live — `v0.1.0-railgun` |
 | 1 | Local primary+replica split + lag smoke | Compose + `scripts/redis_replica_smoke.ps1` | Local only |
 | 2 | Leader `REDIS_URL`=reader, `REDIS_WRITE_URL`=primary | Secrets + outputs | Leader live |
-| 3 | Global Datastore secondaries + edge env | Terraform when `enable_edges=true` | **Live** `ldgnf-ohm`; edges us-west-2 + eu-west-2 |
-| 4 | `AT_RS_REDIS_WRITE` on gateway-rs | Implemented | TLS RESP in `resp.rs`; point secrets at `rediss://` to activate edge HITs |
-| 5 | Anycast | GA Terraform + DNS | **Charged** — `api` → `a8d1c391c281079a4.awsglobalaccelerator.com` (`v0.1.1-mesh`) |
+| 3 | Global Datastore secondaries + edge env | Terraform when `enable_edges=true` | Was live `ldgnf-ohm`; edges us-west-2 + eu-west-2 |
+| 4 | `AT_RS_REDIS_WRITE` on gateway-rs | Implemented | TLS RESP in `resp.rs` |
+| 5 | Anycast | GA Terraform + DNS | Was charged — GA endpoint (`v0.1.1-mesh`) |
 
-Lag drill (us-west-2 in-cluster): **PASS (~0–1000ms budget)**. Edge NLBs + all three GA endpoint groups **HEALTHY**. Railgun Phase 3–5 charge complete (merge + tag + region-drain).
+Historical note: lag drill us-west-2 **PASS**; Phase 3–5 later torn down
+until paid traffic justifies them ([STATUS.md](STATUS.md),
+[SINGLE_REGION.md](../infra/runbooks/SINGLE_REGION.md)).
 
 ## Env pattern
 

@@ -18,6 +18,13 @@ export default function BountyPage() {
           social, then email us the <strong>post URL</strong>. You get a{" "}
           <strong>$100 metered-usage credit</strong> on your Intermediate seat.
         </p>
+        <p>
+          Indie proof path:{" "}
+          <Link href="/demo">waste check</Link> → mint → post → claim. Need a
+          seat first? <Link href="/signup">Sign up — $0 Intermediate</Link>.
+          Teams governing shadow AI: see{" "}
+          <Link href="/use-cases/enterprise-chaos">chaos governor</Link>.
+        </p>
       </header>
 
       <div className="partner">

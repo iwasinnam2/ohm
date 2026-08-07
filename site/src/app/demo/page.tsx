@@ -43,7 +43,7 @@ export default function DemoPage() {
         {" · "}
         <Link href="/bounty">$100 artifact bounty</Link>
         {" · "}
-        <Link href="/billing/intermediate">$0 seat</Link>
+        <Link href="/signup">$0 seat</Link>
         {" · "}
         <Link href="/workbench">Agent Shell</Link>
         {" · "}
