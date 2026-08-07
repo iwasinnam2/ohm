@@ -1039,6 +1039,12 @@ mod tests {
     }
 
     #[test]
+    fn canonical_json_sorts_keys() {
+        let v = serde_json::json!({"b": 1, "a": 2});
+        assert_eq!(canonical_json(&v), r#"{"a":2,"b":1}"#);
+    }
+
+    #[test]
     fn skip_edge_set_on_no_store_or_bypass() {
         assert!(should_skip_edge_set(true, None));
         assert!(should_skip_edge_set(false, Some("BYPASS")));
