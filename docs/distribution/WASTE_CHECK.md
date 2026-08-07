@@ -13,7 +13,8 @@ surfaces lead with quota burn, then point at `/docs/enterprise-chaos`.
 
 Related: [GAP_SURFACES.md](GAP_SURFACES.md) · [SHOW_HN_RUNBOOK.md](SHOW_HN_RUNBOOK.md) ·
 [SIEGE_DEFENSE.md](SIEGE_DEFENSE.md) · [PARTNER_HIT_LIST.md](PARTNER_HIT_LIST.md) ·
-[STEAL_KIT.md](STEAL_KIT.md) · [CURSOR_DIRECTORY.md](../listings/CURSOR_DIRECTORY.md)
+[STEAL_KIT.md](STEAL_KIT.md) · [CURSOR_DIRECTORY.md](../listings/CURSOR_DIRECTORY.md) ·
+[CARE_AUDIT.md](../CARE_AUDIT.md) (full-product care / SoT remediation)
 
 ---
 
