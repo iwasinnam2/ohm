@@ -6,6 +6,8 @@ This document binds the **entire repo** (gateway, ingest worker, SDKs, docs, sit
 
 > Not legal advice. Operators and tenants remain responsible for their use cases and jurisdictions.
 
+**Ohm’s own IP** (copyright registration, patents, trademarks, MIT vs hosted pipe) is tracked separately in [`docs/legal/IP.md`](legal/IP.md) — not in this compliance matrix.
+
 ## Operating principle
 
 | Allowed | Prohibited |
