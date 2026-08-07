@@ -126,11 +126,18 @@ async def fulfill_pending_checkout(
         return None
 
     plan = str(pending.get("plan") or "payg")
+    password_hash = str(pending.get("password_hash") or "")
+    # Legacy pending payloads may still carry plaintext password briefly.
+    password = str(pending.get("password") or "")
+    email = str(pending.get("email") or "")
     raw_key, record = await tenants.issue(
         plan=plan if plan in ("payg", "enterprise") else "payg",
-        label=str(pending.get("label") or pending.get("email") or "self-serve"),
+        label=str(pending.get("label") or email or "self-serve"),
         terms_version=str(pending.get("terms_version") or ""),
         dpa_version=str(pending.get("dpa_version") or ""),
+        email=email,
+        password=password if not password_hash else "",
+        password_hash=password_hash,
     )
     await tenants.attach_stripe(
         record.tenant_id,

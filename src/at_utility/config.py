@@ -98,6 +98,8 @@ class Settings(BaseSettings):
     # Shared secret for the Rust edge → /internal/edge-hit metering gate.
     # Empty disables edge HIT serving (edge falls back to full proxy).
     at_edge_shared_secret: str = ""
+    # Fernet wrap for Intermediate API keys (email/password login restore).
+    at_account_secret: str = ""
 
     at_admin_api_keys: str = ""
     # Slack /observer slash command. slack_signing_secret verifies inbound

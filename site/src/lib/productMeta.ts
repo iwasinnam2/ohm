@@ -5,7 +5,7 @@ export type ProductMeta = {
   eyebrow?: string;
 };
 
-/** Product pages — Neon Product mega, Ohm nouns. */
+/** Product pages — withOhm nouns. */
 export const PRODUCT_INDEX: ProductMeta[] = [
   {
     slug: "pipe",
@@ -18,14 +18,14 @@ export const PRODUCT_INDEX: ProductMeta[] = [
     slug: "cache-trees",
     title: "Cache trees",
     description:
-      "Branch exact-replay inventory for PRs and agents — fork, promote, freeze without cloning Postgres.",
+      "Branch exact-replay inventory for PRs and agents — fork, promote, freeze without cloning a database.",
     eyebrow: "Branching",
   },
   {
     slug: "architecture",
     title: "Architecture",
     description:
-      "Two containers, one metered crossing — tips, Promote, and compose with a database preview.",
+      "Ephemeral replay × pipeline governance — one metered HIT/MISS crossing.",
     eyebrow: "Deep dive",
   },
   {
@@ -36,17 +36,10 @@ export const PRODUCT_INDEX: ProductMeta[] = [
     eyebrow: "Scale",
   },
   {
-    slug: "trust",
-    title: "Trust & receipts",
-    description:
-      "Signed cache-hit receipts, public honesty map, JWKS — verify the pipe yourself.",
-    eyebrow: "Proof",
-  },
-  {
     slug: "what-is-withohm",
     title: "What is withOhm",
     description:
-      "Tollbooth on wasted inference. Neon branches state; Ohm branches exact replay.",
+      "AI traffic utility — metered pipe on wasted and repeated inference.",
     eyebrow: "Position",
   },
 ];

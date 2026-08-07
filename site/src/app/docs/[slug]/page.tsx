@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { notFound } from "next/navigation";
 import { DocsMarkdown } from "@/components/DocsMarkdown";
 import { IntegrationBrandBoard } from "@/components/IntegrationBrandBoard";
+import { BrandValuesAid } from "@/components/BrandValuesAid";
 import { CacheTreesFlowchart } from "@/components/CacheTreesFlowchart";
 import { ComposeCiFlowchart } from "@/components/ComposeCiFlowchart";
 import {
@@ -15,6 +16,7 @@ import {
 
 const CACHE_TREES_FLOW_MARK = "<!-- ohm:cache-trees-flowchart -->";
 const COMPOSE_CI_MARK = "<!-- ohm:compose-ci -->";
+const BRAND_VALUES_MARK = "<!-- ohm:brand-values -->";
 
 type Props = {
   params: Promise<{ slug: string }>;
@@ -45,14 +47,17 @@ export default async function DocPage({ params }: Props) {
 
   const cleaned = source
     .replaceAll(CACHE_TREES_FLOW_MARK, "\n")
-    .replaceAll(COMPOSE_CI_MARK, "\n");
+    .replaceAll(COMPOSE_CI_MARK, "\n")
+    .replaceAll(BRAND_VALUES_MARK, "\n");
 
   const sectionMedia: Record<string, ReactNode> | undefined =
     slug === "cache-trees"
       ? { "": <CacheTreesFlowchart /> }
       : slug === "compose-neon"
         ? { "": <ComposeCiFlowchart /> }
-        : undefined;
+        : slug === "brand"
+          ? { "": <BrandValuesAid /> }
+          : undefined;
 
   return (
     <div className="doc-layout">

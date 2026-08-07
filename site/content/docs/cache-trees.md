@@ -9,11 +9,9 @@ Fork, promote, freeze, and reset are available on `/v1/cache/trees`.
 
 <!-- ohm:cache-trees-flowchart -->
 
-Neon branches **state**. withOhm branches **exact replay**. In CI, pair the
-same slug: `NEON_BRANCH` + `X-Ohm-Cache-Tree`. Full ADR:
-[docs/CACHE_TREES.md](https://github.com/iwasinnam2/ohm/blob/master/docs/CACHE_TREES.md)
-· architecture overview:
-[docs/ARCHITECTURE.md](https://github.com/iwasinnam2/ohm/blob/master/docs/ARCHITECTURE.md).
+Tips isolate exact-replay inventory per PR or agent run. For pairing tips with
+a database preview branch in CI, see [Compose with Neon](/docs/compose-neon).
+Full ADR: repository `docs/CACHE_TREES.md`.
 
 ## Select a tree
 

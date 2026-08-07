@@ -58,6 +58,7 @@ While the sections below describe the runtime split, withOhm organizes customer 
 | Tenant | Billing and meter identity | Owns cache trees and ledger events |
 | Cache tree | Named exact-replay inventory (`main`, `pr-842`, …) | Holds digests → blobs |
 | API key | Auth material (`sk-at-*`) | Bound to a tenant (and optionally an org) |
+| Account profile | Email + password hash beside apikey SHA-256 | Login restores Intermediate bearer |
 | Path / cost center | Attribution labels (`X-Ohm-Path`, cost center) | Ledger dimensions — **not** cache partitions |
 | Operation | Async or admin action (checkout, promote, retain — phased) | Audited on the Pipeline |
 

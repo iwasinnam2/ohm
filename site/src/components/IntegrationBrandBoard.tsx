@@ -6,22 +6,46 @@ import {
 } from "@/lib/integrationBrands";
 
 function BrandCard({ brand }: { brand: BrandTile }) {
+  const external = brand.authorizeHref.startsWith("http");
   return (
     <li className="brand-tile">
-      <a
-        className="brand-tile__outer"
-        href={brand.href}
-        target={brand.href.startsWith("http") ? "_blank" : undefined}
-        rel={brand.href.startsWith("http") ? "noopener noreferrer" : undefined}
-      >
-        <span className="brand-tile__name">{brand.name}</span>
-        <span className="brand-tile__blurb">{brand.blurb}</span>
-      </a>
-      {brand.setupHref ? (
-        <Link className="brand-tile__setup" href={brand.setupHref}>
-          Set up →
-        </Link>
-      ) : null}
+      <div className="brand-tile__outer">
+        <span
+          className="brand-tile__logo"
+          style={{ background: brand.markColor }}
+          aria-hidden="true"
+        >
+          {brand.mark}
+        </span>
+        <div className="brand-tile__copy">
+          <span className="brand-tile__name">{brand.name}</span>
+          <span className="brand-tile__blurb">{brand.blurb}</span>
+        </div>
+      </div>
+      <div className="brand-tile__actions">
+        <a
+          className="btn btn--primary brand-tile__integrate"
+          href={brand.authorizeHref}
+          target={external ? "_blank" : undefined}
+          rel={external ? "noopener noreferrer" : undefined}
+        >
+          Integrate
+        </a>
+        <a
+          className="brand-tile__setup"
+          href={brand.href}
+          target={brand.href.startsWith("http") ? "_blank" : undefined}
+          rel={
+            brand.href.startsWith("http") ? "noopener noreferrer" : undefined
+          }
+        >
+          Visit site
+        </a>
+      </div>
+      <p className="brand-tile__perm">
+        Opens {brand.name} and prompts authorization for withOhm read/write
+        access on that platform where supported.
+      </p>
     </li>
   );
 }
@@ -36,9 +60,9 @@ export function IntegrationBrandBoard({
     <div className="brand-board">
       {showIntro ? (
         <p className="brand-board__lede">
-          Interconnectedness and accessibility — withOhm sits in the middle of
-          tools you already use. Tap a brand for their home; <em>Set up</em>{" "}
-          wires withOhm.
+          One-click integrate — authorize withOhm on the tools you already use.
+          Each Integrate button opens the platform and requests read/write
+          permissions where the vendor supports OAuth or marketplace attach.
         </p>
       ) : null}
       {kinds.map((kind) => {
@@ -60,6 +84,10 @@ export function IntegrationBrandBoard({
           </section>
         );
       })}
+      <p className="brand-board__foot">
+        Prefer the connections workbench?{" "}
+        <Link href="/connections">Open Connections</Link>.
+      </p>
     </div>
   );
 }
