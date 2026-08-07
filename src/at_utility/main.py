@@ -2361,6 +2361,12 @@ async def edge_hit_meter(
     if x_ohm_edge_secret != s.at_edge_shared_secret:
         raise HTTPException(status_code=403, detail="Invalid edge secret")
     api_key, tenant_rec = auth
+    log.info(
+        "hit_fsm state=%s endpoint=edge_hit_meter tenant=%s digest=%s",
+        receipts.HIT_STATE_AWAIT_ADMIT,
+        tenant_rec.tenant_id,
+        (body.request_sha256 or "")[:16],
+    )
     await rate_limit(api_key, tenant_rec.tenant_id)
     meter_eid = stable_meter_event_id(
         kind="cache_hit",
@@ -2402,6 +2408,12 @@ async def edge_hit_meter(
     )
     if receipt_jws:
         out["receipt"] = receipt_jws
+    log.info(
+        "hit_fsm state=%s endpoint=edge_hit_meter tenant=%s digest=%s",
+        receipts.HIT_STATE_RELEASE,
+        tenant_rec.tenant_id,
+        (body.request_sha256 or "")[:16],
+    )
     return out
 
 
@@ -2602,6 +2614,18 @@ async def chat_completions(
             tenant, cache_tree, request_digest
         )
         if cached:
+            log.info(
+                "hit_fsm state=%s plane=python tenant=%s digest=%s",
+                receipts.HIT_STATE_LOOKUP,
+                tenant,
+                request_digest[:16],
+            )
+            log.info(
+                "hit_fsm state=%s plane=python tenant=%s digest=%s",
+                receipts.HIT_STATE_AWAIT_ADMIT,
+                tenant,
+                request_digest[:16],
+            )
             payload = json.loads(cached)
             usage = payload.get("usage") or {}
             total = int(usage.get("total_tokens") or 0)

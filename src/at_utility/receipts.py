@@ -92,6 +92,11 @@ HIT_STATE_PROXY = "PROXY"
 HIT_STATE_HEADER = "X-Ohm-Hit-State"
 
 
+def _rl_epoch_utc() -> str:
+    """Cheap rate-limit epoch bound into receipts (UTC calendar day)."""
+    return time.strftime("%Y%m%d", time.gmtime())
+
+
 def mint_receipt(
     *,
     tenant: str,
@@ -106,6 +111,7 @@ def mint_receipt(
     tree_name: str = "",
     admit: str = "allow",
     meter_event_id: str = "",
+    rl_epoch: str = "",
     created: Optional[int] = None,
     key: Optional[Ed25519PrivateKey] = None,
 ) -> Optional[str]:
@@ -126,6 +132,7 @@ def mint_receipt(
         "request_sha256": request_sha256,
         "tenant_sha256": _tenant_fingerprint(tenant),
         "admit": admit or "allow",
+        "rl_epoch": (rl_epoch or "").strip() or _rl_epoch_utc(),
     }
     if meter_event_id:
         payload["meter_event_id"] = meter_event_id

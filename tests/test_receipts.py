@@ -66,6 +66,7 @@ def test_mint_verify_roundtrip_and_tamper(monkeypatch):
     assert payload["request_sha256"] == "cd" * 32
     assert payload["plane"] == "python"
     assert payload["admit"] == "allow"
+    assert payload["rl_epoch"] and len(payload["rl_epoch"]) == 8
     # tenant is fingerprinted, never raw
     assert "tenant_x" not in json.dumps(payload)
 
@@ -187,6 +188,7 @@ async def test_edge_hit_response_includes_receipt(monkeypatch):
         assert payload["request_sha256"] == "ef" * 32
         assert payload["admit"] == "allow"
         assert payload["meter_event_id"].startswith("cache_hit:")
+        assert payload["rl_epoch"] and len(payload["rl_epoch"]) == 8
         assert body["hit_state"] == "RELEASE"
         assert body["meter_event_id"] == payload["meter_event_id"]
 
@@ -207,6 +209,7 @@ async def test_python_hit_exposes_hit_state_and_receipt_bind(monkeypatch):
         payload = receipts.verify_receipt(jws, receipts.receipt_public_jwk())
         assert payload["admit"] == "allow"
         assert payload["meter_event_id"].startswith("cache_hit:")
+        assert payload["rl_epoch"] and len(payload["rl_epoch"]) == 8
         assert payload["plane"] == "python"
 
     transport = ASGITransport(app=app)

@@ -121,14 +121,11 @@ Bring forward from the last session (IP assessment → Phase A pack → site UI 
 
 | # | Loop | Status | Next action |
 |---|------|--------|-------------|
-| 1 | **Phase B — attorney Traffic Light** | Pack ready (`docs/ip/BRIEF.md`); emails **not** sent by agent | You send `05-EMAIL-TEMPLATE.md` + `BRIEF.md` to Kilburn & Strode, Elkington and Fife, Venner Shipley (£1.5–2.5k + VAT cap) |
+| 1 | **Phase B — attorney Traffic Light** | Briefs **sent**; awaiting Red/Amber/Green per A/B/C | After opinions → File vs Do-not-file binary |
 | 2 | **Phase C-1 / C-2** | Blocked on #1 | File narrow claims **or** defensive-publication git tag + PDF snapshot |
-| 3 | **Disclosure freeze** | In force until #1 returns | No public RFCs on admit-token / CAS redesign |
-| 4 | **Defensive publication snapshot** | Explicitly “Not done in Phase A” | Do after Do-not-file **or** after filing priority date |
-| 5 | **Meter `event_id` / SIEGE overstatement** | Identified in research; **not fixed in code** | Tranche 1 (H1) |
-| 6 | **Shared-CAS verification (B3)** | Called out; not audited in code this session | Tranche 1 doc + code check |
-| 7 | **Amplify deploy confirmation** | Pushed `e7f0e5b` to `master`; deploy success **not verified** here | Check Amplify console / www.withohm.dev for enablement grid + rail shape |
-| 8 | **Git workspace state** | Cloud agent now on `HEAD (no branch)` in `/workspace` | Confirm local vs cloud sync; avoid divergent edits |
+| 3 | **Disclosure freeze** | In force until #1 returns | Keep Tranche 2 admit-token / shared-CAS designs private until binary |
+| 4 | **Defensive publication snapshot** | Explicitly “Not done” | Do after Do-not-file **or** after filing priority date |
+| 5 | **Amplify deploy confirmation** | Pushed `e7f0e5b` to `master`; deploy success **not verified** here | Check Amplify console / www.withohm.dev for enablement grid + rail shape (+ later Tranche 1 merge) |
 
 ### Closed or parked
 
@@ -139,18 +136,21 @@ Bring forward from the last session (IP assessment → Phase A pack → site UI 
 | Single-file BRIEF | Done |
 | Enablement UI + payload/rail polish | Committed and pushed |
 | Contacting attorneys on your behalf | Out of scope unless you ask |
+| Tranche 1 dual-use eng (H1/C2/C3, A2/A5, B3/B4, SIEGE) | On `cursor/dual-use-gap-close-8d0e` |
+| Meter `event_id` / SIEGE overstatement | Fixed: digest-scoped ids + honest SIEGE wording |
+| Shared-CAS honesty (B3) + bleed tests (B4) | CACHE_TREES Storage honesty + pytest invariants |
 
 ### Soft risks to remember
 
 - Public repo + site already **defensive prior art** (and novelty clock against yourselves).
-- Marketing “zero double charge” ≠ meter idempotency until H1 lands.
+- Digest-scoped meter ids make **retry sync** idempotent per plane — not “never bill two distinct HIT crossings.”
 - Plan-mode IP assessment lived in `.cursor/plans/`; durable artifacts are under `docs/ip/`.
 
 ---
 
 ## 4. Recommended immediate order
 
-1. **You:** send BRIEF to the three firms (Phase B).  
-2. **Eng (parallel, dual-use):** start **Tranche 1** — does not wait on counsel; improves product either way.  
+1. **Counsel:** return Traffic Lights (Phase B in flight).  
+2. **Eng:** ship **Tranche 1** on `cursor/dual-use-gap-close-8d0e` (dual-use; valuable File or not).  
 3. **You:** confirm Amplify/`www` shows enablement grid + new rails.  
 4. After Traffic Lights: either file (protect unpublished Tranche 2 pieces first) or tag defensive publication and continue Tranche 2 in the open.

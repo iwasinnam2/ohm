@@ -726,6 +726,7 @@ async fn handle_inner(
             // served after /internal/edge-hit accepts it. Without the shared
             // secret, or when the gate is unreachable, fall through to a full
             // proxy so the control plane bills the hit itself.
+            info!("cache HIT {key} hit_state=LOOKUP");
             if !cfg.edge_secret.is_empty() {
                 let total_tokens = serde_json::from_str::<serde_json::Value>(&cached)
                     .ok()
@@ -741,6 +742,7 @@ async fn handle_inner(
                     .unwrap_or("")
                     .to_string();
                 let request_sha256 = key.rsplit(':').next().unwrap_or("").to_string();
+                info!("cache HIT {key} hit_state=AWAIT_ADMIT");
                 match edge_hit_gate(&app, &token, total_tokens, &model, &request_sha256).await {
                     Some((status, gate_body)) if status.is_success() => {
                         info!("cache HIT {key} (metered) hit_state=RELEASE");
