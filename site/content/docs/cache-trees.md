@@ -26,6 +26,10 @@ curl -s https://api.withohm.dev/v1/chat/completions \
 Invalid names return `400`. Frozen trees reject new writes (`409`) but can
 still serve HITs.
 
+COW reads may serve a parent blob without copying into the child tip. That is
+not yet a single shared content-addressed store with many refs — Promote still
+copies child-local digests. See repository `docs/CACHE_TREES.md` (Storage honesty).
+
 ## Fork, promote, freeze
 
 ```bash

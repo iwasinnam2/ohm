@@ -36,6 +36,24 @@ class UsageEvent:
     billed_usd: float = 0.0
     stripe_synced: bool = False
     billable_units: int = 0
+    event_id: str = ""
+
+
+def stable_meter_event_id(
+    *,
+    kind: str,
+    request_digest: str,
+    plane: str = "",
+) -> str:
+    """Deterministic Stripe meter identifier fragment for a request digest.
+
+    Callers pass this as ``event_id`` so retries of the same HIT/MISS sync land
+    on Stripe's 24h dedup window. Distinct planes (python vs rust-edge) keep
+    separate keys so dual-plane serving cannot collide.
+    """
+    digest = (request_digest or "").strip() or "unknown"
+    plane_part = f":{plane}" if (plane or "").strip() else ""
+    return f"{kind}:{digest}{plane_part}"
 
 
 def _day_stamp() -> str:
@@ -195,13 +213,14 @@ class Meter:
             await self._store.incr_by_float(
                 GLOBAL_AGG_HIT_TOKENS_KEY, float(total_tokens)
             )
+        resolved_id = (event_id or "").strip() or uuid.uuid4().hex
         synced = False
         if units > 0:
             synced = await self._sync_stripe(
                 kind=kind,
                 value=units,
                 stripe_customer_id=stripe_customer_id,
-                identifier=f"{tenant}:{kind}:{event_id or uuid.uuid4().hex}",
+                identifier=f"{tenant}:{kind}:{resolved_id}",
             )
             if stripe_customer_id:
                 await self._mark_stripe_sync(tenant, synced)
@@ -212,6 +231,7 @@ class Meter:
             billed_usd=billed,
             stripe_synced=synced,
             billable_units=units,
+            event_id=resolved_id,
         )
 
     async def record_fetch(
@@ -224,11 +244,12 @@ class Meter:
         billed = count * self._settings.at_price_per_fetch
         await self._bump(tenant, "fetches", float(count))
         await self._bump(tenant, "fetch_usd", billed)
+        resolved_id = (event_id or "").strip() or uuid.uuid4().hex
         synced = await self._sync_stripe(
             kind="fetch",
             value=count,
             stripe_customer_id=stripe_customer_id,
-            identifier=f"{tenant}:fetch:{event_id or uuid.uuid4().hex}",
+            identifier=f"{tenant}:fetch:{resolved_id}",
         )
         if stripe_customer_id:
             await self._mark_stripe_sync(tenant, synced)
@@ -239,6 +260,7 @@ class Meter:
             billed_usd=billed,
             stripe_synced=synced,
             billable_units=count,
+            event_id=resolved_id,
         )
 
     async def mark_receipt_minted(self) -> None:

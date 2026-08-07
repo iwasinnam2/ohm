@@ -16,7 +16,9 @@ Receipt shape (JWS payload):
   v, kind ("cache_hit"), iat, region, plane ("python" | "rust-edge"),
   model, tokens_replayed, pipe_usd, request_sha256 (exact-replay identity),
   tenant_sha256 (truncated hash — lets the tenant self-verify without the
-  receipt identifying them to third parties).
+  receipt identifying them to third parties),
+  admit ("allow" on served HITs), meter_event_id (Stripe/meter identifier
+  fragment bound to this release).
 """
 
 from __future__ import annotations
@@ -81,6 +83,20 @@ def _tenant_fingerprint(tenant: str) -> str:
     ]
 
 
+# Dual-plane HIT release states (egress control — not billing labels).
+HIT_STATE_LOOKUP = "LOOKUP"
+HIT_STATE_AWAIT_ADMIT = "AWAIT_ADMIT"
+HIT_STATE_RELEASE = "RELEASE"
+HIT_STATE_DENY = "DENY"
+HIT_STATE_PROXY = "PROXY"
+HIT_STATE_HEADER = "X-Ohm-Hit-State"
+
+
+def _rl_epoch_utc() -> str:
+    """Cheap rate-limit epoch bound into receipts (UTC calendar day)."""
+    return time.strftime("%Y%m%d", time.gmtime())
+
+
 def mint_receipt(
     *,
     tenant: str,
@@ -93,6 +109,9 @@ def mint_receipt(
     kind: str = "cache_hit",
     tree_id: str = "",
     tree_name: str = "",
+    admit: str = "allow",
+    meter_event_id: str = "",
+    rl_epoch: str = "",
     created: Optional[int] = None,
     key: Optional[Ed25519PrivateKey] = None,
 ) -> Optional[str]:
@@ -112,7 +131,11 @@ def mint_receipt(
         "pipe_usd": round(float(pipe_usd), 6),
         "request_sha256": request_sha256,
         "tenant_sha256": _tenant_fingerprint(tenant),
+        "admit": admit or "allow",
+        "rl_epoch": (rl_epoch or "").strip() or _rl_epoch_utc(),
     }
+    if meter_event_id:
+        payload["meter_event_id"] = meter_event_id
     if tree_id:
         payload["tree_id"] = tree_id
         payload["tree_name"] = tree_name or tree_id
