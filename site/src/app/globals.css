@@ -3751,14 +3751,16 @@ body:has(.doc-layout) .site-footer {
   stroke-width: 0.35;
 }
 
-/* Thin purple neon rails — locked to the content column (docs index edge) */
+/* Thin purple neon rails — locked outside the content column, 1/8 wider from center */
 .pipe-border {
   --pipe-border-column: min(var(--content-width), calc(100% - var(--gutter)));
+  /* Distance from center to rail was ~column/2 + 28px; push to 9/8 of that. */
+  --pipe-border-radius: calc((var(--pipe-border-column) / 2 + 28px) * 1.125);
   position: absolute;
   top: 0;
   bottom: 0;
-  left: max(0px, calc((100% - var(--pipe-border-column)) / 2 - 28px));
-  right: max(0px, calc((100% - var(--pipe-border-column)) / 2 - 28px));
+  left: max(0px, calc(50% - var(--pipe-border-radius)));
+  right: max(0px, calc(50% - var(--pipe-border-radius)));
   width: auto;
   height: auto;
   overflow: visible;
