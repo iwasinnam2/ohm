@@ -22,7 +22,7 @@ Related: [GAP_SURFACES.md](GAP_SURFACES.md) · [SHOW_HN_RUNBOOK.md](SHOW_HN_RUNB
 - Incognito `/demo` works with no key paste (`OHM_DEMO_API_KEY` set)
 - ≥20 demo miss→HIT sessions on proof tenant
 - ≥5 public `/r/…` receipts
-- Show HN fired once with live coverage
+- Show HN — **blocked** (HN account banned); do not attempt
 - cursor.directory submitted
 - ≥10 partners `touched`, ≥2 `keyed`
 - ≥1 bounty claim or steal-kit PR opened
@@ -33,11 +33,14 @@ Related: [GAP_SURFACES.md](GAP_SURFACES.md) · [SHOW_HN_RUNBOOK.md](SHOW_HN_RUNB
 
 Agent does not post as you.
 
-### B0 — Before Show HN (day of or day before)
+### B0 — Before the spike
 
 1. Mint a **dedicated** public-proof tenant/key (Intermediate or design_partner).
    Do not reuse a personal paying key.
-2. Set Amplify env `OHM_DEMO_API_KEY` to that key; wait for RELEASE green.
+2. Set Amplify env `OHM_DEMO_API_KEY` on branch **master** (Hosting →
+   Environment variables — not only “build” if the UI splits them). Save, then
+   **Redeploy this version** / `start-job RELEASE`. Confirm:
+   `curl -s https://www.withohm.dev/api/demo-session` → `"available": true`.
 3. Incognito: open https://www.withohm.dev/demo → **Prove miss → HIT** → mint
    receipt → open `/r/…`.
 4. API smoke:
@@ -46,20 +49,19 @@ Agent does not post as you.
 .\scripts\external_smoke.ps1 -BaseUrl https://api.withohm.dev -ApiKey $env:OHM_API_KEY
 ```
 
-5. Paste Show HN first comment ([SHOW_HN_RUNBOOK.md](SHOW_HN_RUNBOOK.md)) + keep
-   [SIEGE_DEFENSE.md](SIEGE_DEFENSE.md) open.
+5. Keep [SIEGE_DEFENSE.md](SIEGE_DEFENSE.md) open for thread replies.
+   **Show HN is out** — HN account banned; do not use [SHOW_HN_RUNBOOK.md](SHOW_HN_RUNBOOK.md).
 
-### B1 — Distribution spike (Tue–Thu 13:00–15:00 UK for HN)
+### B1 — Distribution spike (no HN)
 
-1. **Show HN** — URL = GitHub repo; first comment within 60s leads with
-   `https://www.withohm.dev/demo`; guard ≥2h replies.
-2. **cursor.directory** — chaos-governor packet
+1. **cursor.directory** — chaos-governor packet
    ([CURSOR_DIRECTORY.md](../listings/CURSOR_DIRECTORY.md)); logo
    `ohm-icon-360.png`; cite T-E60068.
-3. **Cursor Forum** — [GAP_SURFACES.md](GAP_SURFACES.md) §1; reply same day.
-4. **r/cursor** — §2 (Pro+ burn + `/demo`).
-5. **X thread** — §3; tag `@cursor_ai` only where factual.
-6. **Steal-kit** — open 1–2 PRs ([STEAL_KIT.md](STEAL_KIT.md)).
+2. **Cursor Forum** — [GAP_SURFACES.md](GAP_SURFACES.md) §1; reply same day.
+3. **r/cursor** — §2 (Pro+ burn + `/demo`).
+4. **X thread** — §3; tag `@cursor_ai` only where factual.
+5. **Steal-kit** — open 1–2 PRs ([STEAL_KIT.md](STEAL_KIT.md)).
+6. Optional: r/SideProject (promo-tolerant) with waste-check link — distinct copy.
 
 ### B2 — Partners (ongoing, 5/day)
 
