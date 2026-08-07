@@ -41,7 +41,7 @@ export default function DemoPage() {
       <p className="receipt__foot">
         <Link href="/i">Attach in Cursor</Link>
         {" · "}
-        <Link href="/bounty">$35 artifact bounty</Link>
+        <Link href="/bounty">$100 artifact bounty</Link>
         {" · "}
         <Link href="/billing/intermediate">$0 seat</Link>
         {" · "}

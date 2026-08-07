@@ -68,7 +68,9 @@ Agent does not post as you.
 2. DM offer: run `/demo` + design-partner key — not logo/PR.
 3. Same-day mint ([PARTNER_ONBOARD.md](PARTNER_ONBOARD.md)); day 5–7 quote /
    receipt share for bounty.
-4. Pay bounty claims at `partners@withohm.dev` when receipts are public.
+4. Pay bounty claims at `partners@withohm.dev` when the email includes
+   **receipt URL + social post URL + seat email** per [/bounty](https://www.withohm.dev/bounty)
+   ($100 credit). Receipt alone does not qualify.
 
 ### B3 — Do not
 

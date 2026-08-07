@@ -41,6 +41,7 @@ savings receipt and returns badge markdown like:
 ```
 
 Paste it here (or in any repo on the pipe). Sharing a receipt qualifies for
-the [$35 artifact bounty](https://www.withohm.dev/bounty).
+the [$100 artifact bounty](https://www.withohm.dev/bounty) (post your receipt
+publicly, then email the social post URL).
 
 Powered by [withOhm](https://www.withohm.dev) — pipe rent, not token wholesale. BYOK.

@@ -127,7 +127,8 @@ withohm.dev/docs/enterprise-chaos
 6/ MCP for @cursor_ai / Claude: pip install withohm-mcp
 https://www.withohm.dev/i — works today without marketplace.
 
-7/ $0 to connect. Share a public receipt → $35 bounty: withohm.dev/bounty
+7/ $0 to connect. Post your savings receipt publicly → $100 bounty:
+withohm.dev/bounty (email the social post URL, not just the receipt)
 Repo: https://github.com/iwasinnam2/ohm
 ```
 

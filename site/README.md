@@ -32,7 +32,7 @@ Doctrine checklist when changing UI: one focal point (squint), three type levels
 | `/i` | Meme install URL (deeplink + share line) |
 | `/fetch` | Public fetch toy (`fetch.withohm.dev` rewrite) |
 | `/templates` | cursor-agent-with-web steal page |
-| `/bounty` | $35 usage-credit artifact bounty |
+| `/bounty` | $100 usage-credit artifact bounty (social post URL required) |
 | `/docs` | Doc index |
 | `/docs/[slug]` | Curated markdown from `content/docs/` |
 | `/subscriptions` | Intermediate · Enterprise |
