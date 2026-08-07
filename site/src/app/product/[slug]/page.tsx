@@ -4,6 +4,7 @@ import { CacheTreesFlowchart } from "@/components/CacheTreesFlowchart";
 import { ComposeCiFlowchart } from "@/components/ComposeCiFlowchart";
 import { CrossingFlowchart } from "@/components/CrossingFlowchart";
 import { DualCrossingAid } from "@/components/DualCrossingAid";
+import { EnablementFeatures } from "@/components/EnablementFeatures";
 import {
   MarketingArticle,
   type ArticleEmbed,
@@ -21,6 +22,7 @@ const DUAL_MARK = "<!-- ohm:dual-crossing -->";
 const CROSSING_MARK = "<!-- ohm:crossing -->";
 const NOISY_MARK = "<!-- ohm:noisy-neighbor -->";
 const COMPOSE_MARK = "<!-- ohm:compose-ci -->";
+const ENABLEMENT_MARK = "<!-- ohm:enablement -->";
 
 type Props = {
   params: Promise<{ slug: string }>;
@@ -57,6 +59,12 @@ function embedsFor(slug: string, source: string): ArticleEmbed[] {
   }
   if (source.includes(COMPOSE_MARK)) {
     embeds.push({ mark: COMPOSE_MARK, node: <ComposeCiFlowchart /> });
+  }
+  if (source.includes(ENABLEMENT_MARK)) {
+    embeds.push({
+      mark: ENABLEMENT_MARK,
+      node: <EnablementFeatures showHeading={false} />,
+    });
   }
 
   return embeds;

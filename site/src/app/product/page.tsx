@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { DualCrossingAid } from "@/components/DualCrossingAid";
+import { EnablementFeatures } from "@/components/EnablementFeatures";
 import { PRODUCT_INDEX } from "@/lib/product";
 
 export const metadata: Metadata = {
@@ -37,6 +38,8 @@ export default function ProductIndexPage() {
       </header>
 
       <DualCrossingAid flashy />
+
+      <EnablementFeatures />
 
       <section className="product-pillars" aria-labelledby="product-pillars-label">
         <h2 id="product-pillars-label" className="visually-hidden">
