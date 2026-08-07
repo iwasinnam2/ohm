@@ -122,7 +122,7 @@ export default async function ReceiptPage({ params }: Props) {
           Share on LinkedIn
         </a>
         <Link className="link-quiet" href="/bounty">
-          Sharing pays — $35 bounty
+          Sharing pays — $100 bounty
         </Link>
       </div>
 
@@ -137,9 +137,11 @@ export default async function ReceiptPage({ params }: Props) {
 
       <p className="receipt__foot">
         Want your own receipt? Get a $0 seat at{" "}
-        <Link href="/billing/intermediate">Intermediate checkout</Link>, work
-        through the pipe, then ask your agent for <code>ohm_receipt</code> —
-        or <Link href="/docs/pricing">see the metered rates</Link> first.
+        <Link href="/billing/intermediate">Intermediate checkout</Link>, run the{" "}
+        <Link href="/demo">waste check</Link>, mint under your name, post it
+        publicly (e.g. &quot;My monthly savings simply from choosing
+        withOhm&quot;), then email the <em>social post URL</em> for the{" "}
+        <Link href="/bounty">$100 bounty</Link>.
       </p>
     </section>
   );

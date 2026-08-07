@@ -8,7 +8,7 @@ AI traffic control plane: OpenAI-compatible ingress, Redis prompt replay, compli
 > **Exact-replay hits that cost zero upstream tokens. Cross-provider consistency. Locality — Redis edge reads. Replay and audit value.**
 > Point any OpenAI-compatible client (or the Ohm Agent Shell) at one base URL. Keep your keys or use a managed pool. Rent the plumbing; govern the chaos.
 
-**Site:** https://www.withohm.dev · **API:** https://api.withohm.dev/v1 · **Workbench:** `/workbench` · **Architecture:** [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) · **Vision:** [`docs/VISION.md`](docs/VISION.md) · **Enterprise:** [`docs/ENTERPRISE_CHAOS.md`](docs/ENTERPRISE_CHAOS.md) · **Gem:** [`docs/GEM_POSITION.md`](docs/GEM_POSITION.md)
+**Site:** https://www.withohm.dev · **API:** https://api.withohm.dev/v1 · **Workbench:** `/workbench` · **Architecture:** [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) · **Vision:** [`docs/VISION.md`](docs/VISION.md) · **Enterprise:** [`docs/ENTERPRISE_CHAOS.md`](docs/ENTERPRISE_CHAOS.md) · **Gem:** [`docs/GEM_POSITION.md`](docs/GEM_POSITION.md) · **Care audit:** [`docs/CARE_AUDIT.md`](docs/CARE_AUDIT.md)
 
 **License:** MIT (see [`LICENSE`](LICENSE) + [`NOTICE`](NOTICE)). Source is open; the hosted withOhm pipe remains a commercial metered service. Package/key names may still say `at-utility` / `sk-at-*` (legacy AT prefix); the product is **withOhm**.
 
@@ -53,13 +53,15 @@ completion = client.chat.completions.create(
 ## Quick start (Docker Compose)
 
 ```powershell
-cd C:\Users\markk\OneDrive\Documents\at-utility
+cd <repo-root>   # e.g. clone of iwasinnam2/ohm
 copy .env.example .env
 # Edit .env: set OPENAI_API_KEY for local env-fallback; keep OPENAI_BASE_URL=https://api.openai.com/v1
 docker compose --profile rust up --build -d
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts\release_smoke.ps1
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts\railgun_smoke.ps1
 ```
+
+Cloud / agent native run (no Docker): see [`AGENTS.md`](AGENTS.md).
 
 Release smoke asserts health, mock miss/hit, OpenAI miss/hit (when a key is present), Rust plane header, and usage counters. Railgun smoke asserts BYOK headers, `seat_plus_meters`, and checkout endpoint shape.
 

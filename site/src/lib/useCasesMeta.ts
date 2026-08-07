@@ -25,7 +25,7 @@ export const USE_CASE_INDEX: UseCaseMeta[] = [
     slug: "ci-preview",
     title: "CI preview inventory",
     description:
-      "Preview cache trees per PR, promote hits to main, compose with Neon branches in CI.",
+      "Preview cache trees per PR, promote hits to main — isolate inventory without a second gateway.",
     eyebrow: "CI",
   },
   {

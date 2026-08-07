@@ -19,7 +19,8 @@ export function ReturningSeatNote() {
       This browser already has a seat. Open your{" "}
       <Link href="/profile">profile</Link> or{" "}
       <Link href="/keys">API keys</Link> — you do not need to check out again
-      to mint another key.
+      to mint another key. On another device?{" "}
+      <Link href="/login">Log in</Link> with your key.
     </p>
   );
 }

@@ -13,13 +13,13 @@ type Props = {
 };
 
 /**
- * Primary marketing CTA — $0 seat checkout until this browser has a key,
- * then Profile.
+ * Primary marketing CTA — sign-up gate until this browser has a key,
+ * then Profile. `/signup` opens Intermediate checkout; `/login` restores a key.
  */
 export function StartOrProfileCta({
   className = "btn btn--primary",
-  guestLabel = "Start now — $0 seat",
-  guestHref = "/billing/intermediate",
+  guestLabel = "Create Account",
+  guestHref = "/signup",
   seatedLabel = "Profile",
   seatedHref = "/profile",
 }: Props) {

@@ -1,6 +1,9 @@
 # Command catalog
 
-The complete withOhm surface in any connected host: seven MCP tools, each mirrored by a slash skill in Cursor (`/ohm-chat`, `/ohm-fetch-web`, and so on). Connect a host first — see [Integrations](/docs/integrations) or [/connections](/connections).
+The complete withOhm surface in any connected host: eight MCP tools, each
+mirrored by a slash skill in Cursor where applicable (`/ohm-chat`,
+`/ohm-fetch-web`, `/ohm-receipt`, and so on). Connect a host first — see
+[Integrations](/docs/integrations) or [/connections](/connections).
 
 | Tool | When to reach for it |
 |------|----------------------|
@@ -8,6 +11,7 @@ The complete withOhm surface in any connected host: seven MCP tools, each mirror
 | `ohm_fetch_web` | Pull public web pages into context, compliantly |
 | `ohm_usage` | Check your meters: cache hits, fetches, pipe rent |
 | `ohm_savings` | See what the cache has saved you |
+| `ohm_receipt` | Mint a public savings receipt (`/r/…`) |
 | `ohm_models` | List the model ids the pipe routes to |
 | `ohm_providers` | Check upstream provider and failover health |
 | `ohm_policy` | See which web-fetch purposes are allowed |
@@ -107,4 +111,4 @@ inventory with `GET /v1/ledger/hit-ratio` (tenant) or
 | `OHM_BASE_URL` | Defaults to `https://api.withohm.dev/v1` |
 | `OHM_UPSTREAM_KEY` | Optional BYOK provider key for cache misses |
 
-Next: [optimized usage](/docs/optimized-usage) — the workflow that gets the most out of these seven.
+Next: [optimized usage](/docs/optimized-usage) — the workflow that gets the most out of these eight.

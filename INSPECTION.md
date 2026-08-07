@@ -22,9 +22,15 @@ round.**
 | Cache key v2: transport noise normalized (CRLF, outer whitespace), Python/Rust byte parity | `test_units.py::test_cache_key_v2_normalizes_transport_noise`, `::test_cache_key_v2_parity`; gateway-rs `cache_key_v2_parity_with_python` |
 | Mid-stream failover | **Not claimed** — docs/STREAMING.md says unsupported |
 | Compliant web browsing (purpose gates, robots fail-closed, PII redaction) | `test_compliance.py` (18 tests); golden step "compliant web fetch" |
+| Copyright excerpt caps + client cannot raise worker ceiling | `test_compliance.py::test_clamp_excerpt_chars_never_raises_ceiling`, `::test_excerpt_cap_truncates` |
+| Compliance policy exposes copyright posture object | `test_gateway.py::test_compliance_policy_shape` |
 | SSRF: DNS re-check, private-IP deny, connect-time IP pin | `test_compliance.py::test_url_gate_dns_literal_skip_ok`, `::test_url_gate_blocks_credentials_and_login`; pin: `workers/ingest_worker.py::_pinned_get` |
 | Cache never exported for training | `test_compliance.py::test_cache_training_hard_deny` |
 | `cache_control: no_store` skips the cache | `test_gateway.py::test_no_store_skips_cache_write` |
+| Edge skips SET on `no_store` / `x-at-cache: BYPASS` | `gateway-rs` `should_skip_edge_set` unit test |
+| MCP ships exactly eight tools (incl. `ohm_receipt`) | `test_mcp_catalogue.py` |
+| Site rate-card mirror == `pricing/rate_card.v2.json` | `test_rate_card.py::test_site_rate_card_copy_matches_canonical` |
+| Prod `/ready` fails when Python fell back to MemoryStore | `redis.backend=memory` + non-dev region → 503 (`main.py` ready) |
 | Rate limiting (RPS + burst) | `test_gateway.py::test_rate_limit_and_usage` |
 | BYOK — metered tenants cannot burn platform env keys | `test_money_path.py::test_payg_cannot_burn_env_upstream_keys` |
 | Terms/DPA ack required before tenant issue / web fetch | `test_gateway.py::test_issue_tenant_requires_terms_ack`, `test_compliance.py::test_terms_acks_required` |

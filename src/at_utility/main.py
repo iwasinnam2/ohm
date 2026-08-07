@@ -623,9 +623,15 @@ async def http_message_signatures_directory(request: Request) -> Response:
 
 @app.get("/ready")
 async def ready() -> JSONResponse:
-    """Readiness: Redis ping. Prod omits exception strings and internal host hints."""
+    """Readiness: Redis ping. Prod omits exception strings and internal host hints.
+
+    In-process MemoryStore (boot fallback when Redis was down) reports
+    redis.ok=false in non-dev regions so orchestrators do not route traffic
+    to a split-brain node.
+    """
     redis_ok = False
     redis_error: str | None = None
+    backend = getattr(state.store, "backend", "unknown")
     try:
         pong = await state.store.ping()
         redis_ok = bool(pong)
@@ -633,12 +639,15 @@ async def ready() -> JSONResponse:
         redis_error = str(exc)
     region = (state.settings.at_region or "").lower()
     is_prod = region not in ("local", "dev", "test", "")
+    if backend == "memory" and is_prod:
+        redis_ok = False
+        redis_error = redis_error or "memory_store_fallback"
     body: dict[str, Any] = {
         "ok": redis_ok,
         "service": "ohm",
         "plane": "python",
         "region": state.settings.at_region,
-        "redis": {"ok": redis_ok},
+        "redis": {"ok": redis_ok, "backend": backend},
     }
     if not is_prod:
         body["redis"]["error"] = redis_error
@@ -1194,6 +1203,19 @@ async def compliance_policy(
             "eu_gdpr_readiness",
             "consumer_billing_hygiene",
         ],
+        "copyright": {
+            "version": "copyright-2026-08-07",
+            "policy_url": "https://www.withohm.dev/docs/copyright",
+            "dmca_contact": "partners@withohm.dev",
+            "excerpt_caps": {
+                "per_source": s.at_compliance_max_chars_per_source,
+                "total": s.at_compliance_max_context_chars,
+                "code_strip": True,
+                "client_cannot_raise_ceiling": True,
+            },
+            "output_reproduction": "prompt_guidance_only",
+            "claims": "controls_not_certification",
+        },
         "web_bot_auth": {
             "enabled": web_bot_auth.signing_enabled(),
             "protocol": "rfc9421-http-message-signatures",
@@ -1206,6 +1228,7 @@ async def compliance_policy(
             "No lead harvesting, person dossiers, biometrics, or PECR cold outreach lists",
             "Short excerpts only — copyright / database-right minimisation",
             "Cache is identical-request replay only — never a training corpus",
+            "Copyright policy: https://www.withohm.dev/docs/copyright — controls, not certification",
             "UK: public identifiable data remains personal data; outputs are minimised",
             "US: CFAA/CCPA — public retrieval ≠ authorization to bypass gates",
             "robots.txt respected by default; cite sources; no private-fact invention",
@@ -1213,6 +1236,7 @@ async def compliance_policy(
             "HTTP 402 pay-per-crawl and 401/403 revocations are honored — no auto-pay, no evasion",
         ],
         "docs": "docs/LEGAL.md",
+        "copyright_docs": "docs/legal/COPYRIGHT.md",
         "tenant_terms_version": getattr(tenant, "terms_version", "") or None,
         "tenant_dpa_version": getattr(tenant, "dpa_version", "") or None,
     }
@@ -1248,6 +1272,8 @@ class PublicCheckoutBody(BaseModel):
     commit: str = ""
     label: str = ""
     email: str = ""
+    # Account password (chosen at signup). Stored hashed; enables email login.
+    password: str = ""
     terms_ack: bool = False
     dpa_ack: bool = False
     success_url: str = ""
@@ -1294,6 +1320,33 @@ async def public_create_checkout(
         raise HTTPException(
             status_code=400, detail="commit must be c29, c99, or c499"
         )
+    email = body.email.strip()
+    if not email or "@" not in email:
+        raise HTTPException(status_code=400, detail="email required")
+    password = body.password or ""
+    if len(password) < 8:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "code": "password_required",
+                "message": "Choose a password of at least 8 characters for account login.",
+            },
+        )
+    from at_utility.passwords import email_index_key, hash_password, normalize_email
+
+    existing = await state.store.get(email_index_key(normalize_email(email)))
+    if existing:
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "email_already_registered",
+                "message": "An account with this email already exists. Log in instead.",
+            },
+        )
+    try:
+        password_hash = hash_password(password)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
     if s.at_compliance_enforce and s.at_compliance_require_terms_ack:
         if not body.terms_ack or not body.dpa_ack:
             raise HTTPException(
@@ -1316,8 +1369,9 @@ async def public_create_checkout(
         {
             "plan": body.plan,
             "commit": commit,
-            "email": body.email.strip(),
-            "label": (body.label or body.email or "self-serve").strip(),
+            "email": email,
+            "password_hash": password_hash,
+            "label": (body.label or email or "self-serve").strip(),
             "terms_version": s.at_compliance_terms_version if body.terms_ack else "",
             "dpa_version": s.at_compliance_dpa_version if body.dpa_ack else "",
         },
@@ -1350,6 +1404,44 @@ async def public_create_checkout(
 
 class ClaimKeyBody(BaseModel):
     session_id: str
+
+
+class AccountLoginBody(BaseModel):
+    email: str
+    password: str
+
+
+@app.post("/v1/auth/login")
+async def account_login(body: AccountLoginBody, request: Request) -> dict[str, Any]:
+    """Email + password → restore Intermediate bearer for the browser seat."""
+    client_ip = (
+        (request.headers.get("x-forwarded-for") or "").split(",")[0].strip()
+        or (request.client.host if request.client else "")
+        or "unknown"
+    )
+    ok = await state.store.eval_token_bucket(
+        f"at:global:rl:login:{client_ip}",
+        0.2,
+        8.0,
+        time.time(),
+    )
+    if not ok:
+        raise HTTPException(status_code=429, detail="Too many login attempts")
+    result = await state.tenants.login_with_password(body.email, body.password)
+    if not result:
+        raise HTTPException(
+            status_code=401,
+            detail={
+                "code": "invalid_credentials",
+                "message": "Email or password is incorrect.",
+            },
+        )
+    raw_key, record = result
+    return {
+        "api_key": raw_key,
+        "tenant": await state.tenants.public_view(record),
+        "note": "Seat restored. Prefer email login over pasting keys.",
+    }
 
 
 @app.post("/v1/billing/claim-key")

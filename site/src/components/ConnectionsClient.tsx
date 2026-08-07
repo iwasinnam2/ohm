@@ -144,7 +144,7 @@ export function ConnectionsClient() {
         <p>
           Interconnectedness and accessibility — withOhm is a cog in your
           workflow machine. Attach once to the tools you already use; every MCP
-          host below gets the same seven tools.
+          host below gets the same eight tools.
         </p>
       </div>
 

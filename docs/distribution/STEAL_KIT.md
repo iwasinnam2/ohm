@@ -85,12 +85,28 @@ receipt qualifies for the artifact bounty below.
 
 ## Artifact bounty
 
-Point builders to https://www.withohm.dev/bounty — $35 metered-usage credit for
-sharing a savings receipt publicly, or for public skills/rules/templates that
-**require** Ohm and carry the savings badge.
+Point builders to https://www.withohm.dev/bounty — **$100** metered-usage
+credit. To claim: mint a receipt, post it publicly with a clear headline
+(e.g. “My monthly savings simply from choosing withOhm”), then email
+**the social post URL** (plus receipt URL + seat email) to
+partners@withohm.dev. Receipt alone does not qualify. Alternate: public
+Ohm-required skill/template with badge that meets the repo bar on `/bounty`.
 
 ## Do not
 
 - Cold DM “quick call?”
 - Mass Reddit spam
 - Claim Cursor first-party placement
+
+## Operator status (Phase 3 honesty)
+
+These PRs are **manual** — agents draft; you open them under your GitHub.
+
+| Target | Status | Notes |
+|--------|--------|-------|
+| punkpeye/awesome-mcp-servers | **Deferred — operator** | Packet above; open when ready |
+| cursor.directory | **Deferred — operator** | [CURSOR_DIRECTORY.md](../listings/CURSOR_DIRECTORY.md) chaos packet |
+| Agent / Cursor rule packs | **Deferred — operator** | Optional second PR |
+| Framework README examples | **Deferred — operator** | Only where “agents can’t browse” is stated |
+
+Do not tick sprint “≥1 steal-kit PR” until a real PR URL exists.

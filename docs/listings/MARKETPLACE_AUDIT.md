@@ -24,7 +24,7 @@ Repo: https://github.com/iwasinnam2/ohm · Plugin: `ohm` / withOhm
 - [x] URL gate: scheme, credentials, private literals, metadata host, **DNS resolve re-check**
 - [x] robots.txt: **fail-closed** on fetch errors; 404 still allows
 - [x] Unauthenticated checkout: IP token-bucket rate limit
-- [x] Rust edge: **fail-closed** when Redis auth lookup errors
+- [x] Rust edge: Redis auth lookup errors → **Unverified** full-proxy to Python (unknown keys still Denied when Redis answers; robots/Slack allowlists remain fail-closed)
 - [x] Prod `/ready`: no Redis exception strings / internal host dump
 - [x] Ingest NetworkPolicy: ClusterIP peers only (`infra/k8s/manifests.yaml`)
 - [x] `request_cap` enforced in `auth_tenant`

@@ -2,7 +2,6 @@ import Link from "next/link";
 import { CacheTreesFlowchart } from "@/components/CacheTreesFlowchart";
 import { DualCrossingAid } from "@/components/DualCrossingAid";
 import { OhmMark } from "@/components/OhmMark";
-import { StartOrProfileCta } from "@/components/StartOrProfileCta";
 
 const PILLARS = [
   {
@@ -32,25 +31,18 @@ const BOARD = [
     go: "Open the shell",
   },
   {
-    href: "/product/pipe",
+    href: "/product",
     eyebrow: "Product",
-    title: "OpenAI-compatible pipe",
-    desc: "Point any SDK at api.withohm.dev/v1. Keep your keys (BYOK).",
-    go: "See the product",
+    title: "What is withOhm",
+    desc: "Ephemeral replay × pipeline governance — one metered HIT/MISS crossing.",
+    go: "Open the product",
   },
   {
-    href: "/use-cases",
-    eyebrow: "Solutions",
-    title: "Use cases",
-    desc: "Agents, CI preview inventory, enterprise chaos, compliant fetch.",
-    go: "Browse solutions",
-  },
-  {
-    href: "/demo",
+    href: "/product/waste-demo",
     eyebrow: "Proof",
-    title: "Hit ratio demo",
-    desc: "Identical prompt twice — MISS then HIT. That’s the inventory we meter.",
-    go: "Run the demo",
+    title: "Waste demo",
+    desc: "Identical agent call twice — MISS then HIT. Second call does not re-buy the model.",
+    go: "Run the waste demo",
   },
   {
     href: "/product/architecture",
@@ -79,19 +71,19 @@ export default function HomePage() {
           </div>
           <p className="hero__strapline">Interconnectedness and accessibility.</p>
           <p className="hero__promise">
-            Model switching, prompt caching, and compliant web browsing — one
-            OpenAI-compatible pipe. Connect Cursor, Claude Code, VS Code, and
-            more; bring your own provider keys (BYOK); pay metered rates on a $0
-            Intermediate seat. Or open the Agent Shell and stay on the pipe.
+            Agent loops re-buy the same tokens. withOhm replays identical calls
+            from cache — one OpenAI-compatible pipe, BYOK, $0 Intermediate seat.
           </p>
         </div>
         <div className="hero__cta cta-row">
-          <StartOrProfileCta className="btn btn--primary" />
-          <Link href="/product" className="link-quiet">
-            Product
+          <Link href="/signup" className="btn btn--primary">
+            Create Account
           </Link>
-          <Link href="/use-cases" className="link-quiet">
-            Solutions
+          <Link href="/login" className="btn btn--login">
+            Login
+          </Link>
+          <Link href="/i" className="link-quiet">
+            Attach in Cursor
           </Link>
           <Link href="/pricing" className="link-quiet">
             Pricing

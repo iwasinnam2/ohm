@@ -41,6 +41,7 @@ BYOK on Intermediate (you keep lab billing) or enterprise managed pool.
 Cursor is an optional client — not required.
 
 Install / connect: https://www.withohm.dev/i
+Waste check (MISS→HIT): https://www.withohm.dev/demo
 Agent Shell: https://www.withohm.dev/workbench
 Org console: https://www.withohm.dev/org
 Enterprise: https://www.withohm.dev/billing/enterprise
@@ -57,6 +58,7 @@ Support: partners@withohm.dev
 |-------|--------|
 | Website | https://www.withohm.dev |
 | Docs | https://www.withohm.dev/docs/enterprise-chaos |
+| Demo | https://www.withohm.dev/demo |
 | Install | https://www.withohm.dev/i |
 | Workbench | https://www.withohm.dev/workbench |
 | Org | https://www.withohm.dev/org |

@@ -1,5 +1,9 @@
 # Amplify Hosting — withOhm marketing site (Next.js App Router SSR)
 # Monorepo: app lives in site/. Platform: WEB_COMPUTE.
+#
+# Branch env vars are NOT auto-injected into Next.js SSR/API routes.
+# Amplify docs require writing selected vars into .env.production at build:
+# https://docs.aws.amazon.com/amplify/latest/userguide/ssr-environment-variables.html
 version: 1
 applications:
   - appRoot: site
@@ -10,6 +14,9 @@ applications:
             - npm ci
         build:
           commands:
+            # Server-only runtime secrets/config for API routes (demo-session, public-fetch, apply).
+            - env | grep -e '^OHM_DEMO_API_KEY=' -e '^OHM_API_URL=' -e '^API_EDGE_LIVE=' -e '^RESEND_API_KEY=' -e '^AT_UTILITY_API_URL=' >> .env.production || true
+            - env | grep -e '^NEXT_PUBLIC_' >> .env.production || true
             - npm run build
       artifacts:
         baseDirectory: .next

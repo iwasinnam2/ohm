@@ -24,11 +24,14 @@ if str(_SRC) not in sys.path:
 
 from at_utility.compliance import (  # noqa: E402
     ComplianceError,
-    apply_excerpt_cap,
     evaluate_ingest_request,
     gate_url,
     redact_personal_data,
     resolve_public_ip,
+)
+from at_utility.compliance.copyright import (  # noqa: E402
+    apply_excerpt_cap,
+    clamp_excerpt_chars,
 )
 from at_utility.compliance.robots import USER_AGENT, allowed_by_robots  # noqa: E402
 from at_utility.compliance.web_bot_auth import (  # noqa: E402
@@ -554,10 +557,9 @@ async def ingest(body: IngestRequest) -> dict[str, Any]:
     )
     redact_pii = REDACT_PII_DEFAULT if body.redact_pii is None else body.redact_pii
     jurisdiction = body.jurisdiction_profile or JURISDICTION
-    max_chars = (
-        MAX_CHARS_PER_SOURCE
-        if body.max_chars_per_source is None
-        else int(body.max_chars_per_source)
+    max_chars = clamp_excerpt_chars(
+        body.max_chars_per_source,
+        ceiling=MAX_CHARS_PER_SOURCE,
     )
 
     decision = evaluate_ingest_request(

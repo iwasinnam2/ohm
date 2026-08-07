@@ -16,12 +16,8 @@ We do **not** sell bigger context windows or wholesale tokens on Intermediate.
 
 ### Promise
 
-Point any OpenAI-compatible client (or the Agent Shell) at one base URL. Keep your keys or use a managed pool. Gain exact-replay, compliant web context, and a clean ledger.
-
-### Fence with Neon
-
-Neon branches **database state**. Labs discount **prefixes**. Ohm branches **exact replay** — and the pipeline bills the crossing. Compose in CI; never cosplay Postgres branching.
+Point any OpenAI-compatible client (or the Agent Shell) at one base URL. Keep your keys or use a managed pool. Gain exact-replay, compliant web context, and a clean ledger. Log in with email and password — Intermediate keys stay bound to your account profile.
 
 ### Non-goals
 
-Listed and proven at [Honesty](/docs/honesty). Start with [Architecture](/product/architecture) or [Quickstart](/docs/quickstart).
+No semantic cache. No Intermediate token wholesale. Replay inventory is never a training corpus. Start with [Architecture](/product/architecture), the [Waste demo](/product/waste-demo), or [Quickstart](/docs/quickstart).

@@ -4,7 +4,11 @@ Enforces the UK/US online-data framework plus adjacent terms/DPA,
 copyright excerpts, and PECR gates — see docs/LEGAL.md.
 """
 
-from at_utility.compliance.copyright import apply_excerpt_cap, cap_total_context
+from at_utility.compliance.copyright import (
+    apply_excerpt_cap,
+    cap_total_context,
+    clamp_excerpt_chars,
+)
 from at_utility.compliance.pii import redact_personal_data
 from at_utility.compliance.policy import (
     ALLOWED_PURPOSES,
@@ -32,6 +36,7 @@ __all__ = [
     "apply_excerpt_cap",
     "assert_cache_training_denied",
     "cap_total_context",
+    "clamp_excerpt_chars",
     "evaluate_ingest_request",
     "gate_url",
     "redact_personal_data",

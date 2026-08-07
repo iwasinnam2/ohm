@@ -32,4 +32,4 @@ Spiky CI suites and agent loops benefit most: MISS once, HIT thereafter, meters 
 
 - [Streaming & failover](/docs/streaming) — full public contract
 - [Architecture](/product/architecture)
-- [Status & limits](/docs/status)
+- [Edge & Redis locality](/docs/edge)

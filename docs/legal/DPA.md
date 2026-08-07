@@ -49,7 +49,12 @@ If Customer Content leaves the UK/EEA, operator must document transfer mechanism
 
 ## Security
 
-Hashed API keys at rest; tenant isolation by cache key prefix; compliance gates on ingest. See [`docs/SECURITY.md`](../SECURITY.md).
+- Hashed Intermediate API keys at rest (`SHA-256` index)
+- Account profiles beside each key hash: email + **password hash** (PBKDF2); API key wrapped with a server-side secret for login restore — passwords are never stored plaintext
+- Tenant isolation by cache key prefix
+- Compliance gates on ingest
+
+See [`docs/SECURITY.md`](../SECURITY.md).
 
 ## Customer instructions
 

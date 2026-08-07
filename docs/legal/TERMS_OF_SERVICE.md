@@ -22,7 +22,7 @@ You must not use the Service to:
 - Access login-gated, credentialed, or private account systems
 - Harvest leads, build person dossiers, or derive biometrics
 - Conduct unsolicited direct marketing (email/SMS/etc.) without a lawful basis (UK PECR and equivalents)
-- Violate copyright, database rights, or site terms through bulk republication of fetched content
+- Violate copyright, database rights, or site terms through bulk republication of fetched content (see [Copyright policy](COPYRIGHT.md))
 - Attempt to extract cache contents for model training or competing model development
 - Violate applicable criminal computer-misuse / unauthorized-access laws
 
@@ -32,7 +32,7 @@ Identical chat requests may be stored in Redis for the configured TTL solely for
 
 ## 5. Web ingestion
 
-Requires `web_purpose`, `web_compliance_ack`, and (when enforced) `terms_ack` / `dpa_ack`. Fetched pages are excerpted and personal identifiers are redacted by default. Public pages only.
+Requires `web_purpose`, `web_compliance_ack`, and (when enforced) `terms_ack` / `dpa_ack`. Fetched pages are excerpted under the [Copyright policy](COPYRIGHT.md) and personal identifiers are redacted by default. Public pages only. Excerpt caps are minimisation controls, not a fair-use opinion.
 
 ## 6. Customer content
 
@@ -67,3 +67,6 @@ Additive under `tos-2026-07-26` (existing acks remain valid):
 - **Savings and receipts.** Dual-ledger and public savings receipts remain
   estimates (`estimate_only`). No guaranteed savings SLA; no semantic cache;
   provider invoice reconcile is not offered.
+- **Copyright.** Posture in [COPYRIGHT.md](COPYRIGHT.md) (`copyright-2026-08-07`).
+  Excerpt caps are technical minimisation, not a fair-use opinion or
+  republication license.
