@@ -16,7 +16,7 @@
 | r/cursor | Open | Post §2 (distinct copy) |
 | X thread | Open | Post §3 |
 | Steal-kit list PRs | Open | Open 1–2 PRs from [STEAL_KIT.md](STEAL_KIT.md) |
-| Show HN | Open | [SHOW_HN_RUNBOOK.md](SHOW_HN_RUNBOOK.md) |
+| Show HN | **Blocked** | Account banned on HN — do not attempt; use Forum / r/cursor / X / directory |
 | Cursor BD | After proof | [CURSOR_BD_BRIEF.md](CURSOR_BD_BRIEF.md) |
 
 Warm reply-fishing under *other people’s* pain posts is always open — use [OUTREACH_TEMPLATES.md](../OUTREACH_TEMPLATES.md) §2–4.
@@ -165,4 +165,4 @@ From [STEAL_KIT.md](STEAL_KIT.md):
 - [ ] X §3 posted
 - [ ] cursor.directory submitted (chaos packet)
 - [ ] ≥1 steal-kit PR opened
-- [ ] Show HN fired per runbook (separate day, 2h live)
+- [ ] Show HN — **skip** (HN account banned); do not burn other accounts to evade

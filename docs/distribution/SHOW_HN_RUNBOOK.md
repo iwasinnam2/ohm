@@ -1,12 +1,15 @@
-# Show HN runbook — one shot, 2h live
+# Show HN runbook — **BLOCKED**
 
-Do not resubmit for ~6 months. Fire only when you can reply live for **≥2 hours**.
+**Do not fire.** The operator account is banned on Hacker News. Do not create
+or use alternate accounts to evade the ban. Distribution runs through Cursor
+Forum, r/cursor, X, cursor.directory, and steal-kit PRs instead — see
+[WASTE_CHECK.md](WASTE_CHECK.md) and [GAP_SURFACES.md](GAP_SURFACES.md).
 
-Copy source: [LAUNCH_POSTS.md](LAUNCH_POSTS.md) §1. Siege answers: [SIEGE_DEFENSE.md](SIEGE_DEFENSE.md).
+Historical one-shot notes kept below for reference only.
 
 ---
 
-## When
+## When (historical — do not use)
 
 - **Tue–Thu, 13:00–15:00 UK** (8–10am ET)
 - Clear calendar for T+0 → T+2h
