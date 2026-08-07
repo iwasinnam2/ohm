@@ -30,7 +30,8 @@ export function AuthGateClient({ initialMode = "login" }: Props) {
       ? (modeParam as AuthMode)
       : initialMode,
   );
-  const [key, setKey] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
@@ -54,30 +55,33 @@ export function AuthGateClient({ initialMode = "login" }: Props) {
     setMode(nextMode);
     const params = new URLSearchParams(searchParams.toString());
     params.set("mode", nextMode);
+    const path = nextMode === "signup" ? "/signup" : "/login";
     startTransition(() => {
-      router.replace(`/login?${params.toString()}`, { scroll: false });
+      router.replace(`${path}?${params.toString()}`, { scroll: false });
     });
   }
 
   async function onLogin(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-    const trimmed = key.trim();
-    if (!trimmed.startsWith("sk-at-")) {
-      setError("Keys start with sk-at-…");
+    const em = email.trim();
+    if (!em || !password) {
+      setError("Email and password are required.");
       return;
     }
     setBusy(true);
     try {
-      const res = await fetch("/api/pipe/v1/usage", {
-        headers: { Authorization: `Bearer ${trimmed}` },
+      const res = await fetch("/api/pipe/v1/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: em, password }),
         cache: "no-store",
       });
       const data = (await res.json().catch(() => ({}))) as {
         detail?: string | { message?: string };
         error?: { message?: string };
-        label?: string;
-        email?: string;
+        api_key?: string;
+        tenant?: { email?: string; label?: string };
       };
       if (!res.ok) {
         const detail =
@@ -85,16 +89,18 @@ export function AuthGateClient({ initialMode = "login" }: Props) {
             ? data.detail
             : data.detail?.message ||
               data.error?.message ||
-              `Could not verify key (HTTP ${res.status})`;
+              `Login failed (HTTP ${res.status})`;
         throw new Error(detail);
       }
-      persistKey(trimmed);
-      if (data.email || data.label) {
-        writeProfile({
-          email: typeof data.email === "string" ? data.email : undefined,
-          label: typeof data.label === "string" ? data.label : undefined,
-        });
+      const key = data.api_key;
+      if (!key?.startsWith("sk-at-")) {
+        throw new Error("Login succeeded but no seat key was returned.");
       }
+      persistKey(key);
+      writeProfile({
+        email: data.tenant?.email || em,
+        label: data.tenant?.label,
+      });
       notifySeatChanged();
       router.replace(next);
     } catch (err) {
@@ -116,19 +122,15 @@ export function AuthGateClient({ initialMode = "login" }: Props) {
     <div className="auth-gate">
       <header className="auth-gate__brand page-head">
         <p className="auth-gate__eyebrow">withOhm</p>
-        <h1>{mode === "login" ? "Log in" : "Sign up"}</h1>
+        <h1>{mode === "login" ? "Log in" : "Create account"}</h1>
         <p>
           {mode === "login"
-            ? "Paste the sk-at-… key from checkout or API keys. This browser keeps the seat — there is no password."
-            : "Open a $0 Intermediate seat. Card on file; meters bill usage. Stripe issues your key once."}
+            ? "Use the email and password you chose at checkout. Your Intermediate seat key is restored in this browser."
+            : "Open a $0 Intermediate seat. Choose a password now — you will log in with email, not by pasting a key."}
         </p>
       </header>
 
-      <div
-        className="auth-gate__tabs"
-        role="tablist"
-        aria-label="Account"
-      >
+      <div className="auth-gate__tabs" role="tablist" aria-label="Account">
         <button
           type="button"
           role="tab"
@@ -157,7 +159,7 @@ export function AuthGateClient({ initialMode = "login" }: Props) {
           }
           onClick={() => switchMode("signup")}
         >
-          Sign up
+          Create account
         </button>
       </div>
 
@@ -170,14 +172,25 @@ export function AuthGateClient({ initialMode = "login" }: Props) {
         >
           <form className="billing-form auth-gate__form" onSubmit={onLogin}>
             <label className="billing-form__field">
-              <span>API key</span>
+              <span>Email</span>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@company.com"
+                autoComplete="email"
+                required
+                disabled={busy}
+              />
+            </label>
+            <label className="billing-form__field">
+              <span>Password</span>
               <input
                 type="password"
-                value={key}
-                onChange={(e) => setKey(e.target.value)}
-                placeholder="sk-at-…"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
                 autoComplete="current-password"
-                spellCheck={false}
                 required
                 disabled={busy}
               />
@@ -191,22 +204,21 @@ export function AuthGateClient({ initialMode = "login" }: Props) {
             <button
               type="submit"
               className="btn btn--primary"
-              disabled={busy || !key.trim()}
+              disabled={busy || !email.trim() || !password}
             >
-              {busy ? "Verifying…" : "Log in"}
+              {busy ? "Signing in…" : "Log in"}
             </button>
             <p className="billing-form__note">
-              Lost the secret? Mint another from{" "}
-              <Link href="/keys">API keys</Link> while any seat key still works,
-              or open a new seat under Sign up. New here?{" "}
+              New here?{" "}
               <button
                 type="button"
                 className="link-quiet"
                 onClick={() => switchMode("signup")}
               >
-                Create an Intermediate seat
+                Create an account
               </button>
-              .
+              . Pipe keys still live under{" "}
+              <Link href="/keys">API keys</Link> after you sign in.
             </p>
           </form>
         </section>
@@ -219,7 +231,7 @@ export function AuthGateClient({ initialMode = "login" }: Props) {
         >
           <BillingCheckoutForm />
           <p className="billing-form__alt">
-            Already have a key?{" "}
+            Already subscribed?{" "}
             <button
               type="button"
               className="link-quiet"

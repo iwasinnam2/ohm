@@ -86,7 +86,7 @@ Access/privacy gates are necessary but not sufficient. These regimes also bind t
 |-----------|-----------------|-------|
 | **Customer terms + DPA** | Controller (tenant) / processor (Ohm); prompts may hit Redis TTL cache | [legal/TERMS_OF_SERVICE.md](legal/TERMS_OF_SERVICE.md), [legal/DPA.md](legal/DPA.md); `terms_ack` / `dpa_ack` |
 | **Upstream provider ToS** | Passthrough inference; no Ohm training on tenant prompts | [legal/UPSTREAM_PROVIDERS.md](legal/UPSTREAM_PROVIDERS.md) |
-| **Copyright / database right** | Short excerpts for retrieval; per-source and total char caps; no bulk republication | `compliance/copyright.py` |
+| **Copyright / database right** | Short excerpts for retrieval; per-source and total char caps; no bulk republication; controls ≠ certification | [legal/COPYRIGHT.md](legal/COPYRIGHT.md); `compliance/copyright.py` |
 | **UK PECR / anti-spam** | Blocked purposes: cold email, SMS blast, direct-marketing lists | `compliance/policy.py` |
 | **EU GDPR readiness** | Same minimisation + DPA roles; document transfers before EU go-live | DPA template + jurisdiction warnings |
 | **Consumer / billing hygiene** | Separate Ohm invoice vs upstream cost; savings are **estimates** | [PRICING.md](PRICING.md), `GET /v1/savings` |
@@ -103,7 +103,8 @@ By setting `web_compliance_ack`, `terms_ack`, and `dpa_ack` as required, the cal
 2. They will not request login-gated, credentialed, or private-account access.
 3. They will not use outputs for lead generation, stalking, biometrics, or unsolicited direct marketing without a lawful basis.
 4. They accept the bound Terms and DPA versions and will not use cache contents for model training.
-5. They will comply with UK GDPR/CMA, EU GDPR where applicable, and US CFAA/CCPA/state privacy laws, including their own notices and lawful bases.
+5. They will treat fetched text as short quotations — not bulk republication or a training corpus ([legal/COPYRIGHT.md](legal/COPYRIGHT.md)).
+6. They will comply with UK GDPR/CMA, EU GDPR where applicable, and US CFAA/CCPA/state privacy laws, including their own notices and lawful bases.
 
 ## Configuration
 

@@ -188,6 +188,11 @@ async def test_compliance_policy_shape():
         assert body["max_chars_per_source"] == 4000
         assert body["terms"]["terms_version"]
         assert "copyright_excerpt_caps" in body["adjacent_frameworks"]
+        assert body["copyright"]["version"] == "copyright-2026-08-07"
+        assert body["copyright"]["dmca_contact"] == "partners@withohm.dev"
+        assert body["copyright"]["excerpt_caps"]["client_cannot_raise_ceiling"] is True
+        assert body["copyright"]["claims"] == "controls_not_certification"
+        assert "docs/copyright" in body["copyright"]["policy_url"]
 
 
 @pytest.mark.asyncio

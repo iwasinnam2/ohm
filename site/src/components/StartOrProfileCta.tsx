@@ -18,7 +18,7 @@ type Props = {
  */
 export function StartOrProfileCta({
   className = "btn btn--primary",
-  guestLabel = "Start now — $0 seat",
+  guestLabel = "Create Account",
   guestHref = "/signup",
   seatedLabel = "Profile",
   seatedHref = "/profile",

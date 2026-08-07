@@ -44,7 +44,7 @@ export const DOC_GROUPS: DocGroup[] = [
         slug: "architecture",
         title: "Architecture",
         description:
-          "Deep dive — Ephemeral Side × Pipeline System, HIT/MISS paths, and what each container owns.",
+          "Deep dive — Ephemeral Side × Pipeline System, HIT/MISS paths, and account profiles.",
       },
       {
         slug: "edge",
@@ -64,14 +64,9 @@ export const DOC_GROUPS: DocGroup[] = [
         description: "Index of public endpoints, headers, and related guides.",
       },
       {
-        slug: "honesty",
-        title: "Honesty map",
-        description: "Published non-goals and the endpoints that prove them.",
-      },
-      {
         slug: "receipts",
-        title: "Signed receipts",
-        description: "X-Ohm-Receipt, JWKS verification, tree claims.",
+        title: "Waste demo",
+        description: "MISS then HIT proof — pipe rent on both crossings.",
       },
     ],
   },
@@ -88,7 +83,7 @@ export const DOC_GROUPS: DocGroup[] = [
         slug: "cache-trees",
         title: "Cache trees",
         description:
-          "Branch exact-replay inventory for PRs and agents — compose with Neon, don’t clone it.",
+          "Branch exact-replay inventory for PRs and agents — tip isolation and Promote.",
       },
       {
         slug: "streaming",
@@ -102,15 +97,9 @@ export const DOC_GROUPS: DocGroup[] = [
         description: "MCP tools and skills — what agents can call.",
       },
       {
-        slug: "status",
-        title: "Status & limits",
-        description: "Rate limits, hosts, and edge availability.",
-      },
-      {
         slug: "trust",
         title: "Trust — verify it yourself",
-        description:
-          "Signed cache-hit receipts, the honesty endpoint, and public keys.",
+        description: "Waste demo, meters, and public keys for the pipe.",
       },
     ],
   },
@@ -150,7 +139,7 @@ export const DOC_GROUPS: DocGroup[] = [
         slug: "brand",
         title: "Brand",
         description:
-          "withOhm promise, voice, hosts, and deferred sk-at / X-AT rename.",
+          "withOhm promise and value system — AI traffic utility governance moderator.",
       },
     ],
   },
@@ -177,6 +166,12 @@ export const DOC_GROUPS: DocGroup[] = [
         slug: "dpa",
         title: "Data Processing Addendum",
         description: "dpa-2026-07-26 — binds on dpa_ack.",
+      },
+      {
+        slug: "copyright",
+        title: "Copyright & database rights",
+        description:
+          "copyright-2026-08-07 — excerpt caps, no bulk republication, rights contact.",
       },
     ],
   },

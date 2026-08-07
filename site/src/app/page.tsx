@@ -2,7 +2,6 @@ import Link from "next/link";
 import { CacheTreesFlowchart } from "@/components/CacheTreesFlowchart";
 import { DualCrossingAid } from "@/components/DualCrossingAid";
 import { OhmMark } from "@/components/OhmMark";
-import { StartOrProfileCta } from "@/components/StartOrProfileCta";
 
 const PILLARS = [
   {
@@ -32,25 +31,18 @@ const BOARD = [
     go: "Open the shell",
   },
   {
-    href: "/product/pipe",
+    href: "/product",
     eyebrow: "Product",
-    title: "OpenAI-compatible pipe",
-    desc: "Point any SDK at api.withohm.dev/v1. Keep your keys (BYOK).",
-    go: "See the product",
+    title: "What is withOhm",
+    desc: "Ephemeral replay × pipeline governance — one metered HIT/MISS crossing.",
+    go: "Open the product",
   },
   {
-    href: "/use-cases",
-    eyebrow: "Solutions",
-    title: "Use cases",
-    desc: "Agents, CI preview inventory, enterprise chaos, compliant fetch.",
-    go: "Browse solutions",
-  },
-  {
-    href: "/demo",
+    href: "/product/waste-demo",
     eyebrow: "Proof",
-    title: "Waste check",
+    title: "Waste demo",
     desc: "Identical agent call twice — MISS then HIT. Second call does not re-buy the model.",
-    go: "Run the waste check",
+    go: "Run the waste demo",
   },
   {
     href: "/product/architecture",
@@ -81,18 +73,15 @@ export default function HomePage() {
           <p className="hero__promise">
             Agent loops re-buy the same tokens. withOhm replays identical calls
             from cache — one OpenAI-compatible pipe, BYOK, $0 Intermediate seat.
-            Hit your Cursor limit mid-month? Run the waste check.
           </p>
         </div>
         <div className="hero__cta cta-row">
-          <Link href="/demo" className="btn btn--primary">
-            Run the waste check
+          <Link href="/signup" className="btn btn--primary">
+            Create Account
           </Link>
-          <StartOrProfileCta
-            className="link-quiet"
-            guestLabel="$0 seat"
-            seatedLabel="Profile"
-          />
+          <Link href="/login" className="btn btn--login">
+            Login
+          </Link>
           <Link href="/i" className="link-quiet">
             Attach in Cursor
           </Link>

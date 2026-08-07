@@ -128,8 +128,8 @@ export function CacheTreesFlowchart() {
         </g>
       </svg>
       <p className="ohm-flow__note">
-        Neon branches database state. withOhm branches exact-replay inventory —
-        compose both in CI; do not confuse the products.
+        withOhm branches exact-replay inventory by tip. For pairing tips with a
+        database preview branch in CI, see Compose with Neon.
       </p>
     </figure>
   );

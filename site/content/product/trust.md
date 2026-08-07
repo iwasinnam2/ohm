@@ -1,29 +1,22 @@
-## Don’t trust the savings copy. Verify the receipt.
+# Trust
 
-Every cache HIT can carry a signed receipt — detached proof of what the pipe did, verifiable against a public key. Replay and audit value as an artifact, not a slogan.
+Prove the pipe yourself — no marketing theatre.
 
-### What you can verify
+## Waste demo
 
-- **`X-Ohm-Receipt`** — Ed25519 JWS on HITs (tokens replayed, pipe USD, request digest, plane/region).
-- **JWKS directory** — `/.well-known/http-message-signatures-directory`
-- **Honesty map** — `GET /v1/public/honesty` — published non-goals and the endpoint that proves each item
-- **Public stats** — `GET /v1/public/stats` (always `estimate_only: true`)
+Open **[Waste demo](/product/waste-demo)**: identical call twice → `MISS` then `HIT`. Labs silent on HIT. Pipe rent on both crossings.
 
-### What we will not claim
+## Meters and savings
 
-- Semantic / fuzzy cache
-- Guaranteed savings SLAs
-- Training corpus from replay inventory
-- Mid-stream provider handoff
+- `GET /v1/usage` — hits, misses, fetches
+- `GET /v1/savings` — estimated provider avoided vs Ohm pipe rent (`estimate_only`)
 
-Details: [Honesty docs](/docs/honesty) · [Receipts docs](/docs/receipts) · [Trust walkthrough](/docs/trust)
+## Account
 
-### Promote, freeze, audit
+Create an Intermediate account with email + password. Log in restores your seat key in the browser. Pipe keys remain under [API keys](/keys) after sign-in.
 
-Cache-tree ops emit audit events (`cache.tree_*`). Frozen tips reject writes with 409; HITs still serve. Receipts may carry optional `tree_id` / `tree_name`.
+## Next
 
-### Related
-
-- [Architecture](/product/architecture)
-- [Security](/docs/security)
-- [Public receipt pages](/docs/receipts)
+- [What is withOhm](/product)
+- [Architecture](/docs/architecture)
+- [Quickstart](/docs/quickstart)
