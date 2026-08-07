@@ -87,7 +87,9 @@ export default function RootLayout({
           </main>
           <footer className="site-footer">
             <span>
-              <strong>withOhm</strong> — interconnectedness and accessibility
+              <strong>withOhm</strong>
+              <span aria-hidden="true">™</span> — interconnectedness and
+              accessibility · © 2026
             </span>
             <nav className="site-footer__legal" aria-label="Legal">
               <Link href="/docs/terms">Terms</Link>
