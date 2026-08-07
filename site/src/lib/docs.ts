@@ -178,6 +178,12 @@ export const DOC_GROUPS: DocGroup[] = [
         title: "Data Processing Addendum",
         description: "dpa-2026-07-26 — binds on dpa_ack.",
       },
+      {
+        slug: "copyright",
+        title: "Copyright & database rights",
+        description:
+          "copyright-2026-08-07 — excerpt caps, no bulk republication, rights contact.",
+      },
     ],
   },
 ];

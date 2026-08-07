@@ -1203,6 +1203,19 @@ async def compliance_policy(
             "eu_gdpr_readiness",
             "consumer_billing_hygiene",
         ],
+        "copyright": {
+            "version": "copyright-2026-08-07",
+            "policy_url": "https://www.withohm.dev/docs/copyright",
+            "dmca_contact": "partners@withohm.dev",
+            "excerpt_caps": {
+                "per_source": s.at_compliance_max_chars_per_source,
+                "total": s.at_compliance_max_context_chars,
+                "code_strip": True,
+                "client_cannot_raise_ceiling": True,
+            },
+            "output_reproduction": "prompt_guidance_only",
+            "claims": "controls_not_certification",
+        },
         "web_bot_auth": {
             "enabled": web_bot_auth.signing_enabled(),
             "protocol": "rfc9421-http-message-signatures",
@@ -1215,6 +1228,7 @@ async def compliance_policy(
             "No lead harvesting, person dossiers, biometrics, or PECR cold outreach lists",
             "Short excerpts only — copyright / database-right minimisation",
             "Cache is identical-request replay only — never a training corpus",
+            "Copyright policy: https://www.withohm.dev/docs/copyright — controls, not certification",
             "UK: public identifiable data remains personal data; outputs are minimised",
             "US: CFAA/CCPA — public retrieval ≠ authorization to bypass gates",
             "robots.txt respected by default; cite sources; no private-fact invention",
@@ -1222,6 +1236,7 @@ async def compliance_policy(
             "HTTP 402 pay-per-crawl and 401/403 revocations are honored — no auto-pay, no evasion",
         ],
         "docs": "docs/LEGAL.md",
+        "copyright_docs": "docs/legal/COPYRIGHT.md",
         "tenant_terms_version": getattr(tenant, "terms_version", "") or None,
         "tenant_dpa_version": getattr(tenant, "dpa_version", "") or None,
     }
