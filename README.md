@@ -8,7 +8,7 @@ AI traffic control plane: OpenAI-compatible ingress, Redis prompt replay, compli
 > **Exact-replay hits that cost zero upstream tokens. Cross-provider consistency. Locality — Redis edge reads. Replay and audit value.**
 > Point any OpenAI-compatible client (or the Ohm Agent Shell) at one base URL. Keep your keys or use a managed pool. Rent the plumbing; govern the chaos.
 
-**Site:** https://www.withohm.dev · **API:** https://api.withohm.dev/v1 · **Workbench:** `/workbench` · **Architecture:** [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) · **Vision:** [`docs/VISION.md`](docs/VISION.md) · **Enterprise:** [`docs/ENTERPRISE_CHAOS.md`](docs/ENTERPRISE_CHAOS.md) · **Gem:** [`docs/GEM_POSITION.md`](docs/GEM_POSITION.md)
+**Site:** https://www.withohm.dev · **API:** https://api.withohm.dev/v1 · **Workbench:** `/workbench` · **Architecture:** [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) · **Vision:** [`docs/VISION.md`](docs/VISION.md) · **Enterprise:** [`docs/ENTERPRISE_CHAOS.md`](docs/ENTERPRISE_CHAOS.md) · **Gem:** [`docs/GEM_POSITION.md`](docs/GEM_POSITION.md) · **Care audit:** [`docs/CARE_AUDIT.md`](docs/CARE_AUDIT.md)
 
 **License:** MIT (see [`LICENSE`](LICENSE) + [`NOTICE`](NOTICE)). Source is open; the hosted withOhm pipe remains a commercial metered service. Package/key names may still say `at-utility` / `sk-at-*` (legacy AT prefix); the product is **withOhm**.
 
