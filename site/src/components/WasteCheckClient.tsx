@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 
 const API = "/api/pipe";
-const DEMO_PROMPT = "ohm-self-proof-v1";
 const DEMO_PATH = "self-proof";
 
 type CallResult = {
@@ -27,7 +26,16 @@ type ReceiptMint = {
   err?: string;
 };
 
-async function chatOnce(apiKey: string): Promise<CallResult> {
+/** Fresh prompt per Prove click so a shared public key never serves HIT→HIT. */
+function freshProofPrompt(): string {
+  const nonce =
+    typeof crypto !== "undefined" && "randomUUID" in crypto
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+  return `ohm-self-proof ${nonce}`;
+}
+
+async function chatOnce(apiKey: string, prompt: string): Promise<CallResult> {
   try {
     const res = await fetch(`${API}/v1/chat/completions`, {
       method: "POST",
@@ -38,7 +46,7 @@ async function chatOnce(apiKey: string): Promise<CallResult> {
       },
       body: JSON.stringify({
         model: "mock",
-        messages: [{ role: "user", content: DEMO_PROMPT }],
+        messages: [{ role: "user", content: prompt }],
         ohm_path: DEMO_PATH,
       }),
     });
@@ -185,13 +193,16 @@ export function WasteCheckClient() {
     setProof(null);
     setReceipt(null);
     setMeta("Sending identical prompt twice…");
+    // One nonce for both calls — first MISS, second HIT. New click = new nonce
+    // so a shared public proof key never collapses the demo into HIT→HIT.
+    const prompt = freshProofPrompt();
     try {
-      const first = await chatOnce(effectiveKey);
+      const first = await chatOnce(effectiveKey, prompt);
       if (!first.ok) {
         setMeta(first.err || "First call failed");
         return;
       }
-      const second = await chatOnce(effectiveKey);
+      const second = await chatOnce(effectiveKey, prompt);
       if (!second.ok) {
         setMeta(second.err || "Second call failed");
         return;
