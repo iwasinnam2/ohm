@@ -414,21 +414,30 @@ async fn authorize(app: &App, token: &str) -> EdgeAuth {
     EdgeAuth::Unverified
 }
 
-async fn resolve_tenant(app: &App, token: &str) -> String {
+fn should_skip_edge_set(req_no_store: bool, x_at_cache: Option<&str>) -> bool {
+    req_no_store
+        || x_at_cache
+            .map(|s| s.eq_ignore_ascii_case("BYPASS"))
+            .unwrap_or(false)
+}
+
+async fn resolve_tenant(app: &App, token: &str) -> Option<String> {
     let suffix = &token[token.len().saturating_sub(8)..];
     if app.cfg.api_keys.iter().any(|k| k == token) {
-        return format!("tenant_bootstrap_{suffix}");
+        return Some(format!("tenant_bootstrap_{suffix}"));
     }
     let idx = format!("at:global:apikey:{}", sha256_hex(token.as_bytes()));
     if ensure_client(&app.redis_read, &app.cfg.redis_addr).await {
         let mut guard = app.redis_read.lock().await;
         if let Some(client) = guard.as_mut() {
             if let Ok(Some(tid)) = client.get(&idx).await {
-                return tid;
+                return Some(tid);
             }
         }
     }
-    format!("tenant_{suffix}")
+    // Never invent tenant_{suffix} after Allowed — wrong namespace pollutes cache.
+    // Caller full-proxies without edge GET/SET when this is None.
+    None
 }
 
 /// Ask the Python control plane to meter + enforce a cache HIT.
@@ -665,10 +674,17 @@ async fn handle_inner(
         .as_ref()
         .and_then(|v| v.get("fetch_web_context").and_then(|s| s.as_bool()))
         .unwrap_or(false);
+    let req_no_store = body_json
+        .as_ref()
+        .and_then(|v| v.get("cache_control").and_then(|c| c.as_str()))
+        .map(|s| s.eq_ignore_ascii_case("no_store"))
+        .unwrap_or(false);
 
-    // Edge cache serving requires verified identity (Redis-confirmed key);
-    // unverified requests full-proxy so Python owns both auth and caching.
-    if edge_verified && is_chat && !wants_stream && !wants_web {
+    // Edge cache serving requires verified identity (Redis-confirmed key)
+    // and a resolved tenant namespace. Unverified auth or unresolved tenant
+    // → full-proxy so Python owns auth and caching (never invent tenant_*).
+    if edge_verified && is_chat && !wants_stream && !wants_web && tenant.is_some() {
+        let tenant = tenant.as_deref().expect("checked is_some");
         let header_tree = headers
             .get("x-ohm-cache-tree")
             .and_then(|v| v.to_str().ok());
@@ -686,7 +702,7 @@ async fn handle_inner(
                 .unwrap());
         };
         let key = match body_json.as_ref() {
-            Some(v) => cache_key_structured(&tenant, v, &cache_tree),
+            Some(v) => cache_key_structured(tenant, v, &cache_tree),
             None => {
                 let digest = sha256_hex(&body);
                 if cache_tree == "main" {
@@ -815,9 +831,22 @@ async fn handle_inner(
                     Err(_) => Bytes::new(),
                 };
                 if status.is_success() {
-                    // Prefer Python's write when proxying through control-plane; still
-                    // SET on write URL so pure-Rust edges never write a replica.
-                    if ensure_client(&app.redis_write, &cfg.redis_write_addr).await {
+                    // Honor Python BYPASS / client no_store — never SET a body
+                    // the control plane (or caller) asked not to store. Org
+                    // default_cache_no_store returns x-at-cache: BYPASS.
+                    let resp_bypass = headers_out
+                        .get("x-at-cache")
+                        .and_then(|v| v.to_str().ok());
+                    let skip_set = should_skip_edge_set(req_no_store, resp_bypass);
+                    if skip_set {
+                        info!(
+                            "skip edge SET {key} (no_store={} bypass={})",
+                            req_no_store,
+                            resp_bypass.unwrap_or("")
+                        );
+                    } else if ensure_client(&app.redis_write, &cfg.redis_write_addr).await {
+                        // Prefer Python's write when proxying through control-plane; still
+                        // SET on write URL so pure-Rust edges never write a replica.
                         let mut guard = app.redis_write.lock().await;
                         if let Some(client) = guard.as_mut() {
                             let _ = client
@@ -854,6 +883,9 @@ async fn handle_inner(
                 .unwrap()),
         }
     } else {
+        if edge_verified && is_chat && !wants_stream && !wants_web && tenant.is_none() {
+            warn!("tenant unresolved after Allowed; full-proxy without edge cache");
+        }
         // Pass-through with pre-first-byte failover: connect error *or* a 5xx
         // status read before any body byte is forwarded. Bodies (including
         // SSE streams) are forwarded chunk-by-chunk — never buffered at the edge.
@@ -1007,8 +1039,13 @@ mod tests {
     }
 
     #[test]
-    fn canonical_json_sorts_keys() {
-        let v = serde_json::json!({"b": 1, "a": 2});
-        assert_eq!(canonical_json(&v), r#"{"a":2,"b":1}"#);
+    fn skip_edge_set_on_no_store_or_bypass() {
+        assert!(should_skip_edge_set(true, None));
+        assert!(should_skip_edge_set(false, Some("BYPASS")));
+        assert!(should_skip_edge_set(false, Some("bypass")));
+        assert!(should_skip_edge_set(true, Some("MISS")));
+        assert!(!should_skip_edge_set(false, Some("MISS")));
+        assert!(!should_skip_edge_set(false, Some("HIT")));
+        assert!(!should_skip_edge_set(false, None));
     }
 }

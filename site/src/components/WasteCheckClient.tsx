@@ -404,9 +404,15 @@ export function WasteCheckClient() {
                         Share on X
                       </a>
                     ) : null}
-                    <Link href="/bounty" className="btn btn--primary">
-                      Claim $100 bounty
-                    </Link>
+                    {usingPublicKey ? (
+                      <Link href="/signup" className="btn btn--primary">
+                        Get a seat — then claim bounty
+                      </Link>
+                    ) : (
+                      <Link href="/bounty" className="btn btn--primary">
+                        Claim $100 bounty
+                      </Link>
+                    )}
                   </div>
                   {receipt.badge_markdown ? (
                     <pre className="org-console__log">
@@ -415,8 +421,8 @@ export function WasteCheckClient() {
                   ) : null}
                   {!usingPublicKey ? null : (
                     <p className="receipt__foot">
-                      Bounty credit needs your own seat key —{" "}
-                      <Link href="/signup">$0 Intermediate</Link>
+                      Public proof keys cannot claim the bounty. Open a{" "}
+                      <Link href="/signup">$0 Intermediate seat</Link>
                       , re-run the check, mint under your name,{" "}
                       <strong>post the receipt on social</strong>, then email
                       the <em>post URL</em> (not just the receipt) to{" "}

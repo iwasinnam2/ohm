@@ -1,6 +1,6 @@
 # Care Audit — Methodological Appendix
 
-**Status:** living plan (inventory + remediation program)  
+**Status:** Phases 0–2 executed (2026-08-07); Phases 3–4 pending  
 **Themes:** (1) care, (2) attention to detail  
 **Issued:** 2026-08-07  
 **Scope:** full monorepo — runtime, site, MCP, pricing, catalogues, docs, GTM ops  
@@ -201,93 +201,68 @@ Cache keys: `at:{tenant}:cache:v2:{digest}` (main);
 
 ### P0 — Correctness
 
-#### F1. Rust edge SET after MISS ignores `no_store` / BYPASS
+#### F1. Rust edge SET after MISS ignores `no_store` / BYPASS — **fixed (Phase 2)**
 
-- **Python:** skips GET and SET when `cache_control: no_store` or org
-  `default_cache_no_store`; returns `X-AT-Cache: BYPASS`.  
-- **Rust:** on successful miss proxy, always `SET`s to write Redis
-  (`gateway-rs/src/main.rs` ~817–831) with no BYPASS / no_store gate.  
-- **Effect:** identical follow-up `no_store` requests can **HIT at the edge**.
-  Org `default_cache_no_store` is worse: Python forces no_store without
-  changing the hashed request field → edge writes into the **shared** key →
-  next request is a normal HIT — **org policy defeated**.  
-- **Test gap:** `test_no_store_skips_cache_write` is Python-only.
+Edge skips SET when request `cache_control=no_store` or response
+`x-at-cache: BYPASS`. `resolve_tenant` no longer invents `tenant_{suffix}`.
+Unit: `should_skip_edge_set`. Python path remains `test_no_store_skips_cache_write`.
 
 ### P1 — Public truth
 
-#### F2. MCP inventory: “seven” vs eight
+#### F2. MCP inventory: “seven” vs eight — **fixed (Phase 0/1)**
 
-Evidence: `docs/INTEGRATIONS.md`, `site/content/docs/commands.md`,
-`ConnectionsClient.tsx`, `packages/ohm-mcp/README.md`, `docs/CURSOR.md` say
-seven / omit `ohm_receipt`. Shell catalog and code have eight. `commands.md`
-even documents `ohm_receipt` later while the opening count stays seven.
+Docs/UI/package README now say **eight** and list `ohm_receipt`. Asserted by
+`tests/test_mcp_catalogue.py`. `/ohm-receipt` skill mirrored.
 
-#### F3. `/pricing` hardcodes rate card
+#### F3. `/pricing` hardcodes rate card — **fixed (Phase 1)**
 
-`site/src/app/pricing/page.tsx` embeds `$0.002` / `$0.001` / `$0.003` and
-commit rows. `/subscriptions` imports `PAYG_RATES` / `COMMIT_TIERS`. Rate-card
-CI does not assert the marketing page or site JSON mirror sync.
+`site/src/app/pricing/page.tsx` imports `PAYG_RATES` / `COMMIT_TIERS`. Site JSON
+mirror asserted equal to `pricing/rate_card.v2.json`.
 
-#### F4. Siege FAQ still says “plain TCP / TLS is next”
+#### F4. Siege FAQ still says “plain TCP / TLS is next” — **fixed (Phase 0)**
 
-`SIEGE_DEFENSE.md` Tier-2 reply (~114–123) and parts of `LAUNCH_POSTS.md` claim
-the edge Redis client is plain TCP and TLS is the next item. Code and
-`OPERATIONS.md` / `REDIS_MESH.md` / `resp.rs` already support `rediss://` /
-`AT_RS_REDIS_TLS`. Production full-proxy is about **secrets pointing at a
-null sink**, not missing TLS. Under thread scrutiny this is a self-own.
+SIEGE_DEFENSE + LAUNCH_POSTS now match OPERATIONS (secrets / null sink; TLS
+client already in-repo).
 
-#### F5. Fail-closed vs Unverified wording
+#### F5. Fail-closed vs Unverified wording — **fixed (Phase 0)**
 
-`READINESS.md` / `MARKETPLACE_AUDIT.md` tick “Rust fail-closed” on Redis auth
-errors. Code returns `Unverified` → full-proxy. Ops doc correctly describes
-Unverified. The checkbox language is the hazard.
+READINESS / MARKETPLACE_AUDIT quote Unverified full-proxy accurately.
 
-#### F6. Bounty CTA on public-key proofs
+#### F6. Bounty CTA on public-key proofs — **fixed (Phase 0)**
 
-`WasteCheckClient` shows primary “Claim $100 bounty” even when
-`usingPublicKey`; footnote says bounty needs a seat key. Bounty page requires
-seat-key receipt. Funnel contradiction — care failure on the campaign we just
-shipped.
+Public-key receipts primary-CTA to `/signup`; Claim bounty only on seat keys.
 
-#### F7. Show HN residue in fire-day copy
+#### F7. Show HN residue in fire-day copy — **fixed (Phase 0)**
 
-Runbooks correctly mark Show HN **BLOCKED**. Titles and partner docs still
-say “On Show HN fire day…”, sprint titles still lead with Show HN. Footgun for
-a tired operator.
+SPRINT_GTM title + PARTNER_HIT_LIST fire-day language mark Show HN **BLOCKED**.
 
 ### P2 — Degradation / process theater
 
-#### F8. MemoryStore silent fallback
+#### F8. MemoryStore silent fallback — **hardened (Phase 2)**
 
-Python boot: Redis unavailable → `MemoryStore()` + one warning. Edge still
-uses Redis → split-brain cache/meters. No readiness fail in non-dev.
+`/ready` reports `redis.backend`; MemoryStore in non-dev regions → 503.
+Boot still falls back with a warning (local/dev/test stay ready).
 
-#### F9. Soft-cap honesty on edge HIT
+#### F9. Soft-cap honesty on edge HIT — **documented (Phase 2)**
 
-Org soft spend warnings / hard 402 run on Python MISS path. Edge HIT via
-`/internal/edge-hit` meters without soft-cap headers — soft-capped orgs get
-quiet HITs.
+OPERATIONS: soft-cap warning headers are MISS-only (hard 402 still via gate).
 
-#### F10. REDIS_MESH status table vs torn-down banner
+#### F10. REDIS_MESH status table vs torn-down banner — **fixed (Phase 0)**
 
-Banner says phases 3–5 torn down; table still “Live / Charged”. `STATUS.md`
-agrees with single-region. Archive vs live not labeled.
+Live vs archive tables separated.
 
-#### F11. Partner CSV all `[fill]`
+#### F11. Partner CSV all `[fill]` — **open (Phase 3)**
 
 `partner_hit_list.csv` — 20 placeholder rows. Docs treat CSV as a pipeline
 artifact; it is still a template.
 
-#### F12. CTA / nav disunity
+#### F12. CTA / nav disunity — **named (Phase 0)**
 
-Home: waste check primary. Header: “Start now — $0 seat”. No Demo / Bounty /
-Attach in primary nav despite GTM funnel. Deliberate dual-audience is fine;
-**unnamed** dual-audience reads as indecision.
+BRAND + WASTE_CHECK CTA doctrine: hero=belief, header=conversion, Log in=return.
 
-#### F13. Skills gap for `ohm_receipt`
+#### F13. Skills gap for `ohm_receipt` — **fixed (Phase 1)**
 
-MCP tool exists; slash skill does not across `.cursor/skills`, plugin, and
-`skills/`.
+`ohm-receipt` skill in `.cursor/skills`, plugin, `skills/`, steal-kit template.
 
 #### F14. Stripe `stripe_synced: false` forever without customer
 
