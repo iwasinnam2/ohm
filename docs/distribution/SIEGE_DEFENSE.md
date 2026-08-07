@@ -67,7 +67,7 @@ Facts these responses rest on (verified against code, 2026-07-31):
 > cross-provider, and does nothing for web fetch. Gateway proxies like
 > LiteLLM are routing layers; their caching is best-effort and unbilled,
 > which is fine until you want to build a product on top of the cache.
-> withOhm's cache is billing-grade (idempotency-keyed meter events, parity-
+> withOhm's cache is billing-grade (digest-scoped meter event identifiers, parity-
 > pinned keys) and it ships the compliance fetch pipe and MCP tools in the
 > same pipe. If you just need routing, use LiteLLM — genuinely.
 
@@ -138,9 +138,12 @@ Facts these responses rest on (verified against code, 2026-07-31):
 
 ### "Metered billing on cache hits — what stops double-billing on retries?"
 
-> Idempotency keys derived from the request hash on every meter event, so a
-> retried request lands on the same key and Stripe deduplicates. The
-> metering code is in the repo.
+> Stripe meter `identifier`s are digest-scoped for HIT/MISS (`cache_hit:{sha}:plane`
+> / `cache_miss:{sha}:plane`). A retried sync of the **same** logical event lands
+> on the same key and Stripe deduplicates within its window. A second successful
+> HIT on the same digest from the **same plane** shares that key (idempotent
+> meter sync), which is the intended retry-safe behaviour — not "never bill two
+> distinct HIT crossings." The metering code is in the repo.
 
 ### "SSE replay can't be faithful to the original stream"
 

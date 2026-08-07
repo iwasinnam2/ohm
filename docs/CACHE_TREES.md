@@ -26,6 +26,15 @@ Parent architecture (Neon-grammar overview): [ARCHITECTURE.md](ARCHITECTURE.md).
 - Unknown / invalid explicit tree → **400**.
 - Exact-match only inside a tree. No semantic cache. No cross-tenant trees.
 
+### Storage honesty (CAS vs COW)
+
+Named-tree blobs use **per-tree Redis keys**. COW **reads** walk the parent
+chain and may serve a parent blob without copying it into the child. That is
+**not** yet a single shared content-addressed object store with many refs
+(Phase 3). Promote still **copies** child-local digests into the parent key
+space. Do not claim “zero duplication” or “one blob, many refs” until Phase 3
+refcount CAS ships.
+
 ## Client surface (Phase 0)
 
 - Header: `X-Ohm-Cache-Tree: pr-842` (optional)
@@ -45,7 +54,7 @@ Parent architecture (Neon-grammar overview): [ARCHITECTURE.md](ARCHITECTURE.md).
 |-------|--------|
 | **0** | Spec, resolve, v3 keys for named trees, dual-plane parity, honesty/LEGAL/SECURITY stubs |
 | **1–2 (this)** | Fork / reset / promote / freeze APIs, COW reads, digest index, receipt `tree_*`, audit actions |
-| 3 | Shared blob store efficiency (refcount GC) |
+| 3 | Shared blob store efficiency (refcount GC / true single-CAS) — **not shipped**; see Storage honesty above |
 | 4 | Retain / restore (legal Duration first) |
 | 5 | Org ACLs / quotas |
 

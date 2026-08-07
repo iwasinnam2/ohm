@@ -46,6 +46,18 @@ async def test_named_trees_isolated():
         assert r3.status_code == 200
         assert r3.headers.get("x-at-cache") == "MISS"
         assert r3.headers.get("x-ohm-cache-tree") == "tree-b"
+        # No ambient bleed: tree-b HIT cannot appear without its own MISS write.
+        r4 = await client.post("/v1/chat/completions", headers=h_b, json=CHAT)
+        assert r4.headers.get("x-at-cache") == "HIT"
+        # Sibling still isolated from a unique prompt only written on tree-a
+        unique = {
+            "model": "mock",
+            "messages": [{"role": "user", "content": "bleed-check-unique-aaa"}],
+        }
+        await client.post("/v1/chat/completions", headers=h_a, json=unique)
+        bleed = await client.post("/v1/chat/completions", headers=h_b, json=unique)
+        assert bleed.headers.get("x-at-cache") == "MISS"
+        assert bleed.headers.get("x-ohm-cache-tree") == "tree-b"
 
 
 async def test_invalid_cache_tree_400():

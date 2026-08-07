@@ -23,6 +23,9 @@ Payload fields:
 | `pipe_usd` | What Ohm billed for the hit (the meter event, 6 dp) |
 | `request_sha256` | The exact-replay identity — digest of the canonicalized request |
 | `tenant_sha256` | Truncated tenant fingerprint (self-verifiable, not identifying) |
+| `admit` | `allow` on a served HIT (RELEASE after dual-plane admission) |
+| `meter_event_id` | Digest-scoped meter identifier fragment bound to this release |
+| `rl_epoch` | UTC calendar day of mint (`YYYYMMDD`) — cheap rate-limit / window bind |
 
 ## Verify one from a cold start
 
