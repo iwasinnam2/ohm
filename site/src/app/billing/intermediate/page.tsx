@@ -72,6 +72,10 @@ export default async function IntermediateBillingPage({
         </p>
       </section>
       <p className="billing-form__alt">
+        Already have a key? <Link href="/login">Log in</Link>
+        {" · "}
+        Prefer the classic gate? <Link href="/signup">Sign up</Link>
+        {" · "}
         Need fixed usage agreements?{" "}
         <Link href="/billing/enterprise">Enterprise at withOhm</Link>
         {" · "}

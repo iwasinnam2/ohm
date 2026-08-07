@@ -294,9 +294,12 @@ MCP tool exists; slash skill does not across `.cursor/skills`, plugin, and
 Local accrual continues; flag is last-ok bit, not “all events synced”. Fine
 for local smoke; easy to misread in support.
 
-#### F15. README personal Windows path in Compose quick start
+#### F16. No classic login/sign-up surface (fixed 2026-08-07)
 
-`C:\Users\markk\...` residue — attention tax.
+Marketing had only “Start — $0 seat” → Intermediate checkout and key paste on
+`/keys`. Added `/login` (restore `sk-at-…`) and `/signup` (Intermediate form)
+with header Log in + Start CTA → `/signup`. Still no email/password — honesty
+copy on the gate.
 
 ### P3 — Deferred
 

@@ -266,7 +266,7 @@ export function WasteCheckClient() {
             Using <strong>public proof key</strong> — <code>model: mock</code>{" "}
             only (proves the cache). Real models work the same through the pipe
             once you{" "}
-            <Link href="/billing/intermediate">get a $0 seat</Link>.
+            <Link href="/signup">get a $0 seat</Link>.
           </p>
         ) : (
           <label className="billing-form__field">
@@ -286,7 +286,7 @@ export function WasteCheckClient() {
         {publicKeyReady === false ? (
           <p className="receipt__foot">
             Need a key?{" "}
-            <Link href="/billing/intermediate">Start — $0 seat</Link>
+            <Link href="/signup">Start — $0 seat</Link>
             {" · "}
             <Link href="/keys">API keys</Link>
           </p>
@@ -416,7 +416,7 @@ export function WasteCheckClient() {
                   {!usingPublicKey ? null : (
                     <p className="receipt__foot">
                       Bounty credit needs your own seat key —{" "}
-                      <Link href="/billing/intermediate">$0 Intermediate</Link>
+                      <Link href="/signup">$0 Intermediate</Link>
                       , re-run the check, mint under your name,{" "}
                       <strong>post the receipt on social</strong>, then email
                       the <em>post URL</em> (not just the receipt) to{" "}

@@ -444,8 +444,11 @@ export function KeysConsole() {
               the account, or subscribe once to start.
             </p>
             <div className="cta-row">
-              <Link href="/billing/intermediate" className="btn btn--primary">
-                Subscribe (first key)
+              <Link href="/signup" className="btn btn--primary">
+                Sign up (first key)
+              </Link>
+              <Link href="/login" className="link-quiet">
+                Log in
               </Link>
               <Link href="/support" className="link-quiet">
                 Support
@@ -458,7 +461,8 @@ export function KeysConsole() {
       <section className="keys-console__panel" aria-labelledby="keys-restore-title">
         <h2 id="keys-restore-title">Restore a key</h2>
         <p className="keys-console__lede">
-          Paste a secret you already saved. We verify it, then stash it in this
+          Paste a secret you already saved — or use{" "}
+          <Link href="/login">Log in</Link>. We verify it, then stash it in this
           browser so you can mint and delete keys without re-entering billing
           details.
         </p>
