@@ -71,12 +71,14 @@ Agent does not post as you.
 
 1. Replace `[fill]` rows in [partner_hit_list.csv](partner_hit_list.csv) with
    real handles (Reddit commenters, Forum pain posts, Pro+ limit complainers).
+   The CSV is a **template** until then — do not count placeholders as pipeline.
 2. DM offer: run `/demo` + design-partner key — not logo/PR.
 3. Same-day mint ([PARTNER_ONBOARD.md](PARTNER_ONBOARD.md)); day 5–7 quote /
    receipt share for bounty.
 4. Pay bounty claims at `partners@withohm.dev` when the email includes
    **receipt URL + social post URL + seat email** per [/bounty](https://www.withohm.dev/bounty)
-   ($100 credit). Receipt alone does not qualify.
+   ($100 credit). Receipt alone does not qualify. Log evidence in
+   [BOUNTY_EVIDENCE.md](BOUNTY_EVIDENCE.md).
 
 ### B3 — Do not
 
