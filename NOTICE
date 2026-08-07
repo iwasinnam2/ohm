@@ -9,3 +9,12 @@ is a commercial offering: usage is metered and subject to the Terms of Service
 and Privacy Policy at https://www.withohm.dev/docs/terms and
 https://www.withohm.dev/docs/privacy. Using this open-source code does not
 grant free access to the hosted pipe.
+
+Trademarks: “withOhm”, “Ohm”, and the Ω logo are trademarks of Ohm / withOhm
+(registration pending where applicable). No trademark license is granted by the
+MIT License except the limited right to describe truthful origin of this software.
+See docs/legal/IP.md for copyright registration and patent counsel process.
+
+Patent rights (if any) are not licensed under MIT unless a separate written
+patent grant is provided. Do not mark marketing materials “patent pending”
+until a filed application serial number exists (see docs/legal/INVENTION_DISCLOSURE.md).

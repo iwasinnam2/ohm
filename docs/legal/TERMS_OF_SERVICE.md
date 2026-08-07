@@ -38,6 +38,12 @@ Requires `web_purpose`, `web_compliance_ack`, and (when enforced) `terms_ack` / 
 
 You retain rights in prompts and outputs as between you and Ohm, subject to upstream provider terms. You grant Ohm a limited license to process content to provide the Service (routing, caching as configured, metering).
 
+## 6A. Ohm intellectual property
+
+Ohm / withOhm retains all right, title, and interest in the Service, software, documentation, APIs, cache-tree mechanisms, metering and receipt systems, compliance gates, brand, and related intellectual property — including copyrights, trademarks, trade secrets, and any patents or applications. The MIT License covering public repository source (see `LICENSE` / `NOTICE`) grants copyright permissions for that source only; it does not transfer ownership of the Service, grant free hosted access, or (unless a separate writing says so) license patents or trademarks.
+
+You may not remove proprietary notices, scrape the Service to build a competing exact-replay pipe from our non-public operations data, or use withOhm / Ohm / Ω marks in a way that implies partnership or endorsement without prior written consent.
+
 ## 7. Subprocessors
 
 See [`docs/SECURITY.md`](../SECURITY.md) and the DPA. Typical: model providers you enable, AWS (or equivalent host), Stripe (billing).
