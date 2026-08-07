@@ -65,6 +65,7 @@ def test_mint_verify_roundtrip_and_tamper(monkeypatch):
     assert payload["tokens_replayed"] == 123
     assert payload["request_sha256"] == "cd" * 32
     assert payload["plane"] == "python"
+    assert payload["admit"] == "allow"
     # tenant is fingerprinted, never raw
     assert "tenant_x" not in json.dumps(payload)
 
@@ -184,9 +185,30 @@ async def test_edge_hit_response_includes_receipt(monkeypatch):
         assert payload["plane"] == "rust-edge"
         assert payload["tokens_replayed"] == 42
         assert payload["request_sha256"] == "ef" * 32
+        assert payload["admit"] == "allow"
+        assert payload["meter_event_id"].startswith("cache_hit:")
+        assert body["hit_state"] == "RELEASE"
+        assert body["meter_event_id"] == payload["meter_event_id"]
 
 
-async def test_public_honesty_endpoint():
+async def test_python_hit_exposes_hit_state_and_receipt_bind(monkeypatch):
+    monkeypatch.setenv(receipts.ENV_SEED, RECEIPT_SEED)
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        miss = await client.post("/v1/chat/completions", headers=HEADERS, json=CHAT)
+        assert miss.status_code == 200
+        assert miss.headers.get("x-at-cache") == "MISS"
+        hit = await client.post("/v1/chat/completions", headers=HEADERS, json=CHAT)
+        assert hit.status_code == 200
+        assert hit.headers.get("x-at-cache") == "HIT"
+        assert hit.headers.get("x-ohm-hit-state") == "RELEASE"
+        jws = hit.headers.get("x-ohm-receipt")
+        assert jws
+        payload = receipts.verify_receipt(jws, receipts.receipt_public_jwk())
+        assert payload["admit"] == "allow"
+        assert payload["meter_event_id"].startswith("cache_hit:")
+        assert payload["plane"] == "python"
+
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as client:
         res = await client.get("/v1/public/honesty")

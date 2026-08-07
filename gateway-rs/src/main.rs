@@ -743,7 +743,7 @@ async fn handle_inner(
                 let request_sha256 = key.rsplit(':').next().unwrap_or("").to_string();
                 match edge_hit_gate(&app, &token, total_tokens, &model, &request_sha256).await {
                     Some((status, gate_body)) if status.is_success() => {
-                        info!("cache HIT {key} (metered)");
+                        info!("cache HIT {key} (metered) hit_state=RELEASE");
                         let gate_json =
                             serde_json::from_slice::<serde_json::Value>(&gate_body).ok();
                         let billed = gate_json
@@ -756,7 +756,8 @@ async fn handle_inner(
                             .header("x-at-cache", "HIT")
                             .header("x-at-plane", "rust")
                             .header("x-at-billed-usd", format!("{billed:.6}"))
-                            .header("x-ohm-cache-tree", cache_tree.as_str());
+                            .header("x-ohm-cache-tree", cache_tree.as_str())
+                            .header("x-ohm-hit-state", "RELEASE");
                         // Signed replay proof minted by the control plane
                         if let Some(receipt) = gate_json
                             .as_ref()
@@ -769,16 +770,17 @@ async fn handle_inner(
                     Some((status, gate_body)) => {
                         // Tenant denied (401/402/403/429) — relay verbatim so
                         // suspended/capped tenants are never served from cache.
-                        warn!("cache HIT denied by control plane: {status}");
+                        warn!("cache HIT denied by control plane: {status} hit_state=DENY");
                         return Ok(Response::builder()
                             .status(status)
                             .header("content-type", "application/json")
                             .header("x-at-plane", "rust")
+                            .header("x-ohm-hit-state", "DENY")
                             .body(full_body(gate_body))
                             .unwrap());
                     }
                     None => {
-                        warn!("edge-hit gate unreachable; full-proxying {key}");
+                        warn!("edge-hit gate unreachable; full-proxying {key} hit_state=PROXY");
                     }
                 }
             }

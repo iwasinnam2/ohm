@@ -100,6 +100,29 @@ async def test_meter_passes_idempotency_identifier(monkeypatch):
         "tenant_idem", cache_hit=True, total_tokens=500, stripe_customer_id="cus_x"
     )
     assert captured[1]["identifier"] != captured[0]["identifier"]
+    # Stable digest-scoped event_id → Stripe dedup key on retry
+    from at_utility.metering import stable_meter_event_id
+
+    eid = stable_meter_event_id(
+        kind="cache_hit", request_digest="ab" * 32, plane="python"
+    )
+    e1 = await meter.record_chat(
+        "tenant_idem",
+        cache_hit=True,
+        total_tokens=500,
+        stripe_customer_id="cus_x",
+        event_id=eid,
+    )
+    e2 = await meter.record_chat(
+        "tenant_idem",
+        cache_hit=True,
+        total_tokens=500,
+        stripe_customer_id="cus_x",
+        event_id=eid,
+    )
+    assert e1.event_id == eid == e2.event_id
+    assert captured[2]["identifier"] == captured[3]["identifier"]
+    assert captured[2]["identifier"].endswith(eid)
 
 
 @pytest.mark.asyncio
@@ -198,9 +221,13 @@ async def test_edge_hit_denies_suspended_tenant():
                 "Authorization": f"Bearer {api_key}",
                 "X-Ohm-Edge-Secret": "s3cret",
             },
-            json={"total_tokens": 100},
+            json={"total_tokens": 100, "request_sha256": "dd" * 32},
         )
         assert res.status_code == 403
+        # Gate returns an error document only — never a completion body to RELEASE.
+        body = res.json()
+        assert "choices" not in body
+        assert "receipt" not in body
 
 
 @pytest.mark.asyncio
@@ -505,6 +532,7 @@ async def test_checkout_passes_commit_to_session(monkeypatch):
                 "plan": "payg",
                 "commit": "c99",
                 "email": "commit@test.dev",
+                "password": "testpass1",
                 "terms_ack": True,
                 "dpa_ack": True,
             },

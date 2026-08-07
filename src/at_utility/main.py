@@ -31,7 +31,7 @@ from at_utility.compliance.policy import ALLOWED_PURPOSES, BLOCKED_PURPOSES, PUR
 from at_utility.compliance.terms import assert_cache_training_denied, terms_metadata
 from at_utility.config import Settings, get_settings
 from at_utility.ingest import fetch_web_context, inject_context_messages
-from at_utility.metering import Meter, STRIPE_METER_DLQ_KEY
+from at_utility.metering import Meter, STRIPE_METER_DLQ_KEY, stable_meter_event_id
 from at_utility.providers import (
     OPENAI_COMPAT_VENDORS,
     AnthropicProvider,
@@ -2348,8 +2348,9 @@ async def edge_hit_meter(
     The edge calls this before serving a cached completion so HITs are billed
     and suspended/capped tenants are denied even on the cached path. The
     ``auth_tenant`` dependency raises 401/402/403 for the edge to relay; a 200
-    means "serve the cached body". Requires the shared edge secret — when it is
-    unset the endpoint is disabled (503) and the edge must full-proxy instead.
+    means "serve the cached body" (HIT state RELEASE). Requires the shared edge
+    secret — when it is unset the endpoint is disabled (503) and the edge must
+    full-proxy instead (PROXY).
     """
     s = state.settings
     if not s.at_edge_shared_secret:
@@ -2361,11 +2362,17 @@ async def edge_hit_meter(
         raise HTTPException(status_code=403, detail="Invalid edge secret")
     api_key, tenant_rec = auth
     await rate_limit(api_key, tenant_rec.tenant_id)
+    meter_eid = stable_meter_event_id(
+        kind="cache_hit",
+        request_digest=body.request_sha256,
+        plane="rust-edge",
+    )
     event = await state.meter.record_chat(
         tenant_rec.tenant_id,
         cache_hit=True,
         total_tokens=max(0, int(body.total_tokens)),
         stripe_customer_id=tenant_rec.stripe_customer_id or "",
+        event_id=meter_eid,
     )
     await _append_ledger(
         tenant_rec,
@@ -2373,11 +2380,14 @@ async def edge_hit_meter(
         tokens=max(0, int(body.total_tokens)),
         pipe_usd=event.billed_usd,
         cache_hit=True,
+        request_id=meter_eid,
     )
     out: dict[str, Any] = {
         "ok": True,
         "billed_usd": event.billed_usd,
         "stripe_synced": event.stripe_synced,
+        "hit_state": receipts.HIT_STATE_RELEASE,
+        "meter_event_id": event.event_id,
     }
     receipt_jws = receipts.mint_receipt(
         tenant=tenant_rec.tenant_id,
@@ -2387,6 +2397,8 @@ async def edge_hit_meter(
         request_sha256=body.request_sha256,
         region=state.settings.at_region,
         plane="rust-edge",
+        admit="allow",
+        meter_event_id=event.event_id,
     )
     if receipt_jws:
         out["receipt"] = receipt_jws
@@ -2593,11 +2605,17 @@ async def chat_completions(
             payload = json.loads(cached)
             usage = payload.get("usage") or {}
             total = int(usage.get("total_tokens") or 0)
+            meter_eid = stable_meter_event_id(
+                kind="cache_hit",
+                request_digest=request_digest,
+                plane="python",
+            )
             event = await state.meter.record_chat(
                 tenant,
                 cache_hit=True,
                 total_tokens=total,
                 stripe_customer_id=stripe_customer,
+                event_id=meter_eid,
             )
             await _append_ledger(
                 tenant_rec,
@@ -2608,11 +2626,13 @@ async def chat_completions(
                 cache_hit=True,
                 purpose=str(web_purpose or ""),
                 path=traffic_path,
+                request_id=meter_eid,
             )
             hit_headers = {
                 **cache_headers,
                 "X-AT-Cache": "HIT",
                 "X-AT-Billed-USD": f"{event.billed_usd:.6f}",
+                receipts.HIT_STATE_HEADER: receipts.HIT_STATE_RELEASE,
             }
             # Signed proof of the replay: verifiable against the public JWKS
             # at /.well-known/http-message-signatures-directory.
@@ -2626,6 +2646,8 @@ async def chat_completions(
                 plane="python",
                 tree_id=cache_tree,
                 tree_name=cache_tree,
+                admit="allow",
+                meter_event_id=event.event_id,
             )
             if receipt_jws:
                 hit_headers[receipts.RECEIPT_HEADER] = receipt_jws
@@ -2735,11 +2757,17 @@ async def chat_completions(
                     if usage_total is not None
                     else approx_tokens_from_sse_lines(collected)
                 )
+                miss_eid = stable_meter_event_id(
+                    kind="cache_miss",
+                    request_digest=request_digest,
+                    plane="python",
+                )
                 sev = await state.meter.record_chat(
                     tenant,
                     cache_hit=False,
                     total_tokens=total_tokens,
                     stripe_customer_id=stripe_customer,
+                    event_id=miss_eid,
                 )
                 await _append_ledger(
                     tenant_rec,
@@ -2750,6 +2778,7 @@ async def chat_completions(
                     cache_hit=False,
                     purpose=str(web_purpose or ""),
                     path=traffic_path,
+                    request_id=miss_eid,
                 )
                 if not no_store:
                     # Streamed MISS populates the same cache entry the JSON
@@ -2807,11 +2836,17 @@ async def chat_completions(
         await state.trees.index_add(tenant, cache_tree, request_digest)
     usage = result.get("usage") or {}
     total = int(usage.get("total_tokens") or 0)
+    miss_eid = stable_meter_event_id(
+        kind="cache_miss",
+        request_digest=request_digest,
+        plane="python",
+    )
     event = await state.meter.record_chat(
         tenant,
         cache_hit=False,
         total_tokens=total,
         stripe_customer_id=stripe_customer,
+        event_id=miss_eid,
     )
     await _append_ledger(
         tenant_rec,
@@ -2822,6 +2857,7 @@ async def chat_completions(
         cache_hit=False,
         purpose=str(web_purpose or ""),
         path=traffic_path,
+        request_id=miss_eid,
     )
     return JSONResponse(
         result,

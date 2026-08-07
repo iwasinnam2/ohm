@@ -26,6 +26,7 @@ Not legal advice. Do not treat this folder as a patent specification.
 | [01-ATTORNEY-SHORTLIST.md](01-ATTORNEY-SHORTLIST.md) | Firm list + asks (internal; not required as attachment) |
 | [00-BRIEF.md](00-BRIEF.md) | Pointer to BRIEF.md |
 | [02-PRIOR-ART.md](02-PRIOR-ART.md) · [03-GAP-AUDIT.md](03-GAP-AUDIT.md) · [04-DISCLOSURE-INVENTORY.md](04-DISCLOSURE-INVENTORY.md) | Source detail now folded into BRIEF.md; keep for internal expansion |
+| [GAP-CLOSE-AND-LOOSE-ENDS.md](GAP-CLOSE-AND-LOOSE-ENDS.md) | Full gap inventory, dual-use build tranches, conversation loose ends |
 
 ## Code anchors
 

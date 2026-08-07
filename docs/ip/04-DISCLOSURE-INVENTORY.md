@@ -35,11 +35,11 @@ Do **not** publish casually if counsel later wants a narrow filing on gap-closes
 
 ## Freeze rule (until Phase B)
 
-Until counsel returns **File** or **Do not file**:
+Counsel briefs are **sent** (Phase B in flight). Until Traffic Lights return:
 
-1. Do not blog deeper protocol RFCs that invent new unpublished mechanisms.
+1. Do not blog deeper protocol RFCs that invent new unpublished mechanisms (admit-token / CAS redesign).
 2. Safe to keep marketing on exact-replay × pipeline (already public).
-3. If engineering gap-closes for patent strength, keep them **private** until counsel advises publish-vs-file order.
+3. Tranche 1 dual-use hardening (HIT states, digest-scoped meter ids, receipt bind, bleed tests) may ship publicly — it documents behaviour already implied by the gate.
 
 ## Dated snapshot (optional defensive publication)
 
