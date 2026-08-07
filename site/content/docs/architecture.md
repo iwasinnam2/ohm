@@ -117,14 +117,7 @@ The quiet implication: you can be aggressive about tip hygiene and TTL without r
 
 ## What this architecture enables
 
-This design turns traditionally wasteful AI operations — re-paying identical agent and CI prompts, mixing preview pollution into production HIT inventory — into **inventory and metadata operations**.
-
-- **Zero-upstream replay** — identical requests answer from Redis; the lab is not paid twice.
-- **Tree-scoped isolation** — PR and agent inventories diverge without cloning tenants or databases.
-- **Promote as index work** — bring new digests to `main` without rewriting history as a bulk export.
-- **Compose with a database preview** — state branch + replay tip in one CI job; complementary peers.
-- **Governed browse** — public web through robots / PII / SSRF before model contact.
-- **Auditable claims** — meters and the waste demo bind marketing to machinery.
+<!-- ohm:enablement -->
 
 ## In short
 

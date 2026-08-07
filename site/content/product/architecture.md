@@ -100,6 +100,10 @@ Putting every agent on `main`, then spinning a second gateway when collisions ap
 
 Isolation is a tip problem. Keep one gateway. Split tips. Promote when the suite earns `main`. The noisy-neighbor diagram is not a morality play; it is the failure mode we see when the gateway is shared for the right reason and the tip is shared for the wrong one.
 
+## What this architecture enables
+
+<!-- ohm:enablement -->
+
 ## Related
 
 - [Docs — Architecture](/docs/architecture) — methodical dual-container deep dive
