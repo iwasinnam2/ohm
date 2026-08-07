@@ -25,7 +25,7 @@ You must not use the Service to:
 - Access login-gated, credentialed, or private account systems
 - Harvest leads, build person dossiers, or derive biometrics
 - Conduct unsolicited direct marketing without a lawful basis (UK PECR and equivalents)
-- Violate copyright, database rights, or site terms through bulk republication of fetched content
+- Violate copyright, database rights, or site terms through bulk republication of fetched content ([Copyright](/docs/copyright))
 - Attempt to extract cache contents for model training or competing model development
 - Violate applicable computer-misuse / unauthorized-access laws
 
@@ -64,3 +64,4 @@ Additive under `tos-2026-07-26` (existing acks remain valid):
 - **Operational metadata.** Optional path labels (`X-Ohm-Path` / `ohm_path`) and cost-center bindings are service-operation fields for hit-ratio inventory and FinOps attribution — not content for model training.
 - **Spend caps.** Org policy may soft-throttle or hard-refuse cache **MISS** upstream when monthly pipe-rent caps are exceeded. Cache **HIT** replay still serves. Caps are not prepaid credits; withOhm invoice ≠ provider bill.
 - **Savings and receipts.** Dual-ledger and public savings receipts remain estimates (`estimate_only`). No guaranteed savings SLA; no semantic cache; provider invoice reconcile is not offered.
+- **Copyright.** Posture documented at [/docs/copyright](/docs/copyright) (`copyright-2026-08-07`) — excerpt caps are controls, not a fair-use opinion.

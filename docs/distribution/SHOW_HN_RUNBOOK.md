@@ -1,12 +1,15 @@
-# Show HN runbook — one shot, 2h live
+# Show HN runbook — **BLOCKED**
 
-Do not resubmit for ~6 months. Fire only when you can reply live for **≥2 hours**.
+**Do not fire.** The operator account is banned on Hacker News. Do not create
+or use alternate accounts to evade the ban. Distribution runs through Cursor
+Forum, r/cursor, X, cursor.directory, and steal-kit PRs instead — see
+[WASTE_CHECK.md](WASTE_CHECK.md) and [GAP_SURFACES.md](GAP_SURFACES.md).
 
-Copy source: [LAUNCH_POSTS.md](LAUNCH_POSTS.md) §1. Siege answers: [SIEGE_DEFENSE.md](SIEGE_DEFENSE.md).
+Historical one-shot notes kept below for reference only.
 
 ---
 
-## When
+## When (historical — do not use)
 
 - **Tue–Thu, 13:00–15:00 UK** (8–10am ET)
 - Clear calendar for T+0 → T+2h
@@ -22,7 +25,8 @@ Copy source: [LAUNCH_POSTS.md](LAUNCH_POSTS.md) §1. Siege answers: [SIEGE_DEFEN
 .\scripts\external_smoke.ps1 -BaseUrl https://api.withohm.dev -ApiKey $env:OHM_API_KEY
 ```
 
-- [ ] Live surfaces: https://www.withohm.dev/i · /design-partners · /docs/cursor
+- [ ] Live surfaces: https://www.withohm.dev/demo · /i · /design-partners · /docs/cursor
+- [ ] Incognito waste check works (MISS → HIT) with public proof key if configured
 - [ ] Health: `GET https://api.withohm.dev/health` and `/ready`
 - [ ] First comment pasted in notepad (below) — post within **60 seconds** of submit
 - [ ] [SIEGE_DEFENSE.md](SIEGE_DEFENSE.md) open (exact-match, charging for hits, Rust full-proxy, semantic cache)
@@ -50,24 +54,22 @@ Show HN: withOhm – metered pipe for agents: cache replay, robots-aware fetch
 ## First comment (paste immediately)
 
 ```text
-I built this after watching coding agents re-pay full token price for calls
-they had already made (repeat prefill tax), and re-scrape pages with no
-regard for robots.txt or what PII came back.
+If you’ve burned through a coding-agent quota mid-month on loops and retries,
+this is the pattern: identical calls get re-billed every time.
 
-withOhm is an OpenAI-compatible pipe you point an agent at. Two things happen
-in the pipe: (1) exact-replay caching — identical requests are served from
-Redis instead of the provider, so a hit costs ~$2/M tokens instead of the
-provider's full input+output price; (2) a compliance pipeline for web fetch —
-robots.txt respected, PII redacted, SSRF-safe. MCP: pip install withohm-mcp.
+Sixty-second proof: https://www.withohm.dev/demo
+Same prompt twice → MISS then HIT. The second call does not re-buy the model.
 
-Savings are a dual ledger on /v1/savings: estimated provider $ avoided
-(blended list rate × hit tokens) vs Ohm pipe rent, plus roi_ratio — always
-labeled estimate_only. Cache hits are billable events on purpose: withOhm
-only makes money when it's saving you more. Exact-match only — semantic
-cache turns savings into refunds. BYOK — your provider key rides in a header.
+withOhm is an OpenAI-compatible pipe: exact-replay caching (streamed or not),
+compliant web fetch (robots / PII / SSRF), BYOK. MCP: pip install withohm-mcp
+→ https://www.withohm.dev/i
 
-Repo is MIT. Scrutiny welcome on cache-key canonicalization and robots/PII.
-Gem position: docs/GEM_POSITION.md
+Savings are a dual ledger on /v1/savings (provider avoided vs pipe rent) —
+always estimate_only. Exact-match only; semantic cache turns savings into
+refunds. Cache hits are billable events on purpose.
+
+Repo MIT. Scrutiny welcome on cache-key canonicalization and robots/PII.
+Siege FAQ lives in docs/distribution/SIEGE_DEFENSE.md
 ```
 
 ---

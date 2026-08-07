@@ -27,14 +27,14 @@ export default function ProfilePage() {
     setKey(readStoredKey());
     setReady(true);
     if (!has) {
-      router.replace("/billing/intermediate");
+      router.replace("/login?next=/profile");
     }
   }, [router]);
 
   function signOut() {
     clearSeatLocal();
     notifySeatChanged();
-    router.push("/");
+    router.push("/login");
   }
 
   if (!ready || !seated) {

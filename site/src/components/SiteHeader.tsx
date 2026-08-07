@@ -2,8 +2,10 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 import { OhmMark } from "./OhmMark";
 import { StartOrProfileCta } from "./StartOrProfileCta";
+import { hasOhmSeat } from "@/lib/profileStorage";
 import { PRODUCT_INDEX } from "@/lib/productMeta";
 import { RESOURCES_INDEX } from "@/lib/resourcesMeta";
 import { USE_CASE_INDEX } from "@/lib/useCasesMeta";
@@ -19,16 +21,38 @@ function navCurrent(pathname: string, href: string): boolean {
       pathname === "/changelog" ||
       pathname === "/security" ||
       pathname === "/contact" ||
-      pathname.startsWith("/support")
+      pathname === "/demo" ||
+      pathname === "/product/waste-demo" ||
+      pathname === "/bounty" ||
+      pathname.startsWith("/support") ||
+      pathname.startsWith("/use-cases/enterprise-chaos")
     );
   }
   if (href === "/profile") {
     return pathname === "/profile" || pathname.startsWith("/keys");
   }
+  if (href === "/login") {
+    return pathname === "/login" || pathname === "/signup";
+  }
   return pathname === href || pathname.startsWith(`${href}/`);
 }
+
 export function SiteHeader() {
   const pathname = usePathname() || "/";
+  const [seated, setSeated] = useState(false);
+
+  useEffect(() => {
+    function sync() {
+      setSeated(hasOhmSeat());
+    }
+    sync();
+    window.addEventListener("storage", sync);
+    window.addEventListener("ohm-seat-changed", sync);
+    return () => {
+      window.removeEventListener("storage", sync);
+      window.removeEventListener("ohm-seat-changed", sync);
+    };
+  }, []);
 
   const utility = [
     { href: "/workbench", label: "Shell" },
@@ -142,6 +166,15 @@ export function SiteHeader() {
             {link.label}
           </Link>
         ))}
+        {!seated ? (
+          <Link
+            href="/login"
+            className="site-header__util-link"
+            aria-current={navCurrent(pathname, "/login") ? "page" : undefined}
+          >
+            Log in
+          </Link>
+        ) : null}
         <StartOrProfileCta className="site-header__cta" />
       </nav>
     </header>

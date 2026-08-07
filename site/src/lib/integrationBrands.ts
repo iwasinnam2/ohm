@@ -1,4 +1,4 @@
-/** Brand board — interconnected tools people already trust. */
+/** Brand board — interconnected tools with one-click authorize/integrate. */
 
 export type BrandTile = {
   id: string;
@@ -7,8 +7,12 @@ export type BrandTile = {
   blurb: string;
   /** Official product site (trust signal). */
   href: string;
-  /** In-app deep link when we have a setup surface. */
-  setupHref?: string;
+  /** One-click authorize / integrate URL (OAuth or marketplace deep link). */
+  authorizeHref: string;
+  /** Optional letter mark when no SVG logo ships yet. */
+  mark: string;
+  /** CSS accent for the mark tile. */
+  markColor: string;
 };
 
 export const INTEGRATION_BRANDS: BrandTile[] = [
@@ -16,17 +20,22 @@ export const INTEGRATION_BRANDS: BrandTile[] = [
     id: "cursor",
     name: "Cursor",
     kind: "agent",
-    blurb: "MCP one-click + mcp.json",
+    blurb: "MCP marketplace attach",
     href: "https://cursor.com",
-    setupHref: "/connections#cursor",
+    authorizeHref:
+      "https://cursor.com/install-mcp?name=withOhm&config=eyJ1cmwiOiJodHRwczovL21jcC53aXRob2htLmRldi9tY3AifQ",
+    mark: "Cu",
+    markColor: "#000000",
   },
   {
     id: "claude-code",
     name: "Claude Code",
     kind: "agent",
-    blurb: "Terminal MCP attach",
+    blurb: "Terminal MCP authorize",
     href: "https://docs.anthropic.com/en/docs/claude-code",
-    setupHref: "/connections#claude-code",
+    authorizeHref: "/connections#claude-code",
+    mark: "Cl",
+    markColor: "#D97757",
   },
   {
     id: "vscode",
@@ -34,7 +43,9 @@ export const INTEGRATION_BRANDS: BrandTile[] = [
     kind: "agent",
     blurb: "Copilot agent MCP",
     href: "https://code.visualstudio.com",
-    setupHref: "/connections#vscode",
+    authorizeHref: "/connections#vscode",
+    mark: "VS",
+    markColor: "#0078D4",
   },
   {
     id: "windsurf",
@@ -42,7 +53,9 @@ export const INTEGRATION_BRANDS: BrandTile[] = [
     kind: "agent",
     blurb: "Codeium MCP config",
     href: "https://windsurf.com",
-    setupHref: "/connections#windsurf",
+    authorizeHref: "/connections#windsurf",
+    mark: "Wi",
+    markColor: "#0EA5E9",
   },
   {
     id: "zed",
@@ -50,7 +63,9 @@ export const INTEGRATION_BRANDS: BrandTile[] = [
     kind: "agent",
     blurb: "Context servers",
     href: "https://zed.dev",
-    setupHref: "/connections#zed",
+    authorizeHref: "/connections#zed",
+    mark: "Ze",
+    markColor: "#0847F7",
   },
   {
     id: "openai",
@@ -58,15 +73,19 @@ export const INTEGRATION_BRANDS: BrandTile[] = [
     kind: "pipe",
     blurb: "Compatible /v1 + BYOK",
     href: "https://platform.openai.com",
-    setupHref: "/docs/quickstart",
+    authorizeHref: "https://platform.openai.com/api-keys",
+    mark: "OAI",
+    markColor: "#10A37F",
   },
   {
     id: "anthropic",
     name: "Anthropic",
     kind: "pipe",
     blurb: "BYOK on the pipe",
-    href: "https://www.anthropic.com",
-    setupHref: "/docs/quickstart",
+    href: "https://console.anthropic.com",
+    authorizeHref: "https://console.anthropic.com/settings/keys",
+    mark: "An",
+    markColor: "#D4A27F",
   },
   {
     id: "mcp",
@@ -74,7 +93,9 @@ export const INTEGRATION_BRANDS: BrandTile[] = [
     kind: "pipe",
     blurb: "Open agent protocol",
     href: "https://modelcontextprotocol.io",
-    setupHref: "/docs/commands",
+    authorizeHref: "/docs/commands",
+    mark: "MCP",
+    markColor: "#6B5CE7",
   },
   {
     id: "stripe",
@@ -82,7 +103,9 @@ export const INTEGRATION_BRANDS: BrandTile[] = [
     kind: "pipe",
     blurb: "Seats + meters",
     href: "https://stripe.com",
-    setupHref: "/docs/pricing",
+    authorizeHref: "https://dashboard.stripe.com/apikeys",
+    mark: "St",
+    markColor: "#635BFF",
   },
   {
     id: "redis",
@@ -90,15 +113,9 @@ export const INTEGRATION_BRANDS: BrandTile[] = [
     kind: "pipe",
     blurb: "Exact-match replay",
     href: "https://redis.io",
-    setupHref: "/docs/optimized-usage",
-  },
-  {
-    id: "neon",
-    name: "Neon",
-    kind: "pipe",
-    blurb: "State branch + Ohm tip compose",
-    href: "https://neon.tech",
-    setupHref: "/docs/compose-neon",
+    authorizeHref: "https://redis.io/cloud/",
+    mark: "Re",
+    markColor: "#DC382D",
   },
   {
     id: "shell",
@@ -106,7 +123,9 @@ export const INTEGRATION_BRANDS: BrandTile[] = [
     kind: "surface",
     blurb: "Ohm workbench",
     href: "/workbench",
-    setupHref: "/workbench",
+    authorizeHref: "/workbench",
+    mark: "Ω",
+    markColor: "#7C3AED",
   },
   {
     id: "org",
@@ -114,7 +133,9 @@ export const INTEGRATION_BRANDS: BrandTile[] = [
     kind: "surface",
     blurb: "Ledger + policy",
     href: "/org",
-    setupHref: "/org",
+    authorizeHref: "/org",
+    mark: "An",
+    markColor: "#111827",
   },
 ];
 

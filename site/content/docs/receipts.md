@@ -1,29 +1,21 @@
-# Signed cache-hit receipts
+# Waste demo
 
-Every cache HIT can carry `X-Ohm-Receipt` — an Ed25519 JWS you can verify against the public JWKS directory.
+Live proof that mechanical repeats stop re-buying the model.
 
-## Verify
+Open the interactive demo: **[Waste demo](/product/waste-demo)**.
 
-```bash
-curl -si https://api.withohm.dev/v1/chat/completions \
-  -H "Authorization: Bearer $OHM_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{"model":"mock","messages":[{"role":"user","content":"receipt demo"}]}' \
-  | grep -i x-ohm-receipt
-```
+## What you see
 
-Fetch keys from `/.well-known/http-message-signatures-directory`. Repository verifier: `scripts/verify_receipt.py`.
+1. First identical call → **MISS** — Pipeline routes BYOK (or mock); pipe rent `ohm_cache_miss`.
+2. Second identical call → **HIT** — Ephemeral Redis replay; labs silent; pipe rent `ohm_cache_hit`.
+3. Dual ledger — estimated provider spend avoided vs Ohm pipe rent (`/v1/savings`).
 
-## Payload (selected fields)
+## Why it matters
 
-| Field | Meaning |
-|-------|---------|
-| `tokens_replayed` | Upstream tokens not re-bought |
-| `pipe_usd` | What Ohm metered for the hit |
-| `request_sha256` | Exact-replay identity |
-| `plane` / `region` | Where the HIT was served |
-| `tree_id` / `tree_name` | Optional cache-tree claims |
+Agent retries, research loops, and CI suites re-pay prefill when every call goes bare to a lab. withOhm intercepts the crossing: inventory stays in Ohm; labs are called only on MISS.
 
-## Related
+## Next
 
-[Trust docs](/docs/trust) · [Honesty](/docs/honesty) · [Product: Trust](/product/trust)
+- [Create Account](/signup) — Intermediate email + password
+- [Attach in Cursor](/i)
+- [Architecture](/docs/architecture)

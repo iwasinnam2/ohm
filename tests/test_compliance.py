@@ -1,6 +1,10 @@
 """Unit tests for UK/US-aligned compliance gates + adjacent frameworks."""
 
-from at_utility.compliance.copyright import apply_excerpt_cap, cap_total_context
+from at_utility.compliance.copyright import (
+    apply_excerpt_cap,
+    cap_total_context,
+    clamp_excerpt_chars,
+)
 from at_utility.compliance.pii import redact_personal_data
 from at_utility.compliance.policy import (
     ComplianceError,
@@ -138,6 +142,18 @@ def test_excerpt_cap_truncates():
     assert out.truncated
     assert len(out.text) < 200
     assert "EXCERPT_TRUNCATED" in out.text
+
+
+def test_clamp_excerpt_chars_never_raises_ceiling():
+    assert clamp_excerpt_chars(None, ceiling=4000) == 4000
+    assert clamp_excerpt_chars(0, ceiling=4000) == 4000
+    assert clamp_excerpt_chars(1000, ceiling=4000) == 1000
+    assert clamp_excerpt_chars(99999, ceiling=4000) == 4000
+    try:
+        clamp_excerpt_chars(100, ceiling=0)
+        assert False, "expected ValueError"
+    except ValueError:
+        pass
 
 
 def test_excerpt_strips_large_code_fence():

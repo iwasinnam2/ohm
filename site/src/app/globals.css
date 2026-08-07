@@ -453,6 +453,19 @@ pre {
   box-shadow: 0 12px 40px -18px rgba(177, 102, 248, 0.75);
 }
 
+.btn--login {
+  background: #0a0a0a;
+  color: #c4a1ff;
+  border: 1px solid #1a1a1a;
+  box-shadow: none;
+}
+
+.btn--login:hover {
+  background: #111;
+  color: #d8b4fe;
+  box-shadow: 0 12px 40px -18px rgba(167, 139, 250, 0.55);
+}
+
 .btn--ghost {
   border-color: var(--line);
   color: var(--fg);
@@ -1217,7 +1230,7 @@ body:has(.doc-layout) .site-footer {
   margin: 0;
   padding: 0;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(12.5rem, 1fr));
   gap: var(--space-2, 0.75rem);
 }
 
@@ -1228,17 +1241,38 @@ body:has(.doc-layout) .site-footer {
   border-radius: var(--radius, 4px);
   background: var(--surface);
   overflow: hidden;
-  min-height: 6.5rem;
+  min-height: 8.5rem;
 }
 
 .brand-tile__outer {
   display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.75rem;
   padding: var(--space-3, 1rem);
   flex: 1;
   color: inherit;
   text-decoration: none;
+}
+
+.brand-tile__logo {
+  flex: 0 0 2.5rem;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 0.55rem;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.brand-tile__copy {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
 }
 
 .brand-tile__outer:hover .brand-tile__name {
@@ -1256,9 +1290,20 @@ body:has(.doc-layout) .site-footer {
   line-height: 1.35;
 }
 
-.brand-tile__setup {
-  padding: 0.45rem var(--space-3, 1rem);
+.brand-tile__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.55rem var(--space-3, 1rem);
   border-top: 1px solid var(--line);
+}
+
+.brand-tile__integrate {
+  font-size: var(--text-sm, 0.85rem);
+  padding: 0.4rem 0.75rem;
+}
+
+.brand-tile__setup {
   font-size: var(--text-sm, 0.85rem);
   color: var(--muted);
   text-decoration: none;
@@ -1266,7 +1311,20 @@ body:has(.doc-layout) .site-footer {
 
 .brand-tile__setup:hover {
   color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 8%, transparent);
+}
+
+.brand-tile__perm {
+  margin: 0;
+  padding: 0 1rem 0.75rem;
+  font-size: 0.72rem;
+  line-height: 1.35;
+  color: var(--muted);
+}
+
+.brand-board__foot {
+  margin-top: var(--space-4);
+  color: var(--muted);
+  font-size: var(--text-sm);
 }
 
 @media (max-width: 760px) {
@@ -1606,6 +1664,90 @@ body:has(.doc-layout) .site-footer {
 
 .rate-table tbody tr:last-child td {
   border-bottom: 1px solid var(--line);
+}
+
+/* Classic log-in / sign-up gate — maps to key restore + Intermediate checkout */
+.auth-gate {
+  max-width: min(28rem, 100%);
+  margin: 0 auto;
+  padding-block: var(--space-4) var(--space-6);
+}
+
+.auth-gate__brand {
+  text-align: center;
+  margin-bottom: var(--space-4);
+}
+
+.auth-gate__brand h1 {
+  margin-bottom: var(--space-2);
+}
+
+.auth-gate__eyebrow {
+  margin: 0 0 var(--space-2);
+  font-family: var(--font-display, var(--font-space-grotesk), sans-serif);
+  font-size: clamp(1.75rem, 4vw, 2.35rem);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: var(--fg);
+  line-height: 1.1;
+}
+
+.auth-gate__tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin-bottom: var(--space-4);
+  background: var(--bg-elevated);
+}
+
+.auth-gate__tab {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-weight: 500;
+  padding: var(--space-2) var(--space-3);
+  cursor: pointer;
+  transition: color 160ms ease, background 160ms ease;
+}
+
+.auth-gate__tab:hover {
+  color: var(--fg);
+}
+
+.auth-gate__tab--active {
+  background: color-mix(in srgb, var(--accent, #b166f8) 18%, transparent);
+  color: var(--fg);
+  box-shadow: inset 0 -2px 0 var(--accent, #b166f8);
+}
+
+.auth-gate__panel {
+  animation: auth-gate-in 280ms ease-out;
+}
+
+@keyframes auth-gate-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.auth-gate__form {
+  margin-top: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-gate__panel {
+    animation: none;
+  }
 }
 
 .billing-form {
@@ -3155,6 +3297,108 @@ body:has(.doc-layout) .site-footer {
   margin-bottom: 0.4rem;
 }
 
+/* Waste-check demo — MISS → HIT proof */
+.waste-check {
+  max-width: 40rem;
+  margin: 0 auto 2rem;
+}
+
+.waste-check__session {
+  margin-bottom: 0.75rem;
+}
+
+.waste-check__key-note {
+  font-size: 0.95rem;
+  line-height: 1.45;
+  color: var(--muted, #5a6570);
+}
+
+.waste-check__actions {
+  margin: 1rem 0 1.25rem;
+}
+
+.demo-result {
+  margin: 1.25rem 0;
+  padding: 1rem 1.1rem;
+  border: 1px solid color-mix(in srgb, currentColor 14%, transparent);
+  border-radius: 8px;
+  background: color-mix(in srgb, currentColor 3%, transparent);
+}
+
+.demo-result__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1rem;
+}
+
+.demo-result__call {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 8rem;
+}
+
+.demo-result__label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  opacity: 0.7;
+}
+
+.demo-result__badge {
+  display: inline-block;
+  font-weight: 700;
+  font-size: 1.05rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+  width: fit-content;
+}
+
+.demo-result__badge--miss {
+  background: color-mix(in srgb, #c45c26 22%, transparent);
+}
+
+.demo-result__badge--hit {
+  background: color-mix(in srgb, #2a7a4b 28%, transparent);
+}
+
+.demo-result__billed {
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.85;
+}
+
+.demo-result__arrow {
+  font-size: 1.25rem;
+  opacity: 0.5;
+}
+
+.demo-result__punchline {
+  margin: 1rem 0 0;
+  font-size: 1rem;
+  line-height: 1.45;
+  font-weight: 500;
+}
+
+.demo-result__receipt {
+  margin-top: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.demo-result__share {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.demo-result__ledger {
+  font-size: 0.9rem;
+  opacity: 0.85;
+}
+
 /* Agent Shell — PowerShell-style terminal */
 .ps-shell {
   --ps-bg: #1a3a66;
@@ -3900,4 +4144,180 @@ body:has(.doc-layout) .site-footer {
   max-width: 48rem;
   margin-left: auto;
   margin-right: auto;
+}
+
+/* Product landing */
+.product-hero__eyebrow {
+  margin: 0 0 var(--space-2);
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.product-hero__lede {
+  max-width: 40rem;
+  font-size: 1.1rem;
+  line-height: 1.55;
+}
+
+.product-hero__cta {
+  margin-top: var(--space-4);
+}
+
+.product-pillars {
+  margin: 0 0 var(--space-7);
+}
+
+.product-pillars__grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  gap: var(--space-3);
+}
+
+.product-pillars__grid li {
+  padding: var(--space-4);
+  border-radius: var(--radius-card);
+  background: color-mix(in srgb, var(--bg-elevated) 90%, #000);
+  border: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.product-pillars__grid strong {
+  font-size: 0.85rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.product-pillars__grid span {
+  color: var(--muted);
+  font-size: var(--text-sm);
+  line-height: 1.45;
+}
+
+.product-more {
+  margin-bottom: var(--space-7);
+}
+
+/* Flashy dual-container aid */
+.dual-aid--flashy {
+  padding: var(--space-6) var(--space-4);
+  border-radius: var(--radius-card);
+  background:
+    radial-gradient(ellipse at 20% 0%, rgba(177, 102, 248, 0.18), transparent 55%),
+    radial-gradient(ellipse at 80% 100%, rgba(99, 102, 241, 0.12), transparent 50%),
+    color-mix(in srgb, var(--bg-elevated) 92%, #000);
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--line));
+  animation: dual-aid-in 520ms ease-out;
+}
+
+@keyframes dual-aid-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.dual-aid__title {
+  margin: 0 0 var(--space-2);
+  font-size: 1.35rem;
+  text-align: center;
+}
+
+.dual-aid__lede {
+  margin: 0 auto var(--space-5);
+  max-width: 40rem;
+  text-align: center;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.dual-aid__kicker {
+  margin: 0 0 var(--space-2);
+  font-size: 0.7rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.dual-aid__list {
+  margin: 0 0 var(--space-3);
+  padding-left: 1.1rem;
+  color: var(--fg);
+  font-size: var(--text-sm);
+  line-height: 1.55;
+}
+
+.dual-aid__pulse {
+  width: 0.65rem;
+  height: 0.65rem;
+  border-radius: 999px;
+  background: var(--accent);
+  box-shadow: 0 0 0 0 rgba(177, 102, 248, 0.55);
+  animation: dual-pulse 1.8s ease-out infinite;
+  margin-bottom: 0.35rem;
+}
+
+@keyframes dual-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(177, 102, 248, 0.55); }
+  70% { box-shadow: 0 0 0 12px rgba(177, 102, 248, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(177, 102, 248, 0); }
+}
+
+/* Brand values diagram */
+.brand-values {
+  margin: var(--space-5) 0 var(--space-6);
+  padding: var(--space-5);
+  border-radius: var(--radius-card);
+  border: 1px solid var(--line);
+  background:
+    radial-gradient(ellipse at 10% 0%, rgba(177, 102, 248, 0.12), transparent 45%),
+    var(--surface);
+}
+
+.brand-values__title {
+  margin: 0 0 var(--space-2);
+  font-size: 1.25rem;
+}
+
+.brand-values__lede {
+  margin: 0 0 var(--space-4);
+  color: var(--muted);
+  max-width: 36rem;
+}
+
+.brand-values__grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  gap: var(--space-3);
+}
+
+.brand-values__card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: var(--space-3);
+  border-radius: var(--radius, 4px);
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--bg-elevated) 88%, #000);
+}
+
+.brand-values__name {
+  color: var(--accent);
+  font-size: 0.95rem;
+}
+
+.brand-values__body {
+  color: var(--muted);
+  font-size: var(--text-sm);
+  line-height: 1.45;
 }

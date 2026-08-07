@@ -71,6 +71,7 @@ Auth is resolved per request: `Authorization: Bearer sk-at-*` (and optional `X-O
 | `ohm_usage` | Usage snapshot (`GET /v1/usage`) |
 | `ohm_chat` | Chat through Ohm; optional `fetch_urls` for web context |
 | `ohm_savings` | Cache savings snapshot (`GET /v1/savings`) |
+| `ohm_receipt` | Mint a public savings receipt (`POST /v1/savings/receipt`) |
 | `ohm_models` | Routable model ids (`GET /v1/models`) |
 | `ohm_providers` | Upstream provider / failover status (`GET /v1/providers`) |
 | `ohm_policy` | Allowed web-fetch purposes (`GET /v1/compliance/policy`) |

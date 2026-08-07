@@ -11,6 +11,14 @@ from dataclasses import asdict, dataclass
 from typing import Any, Optional
 
 from at_utility.config import Settings
+from at_utility.passwords import (
+    email_index_key,
+    hash_password,
+    normalize_email,
+    unwrap_api_key,
+    verify_password,
+    wrap_api_key,
+)
 from at_utility.redis_store import CacheStore, tenant_key
 
 VALID_PLANS = frozenset({"payg", "enterprise", "dev", "design_partner"})
@@ -45,6 +53,11 @@ class TenantRecord:
     org_id: str = ""
     cost_center: str = "default"
     label: str = ""
+    # Account profile (Intermediate email/password login)
+    email: str = ""
+    password_hash: str = ""
+    # Fernet-wrapped sk-at-… so login can restore the bearer (not plaintext at rest)
+    api_key_wrapped: str = ""
 
     def to_json(self) -> str:
         return json.dumps(asdict(self))
@@ -69,6 +82,17 @@ class TenantRegistry:
 
     def _key_index(self, key_hash: str) -> str:
         return f"at:global:apikey:{key_hash}"
+
+    def _profile_beside_key(self, key_hash: str) -> str:
+        """Account details stored beside the apikey SHA-256 index."""
+        return f"at:global:apikey:{key_hash}:profile"
+
+    def _account_secret(self) -> str:
+        return (
+            self._settings.at_account_secret
+            or self._settings.at_edge_shared_secret
+            or "ohm-local-account-wrap"
+        )
 
     def _tenant_meta(self, tenant_id: str) -> str:
         return tenant_key(tenant_id, "meta", "record")
@@ -119,6 +143,9 @@ class TenantRegistry:
         partner_days: int = DEFAULT_DESIGN_PARTNER_DAYS,
         org_id: str = "",
         cost_center: str = "default",
+        email: str = "",
+        password: str = "",
+        password_hash: str = "",
     ) -> tuple[str, TenantRecord]:
         tenant_id = f"tenant_{uuid.uuid4().hex[:12]}"
         raw_key = f"sk-at-{secrets.token_urlsafe(24)}"
@@ -128,6 +155,14 @@ class TenantRegistry:
         exp = expires_at
         if resolved_plan == "design_partner" and not exp:
             exp = created + max(1, partner_days) * 86400
+        email_n = normalize_email(email)
+        if password_hash:
+            pw_hash = password_hash
+        elif password:
+            pw_hash = hash_password(password)
+        else:
+            pw_hash = ""
+        wrapped = wrap_api_key(raw_key, self._account_secret()) if pw_hash else ""
         record = TenantRecord(
             tenant_id=tenant_id,
             plan=resolved_plan,
@@ -143,10 +178,18 @@ class TenantRegistry:
             org_id=org_id or "",
             cost_center=(cost_center or "default").strip() or "default",
             label=label or "",
+            email=email_n,
+            password_hash=pw_hash,
+            api_key_wrapped=wrapped,
         )
         payload = record.to_json()
         await self._store.set(self._key_index(key_hash), tenant_id, ttl_seconds=0)
         await self._store.set(self._tenant_meta(tenant_id), payload, ttl_seconds=0)
+        await self._write_profile_beside_key(record)
+        if email_n and pw_hash:
+            await self._store.set(
+                email_index_key(email_n), tenant_id, ttl_seconds=0
+            )
         if label:
             await self._store.set(
                 tenant_key(tenant_id, "meta", "label"), label, ttl_seconds=0
@@ -156,6 +199,72 @@ class TenantRegistry:
                 f"at:org:{org_id}:tenant_ids", tenant_id
             )
         return raw_key, record
+
+    async def _write_profile_beside_key(self, record: TenantRecord) -> None:
+        """Persist email + password hash beside the apikey SHA-256 index."""
+        if not record.key_hash:
+            return
+        profile = {
+            "email": record.email,
+            "password_hash": record.password_hash,
+            "tenant_id": record.tenant_id,
+            "key_hash": record.key_hash,
+            "label": record.label,
+            "created_at": record.created_at,
+        }
+        await self._store.set(
+            self._profile_beside_key(record.key_hash),
+            json.dumps(profile),
+            ttl_seconds=0,
+        )
+
+    async def attach_account_credentials(
+        self,
+        tenant_id: str,
+        *,
+        email: str,
+        password: str,
+        raw_key: str,
+    ) -> Optional[TenantRecord]:
+        """Bind email/password + wrapped key after issue (checkout fulfill)."""
+        record = await self.get(tenant_id)
+        if not record:
+            return None
+        email_n = normalize_email(email)
+        if not email_n or not password:
+            return record
+        existing = await self._store.get(email_index_key(email_n))
+        if existing and existing != tenant_id:
+            raise ValueError("email_already_registered")
+        record.email = email_n
+        record.password_hash = hash_password(password)
+        record.api_key_wrapped = wrap_api_key(raw_key, self._account_secret())
+        if not record.key_hash:
+            record.key_hash = hash_api_key(raw_key)
+        await self._save(record)
+        await self._write_profile_beside_key(record)
+        await self._store.set(email_index_key(email_n), tenant_id, ttl_seconds=0)
+        return record
+
+    async def login_with_password(
+        self, email: str, password: str
+    ) -> Optional[tuple[str, TenantRecord]]:
+        """Verify email/password; return (raw_api_key, record) when valid."""
+        email_n = normalize_email(email)
+        if not email_n or not password:
+            return None
+        tenant_id = await self._store.get(email_index_key(email_n))
+        if not tenant_id:
+            return None
+        record = await self.get(tenant_id)
+        if not record or record.status != "active":
+            return None
+        if not verify_password(password, record.password_hash):
+            return None
+        raw = unwrap_api_key(record.api_key_wrapped, self._account_secret())
+        if not raw:
+            return None
+        return raw, record
 
     async def _save(self, record: TenantRecord) -> TenantRecord:
         await self._store.set(
@@ -321,6 +430,9 @@ class TenantRegistry:
             return None
         if record.key_hash:
             await self._store.delete(self._key_index(record.key_hash))
+            await self._store.delete(self._profile_beside_key(record.key_hash))
+        if record.email:
+            await self._store.delete(email_index_key(record.email))
         record.status = "revoked"
         return await self._save(record)
 
@@ -402,4 +514,6 @@ class TenantRegistry:
             "org_id": record.org_id or None,
             "cost_center": record.cost_center or "default",
             "label": record.label or None,
+            "email": record.email or None,
+            "has_password": bool(record.password_hash),
         }

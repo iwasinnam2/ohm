@@ -75,3 +75,12 @@ def test_enterprise_floor_matches_config() -> None:
     card = _card()
     s = _default_settings()
     assert card["enterprise_from_usd_month"] == s.at_enterprise_monthly_usd
+
+
+def test_site_rate_card_copy_matches_canonical() -> None:
+    """Amplify/Vercel only upload site/ — the committed mirror must stay equal."""
+    site_copy = REPO_ROOT / "site" / "src" / "lib" / "rate_card.v2.json"
+    assert site_copy.is_file(), "missing site/src/lib/rate_card.v2.json mirror"
+    canonical = json.loads(RATE_CARD_PATH.read_text(encoding="utf-8"))
+    mirrored = json.loads(site_copy.read_text(encoding="utf-8"))
+    assert mirrored == canonical

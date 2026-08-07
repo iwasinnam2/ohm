@@ -68,7 +68,7 @@ Billing stays on the shared gateway (seats + meters). Promote is inventory hygie
 
 ## Compose
 
-Database preview branches (Neon and peers) carry **database state**. Ohm tips carry **exact-replay inventory**. CI composes both: a preview `DATABASE_URL` (or equivalent) plus `X-Ohm-Cache-Tree`. Same job. Two headers. Clear nouns.
+Optional database preview branches carry **database state**. Ohm tips carry **exact-replay inventory**. CI can compose both: a preview `DATABASE_URL` (or equivalent) plus `X-Ohm-Cache-Tree`. Same job. Two headers. Clear nouns. Dedicated guide: [Compose with Neon](/docs/compose-neon).
 
 <!-- ohm:compose-ci -->
 

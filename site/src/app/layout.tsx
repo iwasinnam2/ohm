@@ -93,6 +93,7 @@ export default function RootLayout({
               <Link href="/docs/terms">Terms</Link>
               <Link href="/docs/privacy">Privacy</Link>
               <Link href="/docs/dpa">DPA</Link>
+              <Link href="/docs/copyright">Copyright</Link>
               <Link href="/docs/security">Security</Link>
               <Link href="/docs/legal">Compliance</Link>
               <Link href="/support">Support</Link>

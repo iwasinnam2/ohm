@@ -34,7 +34,8 @@ Web-context payloads are built only after compliance gates (purpose, acks, URL p
 
 ## Keys
 
-- Customer keys are stored hashed (SHA-256) at rest.
+- Customer Intermediate keys are stored hashed (SHA-256) at rest.
+- Account profiles live beside each key hash: email + password hash (PBKDF2); the raw key is Fernet-wrapped with `AT_ACCOUNT_SECRET` so email login can restore the bearer. Passwords are never stored plaintext.
 - Bootstrap env keys (`AT_API_KEYS`) are for local/dev only.
 - Suspended tenants receive HTTP 403 with a clear message.
 

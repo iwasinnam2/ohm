@@ -1,6 +1,12 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { StartOrProfileCta } from "@/components/StartOrProfileCta";
+import {
+  COMMIT_TIERS,
+  formatUsd,
+  formatUsdMoney,
+  PAYG_RATES,
+} from "@/lib/meterRates";
 
 export const metadata: Metadata = {
   title: "Pricing",
@@ -45,17 +51,17 @@ export default function PricingPage() {
           <tr>
             <td>Cache hit</td>
             <td>per 1k tokens</td>
-            <td>$0.002</td>
+            <td>{formatUsd(PAYG_RATES.cache_hit)}</td>
           </tr>
           <tr>
             <td>Cache miss</td>
             <td>per 1k tokens</td>
-            <td>$0.001</td>
+            <td>{formatUsd(PAYG_RATES.cache_miss)}</td>
           </tr>
           <tr>
             <td>Web fetch</td>
             <td>per URL</td>
-            <td>$0.003</td>
+            <td>{formatUsd(PAYG_RATES.web_fetch)}</td>
           </tr>
         </tbody>
       </table>
@@ -70,27 +76,15 @@ export default function PricingPage() {
           </tr>
         </thead>
         <tbody>
-          <tr>
-            <td>
-              <code>c29</code>
-            </td>
-            <td>$29</td>
-            <td>$35</td>
-          </tr>
-          <tr>
-            <td>
-              <code>c99</code>
-            </td>
-            <td>$99</td>
-            <td>$125</td>
-          </tr>
-          <tr>
-            <td>
-              <code>c499</code>
-            </td>
-            <td>$499</td>
-            <td>$700</td>
-          </tr>
+          {COMMIT_TIERS.map((tier) => (
+            <tr key={tier.id}>
+              <td>
+                <code>{tier.id}</code>
+              </td>
+              <td>{formatUsdMoney(tier.usd_month)}</td>
+              <td>{formatUsdMoney(tier.included_usd)}</td>
+            </tr>
+          ))}
         </tbody>
       </table>
       <p style={{ color: "var(--muted)", fontSize: "0.875rem" }}>
@@ -149,7 +143,7 @@ export default function PricingPage() {
           <h3>Are savings figures guaranteed?</h3>
           <p>
             No. <code>/v1/savings</code> is always <code>estimate_only</code>. See{" "}
-            <Link href="/docs/honesty">Honesty</Link>.
+            <Link href="/product/waste-demo">Waste demo</Link>.
           </p>
         </div>
         <div>
