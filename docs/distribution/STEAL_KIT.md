@@ -97,3 +97,16 @@ Ohm-required skill/template with badge that meets the repo bar on `/bounty`.
 - Cold DM “quick call?”
 - Mass Reddit spam
 - Claim Cursor first-party placement
+
+## Operator status (Phase 3 honesty)
+
+These PRs are **manual** — agents draft; you open them under your GitHub.
+
+| Target | Status | Notes |
+|--------|--------|-------|
+| punkpeye/awesome-mcp-servers | **Deferred — operator** | Packet above; open when ready |
+| cursor.directory | **Deferred — operator** | [CURSOR_DIRECTORY.md](../listings/CURSOR_DIRECTORY.md) chaos packet |
+| Agent / Cursor rule packs | **Deferred — operator** | Optional second PR |
+| Framework README examples | **Deferred — operator** | Only where “agents can’t browse” is stated |
+
+Do not tick sprint “≥1 steal-kit PR” until a real PR URL exists.

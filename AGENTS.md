@@ -2,10 +2,13 @@
 
 ## Cursor Cloud specific instructions
 
-This repo is the **Ohm (withOhm)** monorepo — a metered "tollbooth" between apps and LLM
-providers. See `README.md` and `docs/` for product/architecture details; standard commands
-live in `README.md`, `pyproject.toml`, `docker-compose.yml`, and `site/package.json`. The
-notes below are the non-obvious things for running it in this cloud environment.
+This repo is the **Ohm (withOhm)** monorepo — a metered **pipe** (exact-match
+replay + compliant fetch) between apps and LLM providers. “Tollbooth” is the
+same idea: you rent the plumbing, not the model. See `README.md` and `docs/`
+for product/architecture details; standard commands live in `README.md`,
+`pyproject.toml`, `docker-compose.yml`, and `site/package.json`. Lead metaphor
+on marketing surfaces is **pipe / pipe rent** ([docs/BRAND.md](docs/BRAND.md)).
+The notes below are the non-obvious things for running it in this cloud environment.
 
 ### Cloud Agent Builds
 

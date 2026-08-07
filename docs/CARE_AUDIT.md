@@ -1,6 +1,6 @@
 # Care Audit — Methodological Appendix
 
-**Status:** Phases 0–2 executed (2026-08-07); Phases 3–4 pending  
+**Status:** Phases 0–4 executed (2026-08-07); living appendix for regressions  
 **Themes:** (1) care, (2) attention to detail  
 **Issued:** 2026-08-07  
 **Scope:** full monorepo — runtime, site, MCP, pricing, catalogues, docs, GTM ops  
@@ -251,14 +251,15 @@ OPERATIONS: soft-cap warning headers are MISS-only (hard 402 still via gate).
 
 Live vs archive tables separated.
 
-#### F11. Partner CSV all `[fill]` — **open (Phase 3)**
+#### F11. Partner CSV all `[fill]` — **fixed (Phase 3)**
 
-`partner_hit_list.csv` — 20 placeholder rows. Docs treat CSV as a pipeline
-artifact; it is still a template.
+CSV header labels **TEMPLATE**; PARTNER_HIT_LIST / SPRINT / WASTE_CHECK no
+longer claim “20 real rows.” Done-when requires real person+pain fills.
 
-#### F12. CTA / nav disunity — **named (Phase 0)**
+#### F12. CTA / nav disunity — **named + wired (Phase 0/4)**
 
-BRAND + WASTE_CHECK CTA doctrine: hero=belief, header=conversion, Log in=return.
+BRAND + WASTE_CHECK CTA doctrine. Resources mega now links Waste check,
+Chaos governor, and Bounty. Marketplace vs directory audience split noted.
 
 #### F13. Skills gap for `ohm_receipt` — **fixed (Phase 1)**
 
@@ -354,30 +355,20 @@ site/docs.
 
 **Exit:** no_store and org no-store claims hold on the public edge path.
 
-### Phase 3 — Catalogues & ops completion
+### Phase 3 — Catalogues & ops completion — **executed**
 
-1. Partner CSV: replace `[fill]` with real rows **or** mark template and stop
-   claiming “20 real rows”.  
-2. Bounty ops: evidence log template (receipt URL, post URL, seat email,
-   credit applied).  
-3. Steal-kit / GAP checklists: close or explicitly defer open items.  
-4. INSPECTION.md: add rows for edge no_store, MCP count, rate-card site sync.  
-5. README: kill personal Windows path; point to AGENTS.md for cloud native run.
+1. Partner CSV labeled **TEMPLATE**; Done-when no longer claims 20 real rows.  
+2. [BOUNTY_EVIDENCE.md](distribution/BOUNTY_EVIDENCE.md) operator evidence log.  
+3. Steal-kit / GAP surfaces marked **Deferred — operator** until URLs exist.  
+4. INSPECTION rows for edge no_store, MCP count, rate-card sync, MemoryStore.  
+5. README personal Windows path removed; points at AGENTS.md for native run.
 
-**Exit:** distribution artefacts are either real or labeled templates.
+### Phase 4 — Deliberate dual audience — **executed**
 
-### Phase 4 — Deliberate dual audience (product care)
-
-1. Indie surfaces (home, demo, bounty, Forum, r/cursor): waste check + Pro+
-   burn → Intermediate.  
-2. Enterprise / directory / marketplace: chaos governor → design partner /
-   enterprise apply.  
-3. Header CTA doctrine written once: guest “$0 seat” is **conversion**; hero
-   “waste check” is **belief**. Cross-link both; do not pretend they are the
-   same job.  
-4. Align AGENTS.md / README metaphor (tollbooth vs pipe) with BRAND lead.
-
-**Exit:** a stranger can tell which story a page is telling in one screen.
+1. Indie: home / demo / bounty / Forum / r/cursor stay waste-check led.  
+2. Enterprise / directory / marketplace: chaos governor packet + audience split.  
+3. Resources mega: Waste check · Chaos governor · Bounty. CTA doctrine in BRAND.  
+4. AGENTS.md / README lead metaphor = **pipe / pipe rent** (tollbooth synonym).
 
 ---
 

@@ -21,7 +21,10 @@ function navCurrent(pathname: string, href: string): boolean {
       pathname === "/changelog" ||
       pathname === "/security" ||
       pathname === "/contact" ||
-      pathname.startsWith("/support")
+      pathname === "/demo" ||
+      pathname === "/bounty" ||
+      pathname.startsWith("/support") ||
+      pathname.startsWith("/use-cases/enterprise-chaos")
     );
   }
   if (href === "/profile") {

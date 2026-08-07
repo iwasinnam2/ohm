@@ -2,6 +2,10 @@
 
 Canonical wedge for product and GTM. Enterprise framing: [ENTERPRISE_CHAOS.md](ENTERPRISE_CHAOS.md).
 
+**Dual audience:** indie / Cursor surfaces lead with **waste check** (prefill
+replay proof → Intermediate). Directory / enterprise lead with **chaos
+governor**. CTA doctrine: [BRAND.md](BRAND.md).
+
 ## The inefficiency
 
 Agent products scale context across consecutive turns: tool results, retrieved
@@ -11,8 +15,9 @@ near-mechanical repeats (retries, loops, CI prompt suites).
 
 ## The gem
 
-withOhm is the **tollbooth on wasted and repeated inference**, embedded in a
-broader **chaos governor** (SSO, compliance, clean ledger, Agent Shell):
+withOhm is the **metered pipe on wasted and repeated inference** (tollbooth
+synonym), embedded in a broader **chaos governor** (SSO, compliance, clean
+ledger, Agent Shell):
 
 | Layer | Role |
 |-------|------|

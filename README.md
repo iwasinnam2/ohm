@@ -53,13 +53,15 @@ completion = client.chat.completions.create(
 ## Quick start (Docker Compose)
 
 ```powershell
-cd C:\Users\markk\OneDrive\Documents\at-utility
+cd <repo-root>   # e.g. clone of iwasinnam2/ohm
 copy .env.example .env
 # Edit .env: set OPENAI_API_KEY for local env-fallback; keep OPENAI_BASE_URL=https://api.openai.com/v1
 docker compose --profile rust up --build -d
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts\release_smoke.ps1
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts\railgun_smoke.ps1
 ```
+
+Cloud / agent native run (no Docker): see [`AGENTS.md`](AGENTS.md).
 
 Release smoke asserts health, mock miss/hit, OpenAI miss/hit (when a key is present), Rust plane header, and usage counters. Railgun smoke asserts BYOK headers, `seat_plus_meters`, and checkout endpoint shape.
 
