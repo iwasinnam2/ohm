@@ -18,8 +18,19 @@ nothing about the production experience changes.
 
 Org hard/soft spend caps emit audit actions `org.spend_cap_hard` /
 `org.spend_cap_soft`. Soft MISS responses include `X-Ohm-Spend-Cap` headers.
-Caps meter **pipe rent** for the current UTC month per cost center — not
-provider invoices. Hit-ratio reads: `GET /v1/org/ledger/hit-ratio`.
+**Soft-cap warning headers are MISS-only** — edge HITs via `/internal/edge-hit`
+meter without re-emitting those headers (hard 402 still denies HITs when the
+gate enforces). Caps meter **pipe rent** for the current UTC month per cost
+center — not provider invoices. Hit-ratio reads: `GET /v1/org/ledger/hit-ratio`.
+
+## Degraded modes (name them; do not invent green)
+
+| Mode | Symptom | Honest claim |
+|------|---------|--------------|
+| Edge Redis secrets null / miswired | Edge full-proxies; Python serves hits | Correctness OK; latency not edge |
+| Edge Redis auth error | **Unverified** → full-proxy | Not fail-closed deny |
+| Python MemoryStore at boot | `/ready` redis.backend=`memory`; prod → 503 | Split-brain vs edge — do not route |
+| `x-at-cache: BYPASS` / `no_store` | Edge must not SET | Care: org default_cache_no_store |
 
 ## Shipping the API from anywhere (no local tooling)
 

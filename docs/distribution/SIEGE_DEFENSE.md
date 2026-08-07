@@ -113,14 +113,15 @@ Facts these responses rest on (verified against code, 2026-07-31):
 
 ### "The Rust edge doesn't even serve hits — your own ops doc says it's degraded"
 
-> Correct, and it's in the post as well as the ops doc: the edge's Redis
-> client is plain TCP, ElastiCache requires TLS, so the edge full-proxies
-> and Python serves hits today. The edge code, its metering path, and the
-> cross-language key parity tests are all real and all in the repo; the TLS
-> client is the next infrastructure item. Documenting a degraded tier
-> instead of quietly routing around it is the posture the whole system
-> takes — the billing numbers have to be auditable, so the architecture
-> claims have to be too.
+> Correct when production secrets still point the edge Redis URL at a null
+> sink (or leave write/TLS miswired): the edge full-proxies and Python
+> serves hits — correctness and billing stay intact. The Rust RESP client
+> already speaks TLS (`rediss://` / `AT_RS_REDIS_TLS`); turning edge HITs
+> on is an ops secrets flip, not a missing client. Documenting a degraded
+> tier instead of quietly routing around it is the posture the whole
+> system takes — the billing numbers have to be auditable, so the
+> architecture claims have to be too. See `docs/OPERATIONS.md` "Edge cache
+> tier".
 
 ---
 

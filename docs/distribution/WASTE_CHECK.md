@@ -8,6 +8,9 @@ Primary GTM for indie proof. Persona: **Cursor Pro+ user who hit usage max
 
 Funnel: homepage → `/demo` → MISS→HIT → mint `/r/…` → share → `/bounty` → `/i`.
 
+**CTA doctrine:** hero = belief (waste check); header Start = conversion
+(`/signup`); header Log in = return (`/login`). Named in [BRAND.md](../BRAND.md).
+
 Enterprise chaos remains the thesis for directory / enterprise apply. Indie
 surfaces lead with quota burn, then point at `/docs/enterprise-chaos`.
 

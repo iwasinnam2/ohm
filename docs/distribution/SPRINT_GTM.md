@@ -1,9 +1,12 @@
-# Sprint GTM — Show HN + design partners
+# Sprint GTM — waste check + design partners
 
 Master index for the indie **proof** sprint (meter hits + quotes). Company
 thesis is enterprise chaos governance — [ENTERPRISE_CHAOS.md](../ENTERPRISE_CHAOS.md).
 Cursor Marketplace / directory are **optional compatibility** channels, not
 existential. Goal here: **keys attached + first meter events.** Quotes after they feel the win.
+
+**Show HN is BLOCKED** (HN account banned) — see [SHOW_HN_RUNBOOK.md](SHOW_HN_RUNBOOK.md);
+do not attempt.
 
 ## Primary campaign
 

@@ -59,7 +59,8 @@ Optional personalization: run [scripts/partner_research_fetch.ps1](../../scripts
 2. Send **5 personalized** outreaches (message skeleton below).
 3. Set `status=touched`, `date_touched=today`.
 4. Same-day key if they say yes → [PARTNER_ONBOARD.md](PARTNER_ONBOARD.md).
-5. On Show HN fire day: **pause** cold spray; only reply on HN.
+5. Show HN is **BLOCKED** (HN account banned) — do not attempt. Pause cold
+   spray only when a live public thread needs replies that day.
 
 ---
 
