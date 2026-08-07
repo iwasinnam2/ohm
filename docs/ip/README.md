@@ -27,17 +27,20 @@ Not legal advice. Do not treat this folder as a patent specification.
 | [00-BRIEF.md](00-BRIEF.md) | Pointer to BRIEF.md |
 | [02-PRIOR-ART.md](02-PRIOR-ART.md) · [03-GAP-AUDIT.md](03-GAP-AUDIT.md) · [04-DISCLOSURE-INVENTORY.md](04-DISCLOSURE-INVENTORY.md) | Source detail now folded into BRIEF.md; keep for internal expansion |
 | [GAP-CLOSE-AND-LOOSE-ENDS.md](GAP-CLOSE-AND-LOOSE-ENDS.md) | Full gap inventory, dual-use build tranches, conversation loose ends |
+| [PREFILE-ADMIT-FENCING.md](PREFILE-ADMIT-FENCING.md) | File-lean A4 admit token + lease (flag-off) — counsel-facing |
+| [DEFENSIVE-PUBLICATION.md](DEFENSIVE-PUBLICATION.md) | Do-not-file 20% track — tag + PDF checklist (not executed while File-lean) |
 
 ## Code anchors
 
-- Edge HIT gate: `gateway-rs/src/main.rs` (`edge_hit_gate`, HIT path)
+- Edge HIT gate: `gateway-rs/src/main.rs` (`edge_hit_gate`, HIT path, optional admit verify)
 - Control-plane admit: `src/at_utility/main.py` → `POST /internal/edge-hit`
+- Admit fencing: `src/at_utility/admit_fencing.py` (`AT_ADMIT_FENCING`)
 - Receipts: `src/at_utility/receipts.py`, `docs/RECEIPTS.md`
 - Cache trees: `src/at_utility/cache_trees.py`, `docs/CACHE_TREES.md`
 - Architecture / non-goals: `docs/ARCHITECTURE.md`, `GET /v1/public/honesty`
 
 ## Phase status
 
-- **A (this pack):** ready to send — fee-capped Traffic Light consults
-- **B:** attorney binary opinion (file / do not file)
-- **C-1 / C-2:** file narrow claims **or** freeze defensive publication
+- **A (this pack):** sent — fee-capped Traffic Light consults
+- **B:** attorney binary opinion (file / do not file) — in flight; eng File-lean ~80%
+- **C-1 / C-2:** file narrow claims **or** run defensive publication checklist

@@ -31,11 +31,16 @@ use hyper::service::service_fn;
 use hyper::{Method, Request, Response, StatusCode, Uri};
 use hyper_util::rt::TokioIo;
 use sha2::{Digest, Sha256};
+use hmac::{Hmac, Mac};
+use base64::engine::general_purpose::URL_SAFE_NO_PAD;
+use base64::Engine;
 use tokio::net::TcpListener;
 use tokio::sync::Mutex;
 use tracing::{info, warn};
 
 use crate::resp::RespClient;
+
+type HmacSha256 = Hmac<Sha256>;
 
 #[derive(Clone)]
 struct Config {
@@ -53,6 +58,8 @@ struct Config {
     admin_api_keys: Vec<String>,
     /// Shared secret for /internal/edge-hit. Empty disables edge HIT serving.
     edge_secret: String,
+    /// When true, require a valid `admit_token` from the gate before RELEASE.
+    admit_require: bool,
 }
 
 impl Config {
@@ -89,6 +96,9 @@ impl Config {
                 .filter(|s| !s.is_empty())
                 .collect(),
             edge_secret: env::var("AT_RS_EDGE_SECRET").unwrap_or_default(),
+            admit_require: env::var("AT_RS_ADMIT_REQUIRE")
+                .map(|v| matches!(v.to_ascii_lowercase().as_str(), "1" | "true" | "yes" | "on"))
+                .unwrap_or(false),
         }
     }
 }
@@ -440,6 +450,49 @@ async fn resolve_tenant(app: &App, token: &str) -> Option<String> {
     None
 }
 
+/// Verify control-plane HMAC admit token (ohm_admit.v1) before RELEASE.
+fn verify_admit_token(token: &str, secret: &str, request_sha256: &str) -> bool {
+    let parts: Vec<&str> = token.split('.').collect();
+    if parts.len() != 4 || parts[0] != "ohm_admit" || parts[1] != "v1" {
+        return false;
+    }
+    let body = parts[2];
+    let mac_b64 = parts[3];
+    let Ok(mac_bytes) = URL_SAFE_NO_PAD.decode(mac_b64) else {
+        return false;
+    };
+    let Ok(mut mac) = HmacSha256::new_from_slice(secret.as_bytes()) else {
+        return false;
+    };
+    mac.update(format!("ohm_admit.v1.{body}").as_bytes());
+    if mac.verify_slice(&mac_bytes).is_err() {
+        return false;
+    }
+    let Ok(payload_raw) = URL_SAFE_NO_PAD.decode(body) else {
+        return false;
+    };
+    let Ok(payload) = serde_json::from_slice::<serde_json::Value>(&payload_raw) else {
+        return false;
+    };
+    if payload.get("kind").and_then(|v| v.as_str()) != Some("admit") {
+        return false;
+    }
+    let digest = payload
+        .get("digest")
+        .and_then(|v| v.as_str())
+        .unwrap_or("")
+        .to_ascii_lowercase();
+    if digest != request_sha256.to_ascii_lowercase() {
+        return false;
+    }
+    let exp = payload.get("exp").and_then(|v| v.as_i64()).unwrap_or(0);
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_secs() as i64)
+        .unwrap_or(0);
+    exp >= now
+}
+
 /// Ask the Python control plane to meter + enforce a cache HIT.
 ///
 /// Returns `Some((status, body))` when Python answered: 2xx means "serve the
@@ -745,9 +798,30 @@ async fn handle_inner(
                 info!("cache HIT {key} hit_state=AWAIT_ADMIT");
                 match edge_hit_gate(&app, &token, total_tokens, &model, &request_sha256).await {
                     Some((status, gate_body)) if status.is_success() => {
-                        info!("cache HIT {key} (metered) hit_state=RELEASE");
                         let gate_json =
                             serde_json::from_slice::<serde_json::Value>(&gate_body).ok();
+                        if cfg.admit_require {
+                            let token_ok = gate_json
+                                .as_ref()
+                                .and_then(|v| v.get("admit_token").and_then(|t| t.as_str()))
+                                .map(|t| verify_admit_token(t, &cfg.edge_secret, &request_sha256))
+                                .unwrap_or(false);
+                            if !token_ok {
+                                warn!(
+                                    "cache HIT admit_token missing/invalid; DENY without body hit_state=DENY"
+                                );
+                                return Ok(Response::builder()
+                                    .status(StatusCode::FORBIDDEN)
+                                    .header("content-type", "application/json")
+                                    .header("x-at-plane", "rust")
+                                    .header("x-ohm-hit-state", "DENY")
+                                    .body(full_body(
+                                        r#"{"detail":{"code":"admit_token_required","message":"admit token missing or invalid"}}"#,
+                                    ))
+                                    .unwrap());
+                            }
+                        }
+                        info!("cache HIT {key} (metered) hit_state=RELEASE");
                         let billed = gate_json
                             .as_ref()
                             .and_then(|v| v.get("billed_usd").and_then(|b| b.as_f64()))
