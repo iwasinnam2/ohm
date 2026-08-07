@@ -8,12 +8,16 @@ Primary GTM for indie proof. Persona: **Cursor Pro+ user who hit usage max
 
 Funnel: homepage → `/demo` → MISS→HIT → mint `/r/…` → share → `/bounty` → `/i`.
 
+**CTA doctrine:** hero = belief (waste check); header Start = conversion
+(`/signup`); header Log in = return (`/login`). Named in [BRAND.md](../BRAND.md).
+
 Enterprise chaos remains the thesis for directory / enterprise apply. Indie
 surfaces lead with quota burn, then point at `/docs/enterprise-chaos`.
 
 Related: [GAP_SURFACES.md](GAP_SURFACES.md) · [SHOW_HN_RUNBOOK.md](SHOW_HN_RUNBOOK.md) ·
 [SIEGE_DEFENSE.md](SIEGE_DEFENSE.md) · [PARTNER_HIT_LIST.md](PARTNER_HIT_LIST.md) ·
-[STEAL_KIT.md](STEAL_KIT.md) · [CURSOR_DIRECTORY.md](../listings/CURSOR_DIRECTORY.md)
+[STEAL_KIT.md](STEAL_KIT.md) · [CURSOR_DIRECTORY.md](../listings/CURSOR_DIRECTORY.md) ·
+[CARE_AUDIT.md](../CARE_AUDIT.md) (full-product care / SoT remediation)
 
 ---
 
@@ -67,12 +71,14 @@ Agent does not post as you.
 
 1. Replace `[fill]` rows in [partner_hit_list.csv](partner_hit_list.csv) with
    real handles (Reddit commenters, Forum pain posts, Pro+ limit complainers).
+   The CSV is a **template** until then — do not count placeholders as pipeline.
 2. DM offer: run `/demo` + design-partner key — not logo/PR.
 3. Same-day mint ([PARTNER_ONBOARD.md](PARTNER_ONBOARD.md)); day 5–7 quote /
    receipt share for bounty.
 4. Pay bounty claims at `partners@withohm.dev` when the email includes
    **receipt URL + social post URL + seat email** per [/bounty](https://www.withohm.dev/bounty)
-   ($100 credit). Receipt alone does not qualify.
+   ($100 credit). Receipt alone does not qualify. Log evidence in
+   [BOUNTY_EVIDENCE.md](BOUNTY_EVIDENCE.md).
 
 ### B3 — Do not
 

@@ -6,16 +6,16 @@
 - r/LLMDevs
 - r/AI_Agents
 
-**Still open (this pack):**
+**Still open (this pack) — all operator-owned; do not mark done without a URL:**
 
 | Surface | Status | Action |
 |---------|--------|--------|
-| Cursor Forum | Open | Post §1 below |
-| **Marketplace refresh** | Open | [MARKETPLACE.md](../listings/MARKETPLACE.md) — employee review notes |
-| **cursor.directory (primary)** | Open | Chaos-governor packet — [CURSOR_DIRECTORY.md](../listings/CURSOR_DIRECTORY.md) |
-| r/cursor | Open | Post §2 (distinct copy) |
-| X thread | Open | Post §3 |
-| Steal-kit list PRs | Open | Open 1–2 PRs from [STEAL_KIT.md](STEAL_KIT.md) |
+| Cursor Forum | **Deferred — operator** | Post §1 below; log thread URL |
+| **Marketplace refresh** | **Deferred — operator** | [MARKETPLACE.md](../listings/MARKETPLACE.md) — employee review notes |
+| **cursor.directory (primary)** | **Deferred — operator** | Chaos-governor packet — [CURSOR_DIRECTORY.md](../listings/CURSOR_DIRECTORY.md) |
+| r/cursor | **Deferred — operator** | Post §2 (distinct copy); do not re-flood mcp/LLMDevs/AI_Agents |
+| X thread | **Deferred — operator** | Post §3 |
+| Steal-kit list PRs | **Deferred — operator** | Open 1–2 PRs from [STEAL_KIT.md](STEAL_KIT.md) |
 | Show HN | **Blocked** | Account banned on HN — do not attempt; use Forum / r/cursor / X / directory |
 | Cursor BD | After proof | [CURSOR_BD_BRIEF.md](CURSOR_BD_BRIEF.md) |
 
@@ -164,5 +164,7 @@ From [STEAL_KIT.md](STEAL_KIT.md):
 - [ ] r/cursor §2 posted
 - [ ] X §3 posted
 - [ ] cursor.directory submitted (chaos packet)
-- [ ] ≥1 steal-kit PR opened
+- [ ] ≥1 steal-kit PR opened **with PR URL**
 - [ ] Show HN — **skip** (HN account banned); do not burn other accounts to evade
+
+Until a checkbox has a logged URL, treat it as **deferred — operator**, not done.

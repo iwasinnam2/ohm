@@ -36,9 +36,11 @@ Doctrine checklist when changing UI: one focal point (squint), three type levels
 | `/docs` | Doc index |
 | `/docs/[slug]` | Curated markdown from `content/docs/` |
 | `/subscriptions` | Intermediate · Enterprise |
+| `/login` | Log in — restore `sk-at-…` key in this browser |
+| `/signup` | Sign up — $0 Intermediate seat (Stripe) |
 | `/design-partners` | Founding design-partner apply (optional icing) |
 | `/billing` | Redirects to `/subscriptions` |
-| `/billing/intermediate` | Intermediate checkout |
+| `/billing/intermediate` | Intermediate checkout (same form as Sign up) |
 | `/billing/enterprise` | Enterprise application |
 | `/billing/success` | Add to Cursor + teammate share line |
 

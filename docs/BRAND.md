@@ -64,6 +64,30 @@ Local smoke remains `http://localhost:8081/v1`. Public status UI is retired — 
 | Response headers | `X-AT-*` until rename |
 | Upstream BYOK header | `X-Ohm-Upstream-Key` |
 
+## Vernacular (do not invent synonyms mid-thread)
+
+| Term | Means | Do not confuse with |
+|------|-------|---------------------|
+| **Intermediate** | $0 seat UI name | Cursor “Pro+” (competitor pain, not an Ohm SKU) |
+| **payg** | Same plan in API / Stripe Checkout body | — always Intermediate ↔ payg |
+| **waste check** | Indie belief funnel (`/demo` MISS→HIT) | Enterprise chaos thesis |
+| **chaos governor** | Enterprise / directory positioning | Consumer home hero |
+| **fail-closed** | robots.txt errors, Slack allowlists, definitive unknown API keys | Edge Redis **outage** (that is **Unverified** → full-proxy) |
+| **Unverified** | Edge auth when Redis lookup fails | Soft-deny; Python still owns authz/billing |
+| **pipe / pipe rent** | What we bill | Token wholesale |
+
+## CTA doctrine (intentional dual audience)
+
+| Surface | Primary job | Primary CTA |
+|---------|-------------|-------------|
+| Homepage hero | **Belief** — prove the waste | Run the waste check → `/demo` |
+| Header / Start button | **Conversion** — seat | `$0 seat` → `/signup` (or Profile when seated) |
+| Header Log in | **Return** | Restore `sk-at-…` → `/login` |
+| Directory / Marketplace | **Thesis** | Chaos governor → design partner / enterprise |
+
+Cross-link both funnels; do not pretend they are the same job. See
+[distribution/WASTE_CHECK.md](distribution/WASTE_CHECK.md).
+
 ## Distribution
 
 1. OpenAI-compatible API — change `base_url` + Ohm key; pass provider key via `X-Ohm-Upstream-Key` (BYOK).
