@@ -41,6 +41,23 @@ def strip_large_code_blocks(text: str, *, min_fence_chars: int = 800) -> tuple[s
     return out, stripped
 
 
+def clamp_excerpt_chars(
+    requested: int | None,
+    *,
+    ceiling: int,
+) -> int:
+    """Never allow a client to raise excerpt size above the operator ceiling.
+
+    ``requested is None`` → use ceiling. ``requested <= 0`` → treat as ceiling
+    (caps must stay on). Values above ceiling are clamped down.
+    """
+    if ceiling <= 0:
+        raise ValueError("excerpt ceiling must be positive")
+    if requested is None or requested <= 0:
+        return ceiling
+    return min(int(requested), ceiling)
+
+
 def apply_excerpt_cap(
     text: str,
     *,
