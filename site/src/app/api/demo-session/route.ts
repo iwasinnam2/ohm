@@ -6,6 +6,9 @@ import { NextResponse } from "next/server";
  */
 export async function GET() {
   const key = (process.env.OHM_DEMO_API_KEY || "").trim();
+  const headers = {
+    "Cache-Control": "no-store, no-cache, must-revalidate",
+  };
   if (!key.startsWith("sk-at-")) {
     return NextResponse.json(
       {
@@ -13,13 +16,16 @@ export async function GET() {
         error:
           "Public proof key not configured. Paste a sk-at-… key or get a $0 seat.",
       },
-      { status: 503 },
+      { status: 503, headers },
     );
   }
-  return NextResponse.json({
-    available: true,
-    apiKey: key,
-    model: "mock",
-    note: "Public proof key — mock model only. Get a private key for real models and bounty credit.",
-  });
+  return NextResponse.json(
+    {
+      available: true,
+      apiKey: key,
+      model: "mock",
+      note: "Public proof key — mock model only. Get a private key for real models and bounty credit.",
+    },
+    { headers },
+  );
 }

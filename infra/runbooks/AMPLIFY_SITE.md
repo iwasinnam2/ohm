@@ -47,6 +47,12 @@ Optional env: `OHM_DEMO_API_KEY` — dedicated public-proof tenant key. Powers
 `/api/public-fetch` (live Ohm pipe) and `/api/demo-session` (zero-friction
 `/demo` waste check, mock-only). Do not use a paying customer key.
 
+**SSR gotcha:** Amplify does not inject branch env vars into Next.js API routes
+unless the build writes them into `site/.env.production`. That is done in
+repo-root [`amplify.yml`](../amplify.yml) (`env | grep -e OHM_DEMO_API_KEY …`).
+After changing env vars, push a commit or run a full RELEASE so the build
+re-runs with the new values.
+
 ## Cost (ballpark)
 
 Amplify Hosting build minutes + SSR compute + request/data transfer — typically low tens of USD/mo at launch traffic; watch Amplify + CloudWatch billing alarms.
