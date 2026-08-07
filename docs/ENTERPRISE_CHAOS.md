@@ -25,14 +25,6 @@ attach over MCP; SDKs and the Shell use the same pipe.
 | Client lock-in | “We depend on one IDE” | Agent Shell + `base_url` + integrations board |
 | Procurement fear | No admin / audit / DPA | Org console, audit log, enterprise pack |
 
-## Buyers (triad)
-
-1. **Platform / AI infra** — owns the gateway and rate limits  
-2. **FinOps** — wants chargeback-ready export, not vibes  
-3. **Security / Legal** — purpose-bound fetch, audit, DPA bind  
-
-Indie design partners remain **meter proof**, not the end customer.
-
 ## Product surfaces
 
 | Surface | Role |
@@ -53,3 +45,6 @@ Indie design partners remain **meter proof**, not the end customer.
 A platform lead can SSO in, mint a service key, attribute spend to two cost
 centers, export a month, and show Legal a denied fetch — from the org console
 and pipe, with whatever clients their teams already run.
+
+Public pages: site `content/docs/enterprise-chaos.md` ·
+`content/use-cases/enterprise-chaos.md`. Commercial pack: [ENTERPRISE.md](ENTERPRISE.md).
