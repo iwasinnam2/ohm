@@ -31,7 +31,7 @@ receipt → bounty. Manual ops checklist lives there.
 | **A — Show HN** | [SHOW_HN_RUNBOOK.md](SHOW_HN_RUNBOOK.md) | **Blocked** — HN account banned; do not fire |
 | **Onboard / quotes** | [PARTNER_ONBOARD.md](PARTNER_ONBOARD.md) · `scripts/issue_design_partner.ps1` | Same-day key · day 5–7 dual-ledger quote |
 | **D — Cursor BD** | [CURSOR_BD_BRIEF.md](CURSOR_BD_BRIEF.md) | After ≥3 receipt-backed quotes |
-| **Capital intros** | [INVESTOR_INTRO_TARGETS.md](INVESTOR_INTRO_TARGETS.md) · [investor_intro_targets.csv](investor_intro_targets.csv) | Design partners + operator angels first; funds second; patent counsel last |
+| **Capital intros** | [INVESTOR_INTRO_TARGETS.md](INVESTOR_INTRO_TARGETS.md) · [investor_intro_targets.csv](investor_intro_targets.csv) · [WARM_LEAD_LISTS.md](WARM_LEAD_LISTS.md) · [ANGEL_PITCH_PACK.md](ANGEL_PITCH_PACK.md) | Design partners + operator angels first; funds second; patent counsel last |
 
 Also: [OUTREACH_TEMPLATES.md](../OUTREACH_TEMPLATES.md) · [DESIGN_PARTNERS.md](../DESIGN_PARTNERS.md) · [SIEGE_DEFENSE.md](SIEGE_DEFENSE.md) · [STEAL_KIT.md](STEAL_KIT.md)
 

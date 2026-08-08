@@ -1,16 +1,26 @@
 company_or_fund,category,fit_note,person_or_partner,warm_path,status,date_touched,intro_made,notes
 Episode 1,seed_fund,UK pre-seed/seed B2B AI+infra,[fill partner],[fill who intros],queued,,n,
-Seedcamp,seed_fund,Pan-EU seed developer/infra,[fill],[fill],queued,,n,
+Seedcamp,seed_fund,Pan-EU seed developer/infra,[fill],[fill],queued,,n,Desigan Chinniah is Seedcamp mentor — soft adjacency only
 LocalGlobe / Latitude,seed_fund,London platform/infra,[fill],[fill],queued,,n,
 Connect Ventures,seed_fund,Early B2B product-led,[fill],[fill],queued,,n,
 MMC Ventures,seed_fund,AI + enterprise software,[fill],[fill],queued,,n,
 Notion Capital,seed_fund,EU B2B SaaS,[fill],[fill],queued,,n,
 Crane Venture Partners,seed_fund,Deep tech / enterprise infra,[fill],[fill],queued,,n,
 UK Sovereign AI Fund,strategic,Watch stage fit; infra vs labs,[fill],[fill],queued,,n,
-[fill operator angel],operator_angel,Ex-gateway/observability/AI platform,[fill],[fill design partner or mutual],queued,,n,
-[fill operator angel],operator_angel,Devtools founder angel,[fill],[fill],queued,,n,
-[fill design partner eng],design_partner_intro,Live meter proof holder,[fill],after quote week 1,queued,,n,
-Cursor BD path,corporate,Distribution first — see CURSOR_BD_BRIEF,[fill],pilot then soft ask,queued,,n,
-Neon BD path,corporate,Compose tips — see NEON_BD_BRIEF,[fill],compose pilot,queued,,n,
+Jesse Robbins,operator_angel,Heavybit GP; Chef/DevOps; AI devops tools thesis,Jesse Robbins,warm intro via Heavybit portco founder,queued,,n,See WARM_LEAD_LISTS List A Person 2; pitch page requires warm intro
+Shawn Wang / swyx,operator_angel,AI Engineer; AWS/Netlify/Temporal DX; Replay angel,Shawn Wang,warm intro via mutual / Latent Space network,queued,,n,WARM_LEAD_LISTS A3; portfolio says warm intro for fundraising
+Johannes Schickling,operator_angel,Prisma founder; Replay/Stellate angel; EU,Johannes Schickling,Prisma/devtools mutual or X,queued,,n,WARM_LEAD_LISTS A5
+Desigan Chinniah,operator_angel,Mozilla Ventures; London; Replay angel; Seedcamp mentor,Desigan Chinniah,UK/Seedcamp/Mozilla mutual,queued,,n,WARM_LEAD_LISTS A6 — strong UK first-chat candidate
+Charity Majors,operator_angel,Honeycomb CTO; observability + LLM obs; Daytona angel,Charity Majors,mutual or public technical path after dual-ledger proof,queued,,n,WARM_LEAD_LISTS A7
+James Lindenbaum,operator_angel,Heroku cofounder; Heavybit founding partner,James Lindenbaum,Heavybit process + meter proof,queued,,n,WARM_LEAD_LISTS A8
+Tom Preston-Werner,operator_angel,GitHub cofounder; PWV; Cursor/PlanetScale/Supabase angels,Tom Preston-Werner,second-order via PWV/partners after proof,queued,,n,WARM_LEAD_LISTS A4 — low cold reachability
+Kenneth Auchenberg,operator_angel,Replay angel cohort; devtools operator,Kenneth Auchenberg,Replay/devtools-angels mutual,queued,,n,WARM_LEAD_LISTS A9
+Bryan Clark,operator_angel,Archetype; Neon/Databricks product; Replay/DevCycle angel — CAPITAL BLOCKED while Neon WAITING,Bryan Clark,Neon BD compose path only until reply,queued,,n,WARM_LEAD_LISTS A1; NEON_BD_BRIEF WAITING — do not capital-ping
+Atul Jain,design_partner_intro,Ex-Adobe Sensei; Zapid AI agentic founder,Atul Jain,founder peer / design_partner seat offer,queued,,n,WARM_LEAD_LISTS B3
+Gaurav Gupta,design_partner_intro,Adobe Firefly CDM/AWS; agentic systems,Gaurav Gupta,public LinkedIn + enterprise chaos framing,queued,,n,WARM_LEAD_LISTS B4
+Simon Willison,design_partner_intro,LLM tooling educator; indie waste-check amplifier,Simon Willison,demo link + honest estimate_only ledger,queued,,n,WARM_LEAD_LISTS B6
+Carl Lerche,design_partner_intro,Tokio lead; AWS PE; Rust edge peer,Carl Lerche,technical edge question first not raise,queued,,n,WARM_LEAD_LISTS B1
+Cursor BD path,corporate,Distribution first — see CURSOR_BD_BRIEF,Sujay Jayakar (infra peer escalate only after quotes),pilot then soft ask,queued,,n,WARM_LEAD_LISTS B9 Blocked for design-partner fishing
+Neon BD path,corporate,Compose tips — see NEON_BD_BRIEF,Bryan Clark,compose pilot — WAITING,queued,,n,Do not capital-ping
 Entrepreneur First,accelerator,Technical founder density,[fill],apply with proof pack,queued,,n,
 YC,accelerator,Global density when story sharp,[fill],apply with proof pack,queued,,n,

@@ -6,7 +6,7 @@
 
 **Product wedge (say this, not “AI caching”):** metered exact-match replay pipe + governance (HIT/MISS ledger, receipts, compliant fetch). Labs stay labs. We rent plumbing.
 
-**Related:** [PARTNER_HIT_LIST.md](PARTNER_HIT_LIST.md) (design partners = best warm intros) · [GEM_POSITION.md](../GEM_POSITION.md) · [LAUNCH_GTM.md](../LAUNCH_GTM.md)
+**Related:** [WARM_LEAD_LISTS.md](WARM_LEAD_LISTS.md) (named operator angels + design peers) · [ANGEL_PITCH_PACK.md](ANGEL_PITCH_PACK.md) (1-pager draft) · [PARTNER_HIT_LIST.md](PARTNER_HIT_LIST.md) (design partners = best warm intros) · [GEM_POSITION.md](../GEM_POSITION.md) · [LAUNCH_GTM.md](../LAUNCH_GTM.md)
 
 ---
 
@@ -31,7 +31,8 @@ Do not ask for investor intros without:
 1. Live product URL + one Intermediate or design-partner key path  
 2. Screenshot or paste of `/v1/usage` (hits, misses, pipe USD) + optional `X-Ohm-Receipt`  
 3. One public sentence from a design partner **or** a waste-check demo link  
-4. 1-page PDF: problem → exact-replay wedge → who pays → traction → ask  
+4. 1-page PDF: problem → exact-replay wedge → who pays → traction → ask — draft copy in [ANGEL_PITCH_PACK.md](ANGEL_PITCH_PACK.md)  
+
 5. Clear entity plan: sole trader OK for first angel chats; **Ltd + IP assignment** before institutional seed
 
 Optional UK angels: mention you will structure for **SEIS/EIS** once Ltd exists (accountant confirms eligibility — don’t promise).
@@ -59,7 +60,7 @@ Research each firm’s **latest thesis + partner** before outreach. Prefer warm 
 
 ---
 
-## Operator angel *profiles* (fill names yourself)
+## Operator angel *profiles*
 
 Hunt people who have:
 
@@ -68,14 +69,16 @@ Hunt people who have:
 - Angel-invested in **open-source infra** or **AI ops**  
 - Written publicly about **LLM bill shock, agent loops, exact vs semantic cache**
 
+**Draft named roster (research hypotheses, not “interested”):** [WARM_LEAD_LISTS.md](WARM_LEAD_LISTS.md) · pitch: [ANGEL_PITCH_PACK.md](ANGEL_PITCH_PACK.md) · CSV rows filled for List A/B in [investor_intro_targets.csv](investor_intro_targets.csv).
+
+Archetype: Bryan Clark (`clarkbw`) — capital ask **Blocked** while Neon BD WAITING ([NEON_BD_BRIEF.md](NEON_BD_BRIEF.md)).
+
 Sources (public only — no scraped private emails):
 
 - Portfolio “angel” pages of the funds above  
 - Angels on deals in similar companies (LiteLLM-adjacent, Helicone-adjacent, Portkey-adjacent — **compete carefully in narrative**)  
 - UK networks: **AngelList / Wellfound**, **British Business Angels Association** directories, university VC clubs if you’re affiliated  
-- Operators who replied to your Show HN / design-partner thread
-
-Add concrete names to the CSV when you have a **public** profile + a warm path.
+- Operators who replied to your design-partner thread (Show HN blocked)
 
 ---
 
