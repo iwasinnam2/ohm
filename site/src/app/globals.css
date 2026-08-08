@@ -3751,16 +3751,15 @@ body:has(.doc-layout) .site-footer {
   stroke-width: 0.35;
 }
 
-/* Thin purple neon rails — locked outside the content column, 1/8 wider from center */
+/* Thin purple neon rails — full-bleed in the page margin, outside the text column */
 .pipe-border {
-  --pipe-border-column: min(var(--content-width), calc(100% - var(--gutter)));
-  /* Distance from center to rail was ~column/2 + 28px; push to 9/8 of that. */
-  --pipe-border-radius: calc((var(--pipe-border-column) / 2 + 28px) * 1.125);
+  /* Sit in the outer margin band (viewport edge), not beside the measure. */
+  --pipe-border-inset: max(0.4rem, calc(var(--gutter) * 0.2));
   position: absolute;
   top: 0;
   bottom: 0;
-  left: max(0px, calc(50% - var(--pipe-border-radius)));
-  right: max(0px, calc(50% - var(--pipe-border-radius)));
+  left: var(--pipe-border-inset);
+  right: var(--pipe-border-inset);
   width: auto;
   height: auto;
   overflow: visible;
@@ -3769,7 +3768,7 @@ body:has(.doc-layout) .site-footer {
 }
 
 body:has(.doc-layout) .pipe-border {
-  --pipe-border-column: min(1280px, calc(100% - var(--gutter)));
+  --pipe-border-inset: max(0.4rem, calc(var(--gutter) * 0.15));
 }
 
 .pipe-border__run {

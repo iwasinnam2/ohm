@@ -1,8 +1,8 @@
 /** Dark graphite tubes + thin purple border rails + sparse purple payloads.
  *
- * Mesh stays nearly silent; only payloads read bright. Accent rails frame
- * the content column: adjacent to the docs/index edge, curve to the ceiling
- * at withOhm (mirrored on the right), feet flare outward and cease.
+ * Mesh stays nearly silent; only payloads read bright. Accent rails live in
+ * the page margin outside the text column: foot at the viewport edge, rise in
+ * the outer gutter, ceiling curves toward withOhm (mirrored on the right).
  */
 
 type Track = {
@@ -59,18 +59,17 @@ const TRACKS: readonly Track[] = [
 ] as const;
 
 /**
- * Thin purple neon rails — open frame beside the content column.
+ * Thin purple neon rails — open frame in the page margin (outside the text).
  *
- * Left: flares out at the foot → rises just left of the docs/index column →
- * curves up to the ceiling at withOhm and ceases.
- * Right: mirror (ceiling cease at the opposite header end).
- * No continuous top or bottom bar.
+ * SVG is full-bleed with a tiny inset; paths hug the outer edges so rails
+ * clear the content column entirely. Foot flares to the viewport; rise stays
+ * in the margin band; ceiling curves in toward withOhm and ceases.
  */
 const BORDER_RUNS = [
-  // Left — foot flares out to the page edge, rises beside docs/index, ceiling into withOhm
-  "M 0.5 99.4 C 0.2 95.2 2.2 91.5 8.2 88.8 V 12.2 C 8.2 6.4 11.2 3.2 22 2.4",
+  // Left — outer margin: foot at viewport, rise near left edge, ceiling into brand
+  "M 0.15 99.6 C 0.05 95 0.4 91 1.2 88 V 11 C 1.2 5.5 6 2.6 18 2.1",
   // Right — mirror
-  "M 99.5 99.4 C 99.8 95.2 97.8 91.5 91.8 88.8 V 12.2 C 91.8 6.4 88.8 3.2 78 2.4",
+  "M 99.85 99.6 C 99.95 95 99.6 91 98.8 88 V 11 C 98.8 5.5 94 2.6 82 2.1",
 ] as const;
 
 /** Sharp fade windows — mostly solid mid-run, brief ease at ends. */
@@ -81,7 +80,7 @@ const PAYLOAD_SPLINES = "0.25 0.1 0.25 1;0 0 1 1;0.25 0.1 0.25 1";
 export function PipeNetwork() {
   return (
     <div className="pipe-network" aria-hidden="true">
-      {/* Content-locked accent rails — thin purple neon tubing */}
+      {/* Margin-band accent rails — outside the text column */}
       <svg
         className="pipe-border"
         viewBox="0 0 100 100"

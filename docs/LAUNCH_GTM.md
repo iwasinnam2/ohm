@@ -25,6 +25,8 @@ Phrase: **compliant fetch for agents**
 
 Design partners remain available at [/design-partners](https://www.withohm.dev/design-partners) — not the growth engine.
 
+**Capital intros (when you want cheques, not counsel):** [distribution/INVESTOR_INTRO_TARGETS.md](distribution/INVESTOR_INTRO_TARGETS.md) — design partners and operator angels first; patent firms last.
+
 ## This week (non-salesman)
 
 1. Confirm Amplify serves `/i`, `/fetch`, `/templates`, `/bounty`
