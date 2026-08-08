@@ -15,14 +15,18 @@ Identical chat completion requests (per tenant) may store the model response in 
 ## Keys
 
 - Customer keys stored hashed (SHA-256) at rest
-- Issued prefix today: `sk-at-…` (withOhm brand; rename deferred)
+- Issued prefix today: `sk-at-…` — legacy prefix; brand is withOhm. A `sk-ohm-` cutover is planned and will be announced before rename.
 - Suspended tenants → HTTP 403
 
 ## Subprocessors
 
 Model providers you enable, Amazon Web Services (or host), Stripe (billing), AWS Amplify (docs/marketing site).
 
-## Headers (legacy `AT` family)
+## Headers you'll see
+
+Most are `X-Ohm-*`. A few load-bearing ones (`X-AT-Cache` and friends) predate
+the brand and are documented here rather than hidden — same `sk-ohm-`
+cutover plan as above covers these.
 
 | Header | Meaning |
 |--------|---------|

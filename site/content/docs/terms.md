@@ -16,7 +16,7 @@ withOhm provides: (a) LLM request routing and identical-request cache replay; (b
 
 API keys identify a tenant. You are responsible for key custody. Suspended tenants receive HTTP 403.
 
-**Key prefix:** Issued keys currently use the legacy prefix `sk-at-…` (internal package name `at-utility`). The product brand is **withOhm**; a `sk-ohm-` cutover is deferred and will be announced before rename.
+**Key prefix:** Issued keys currently use the legacy prefix `sk-at-…`. The product brand is **withOhm**; a `sk-ohm-` cutover is deferred and will be announced before rename.
 
 ## 3. Prohibited uses
 

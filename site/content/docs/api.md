@@ -17,7 +17,7 @@ Public base: `https://api.withohm.dev/v1`. OpenAI-compatible chat is the primary
 
 ## Headers that matter
 
-- `Authorization: Bearer sk-at-…` (legacy prefix; brand is withOhm)
+- `Authorization: Bearer sk-at-…` — legacy prefix; brand is withOhm. A `sk-ohm-` cutover is planned and will be announced before rename.
 - `X-Ohm-Cache-Tree` — named inventory (header wins over body `cache_tree`)
 - `X-Ohm-Path` — cost-center / path attribution
 - Provider BYOK headers per [Quickstart](/docs/quickstart)

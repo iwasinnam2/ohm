@@ -220,7 +220,7 @@ export function EnterpriseApplicationForm() {
                   required
                 />
                 <span className="rate-caption">
-                  Intermediate PAYG list: {formatUsd(PAYG_RATES[key])}
+                  Intermediate list: {formatUsd(PAYG_RATES[key])}
                   {key === "web_fetch" ? " per URL" : " per 1k tokens"}.
                   Delivery cost context — negotiated Enterprise rates sit against
                   this published Intermediate meter schedule.
