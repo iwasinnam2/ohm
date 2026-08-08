@@ -68,6 +68,16 @@ export const INTEGRATION_BRANDS: BrandTile[] = [
     markColor: "#0847F7",
   },
   {
+    id: "jetbrains",
+    name: "JetBrains",
+    kind: "agent",
+    blurb: "AI Assistant MCP plugin",
+    href: "https://www.jetbrains.com/ai/",
+    authorizeHref: "/docs/integrations",
+    mark: "JB",
+    markColor: "#FE315D",
+  },
+  {
     id: "openai",
     name: "OpenAI",
     kind: "pipe",

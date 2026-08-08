@@ -1,0 +1,44 @@
+<!-- Plugin Configuration File. Read more: https://plugins.jetbrains.com/docs/intellij/plugin-configuration-file.html -->
+<idea-plugin>
+    <id>dev.withohm.jetbrains</id>
+    <name>withOhm</name>
+    <vendor email="partners@withohm.dev" url="https://www.withohm.dev">Ohm</vendor>
+
+    <description><![CDATA[
+    <p><b>withOhm</b> — AI traffic pipe for JetBrains AI Assistant.</p>
+    <p>
+      Exact-match Redis prompt replay, BYOK OpenAI-compatible ingress, and
+      compliant public-web fetch. This plugin does not reimplement tools; it
+      registers the hosted <code>ohm-mcp</code> stdio MCP server so AI Assistant
+      gets the same eight tools as Cursor and other MCP hosts.
+    </p>
+    <p><b>Prerequisites</b></p>
+    <ul>
+      <li>JetBrains IDE 2025.1+ with AI Assistant enabled</li>
+      <li><code>pip install withohm-mcp</code> (<code>ohm-mcp</code> on PATH)</li>
+      <li>Tenant key from <a href="https://www.withohm.dev/billing/intermediate">withohm.dev</a></li>
+    </ul>
+    <p>Open <b>Settings → Tools → withOhm</b>, paste your <code>sk-at-…</code> key, apply.</p>
+  ]]></description>
+
+    <change-notes><![CDATA[
+    <ul>
+      <li>Initial release: Settings UI + AI Assistant MCP registration</li>
+      <li>PasswordSafe for API keys; merges <code>ohm</code> into mcp.json</li>
+    </ul>
+  ]]></change-notes>
+
+    <depends>com.intellij.modules.platform</depends>
+    <!-- Soft: AI Assistant provides the MCP client UI; we only write its mcp.json. -->
+    <depends optional="true">com.intellij.ml.llm</depends>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <applicationConfigurable
+                parentId="tools"
+                instance="dev.withohm.jetbrains.OhmSettingsConfigurable"
+                id="dev.withohm.jetbrains.settings"
+                displayName="withOhm"/>
+        <postStartupActivity implementation="dev.withohm.jetbrains.OhmStartupActivity"/>
+        <notificationGroup id="withOhm" displayType="BALLOON"/>
+    </extensions>
+</idea-plugin>
