@@ -14,6 +14,10 @@ purpose.
 
 ## 0. What this product is (shared model)
 
+Canonical wedge: [GEM_POSITION.md](GEM_POSITION.md). Restated here only for
+audit context — if this section and GEM_POSITION.md ever disagree,
+GEM_POSITION.md wins and this section is stale.
+
 withOhm is a **metered tollbooth** between agent hosts and LLM providers:
 
 ```

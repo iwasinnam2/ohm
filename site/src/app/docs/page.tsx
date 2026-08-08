@@ -14,8 +14,9 @@ export default function DocsIndexPage() {
       <header className="page-head">
         <h1>Docs</h1>
         <p>
-          Interconnectedness and accessibility — one <code>base_url</code>, the
-          tools you already use, and a meter you can read. Product narrative
+          The metered pipe on wasted, repeated inference — one{" "}
+          <code>base_url</code>, the tools you already use, and a meter you
+          can read. Product narrative
           lives under <Link href="/product">Product</Link>; solutions under{" "}
           <Link href="/use-cases">Solutions</Link>.
         </p>

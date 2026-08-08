@@ -24,8 +24,9 @@ export function InstallClient() {
       <p className="steal__eyebrow">Install withOhm</p>
       <h1 className="steal__title">withOhm</h1>
       <p className="steal__lede">
-        Interconnectedness and accessibility — Agent Shell, any OpenAI SDK, or
-        MCP attach for Cursor and friends. Same pipe either way.
+        The metered pipe on wasted, repeated inference — Agent Shell, any
+        OpenAI SDK, or MCP attach for Cursor and friends. Same pipe either
+        way.
       </p>
 
       <div className="steal__row">

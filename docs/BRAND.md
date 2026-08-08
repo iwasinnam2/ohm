@@ -1,6 +1,14 @@
 # Brand
 
-**withOhm, an AI traffic utility governance moderator**
+**withOhm — the metered pipe on wasted, repeated inference.** For enterprises,
+the same pipe is a **chaos governor**: an AI traffic utility that brings SSO
+tenancy, compliant ingest, and a clean ledger to shadow AI spend. Canonical
+wedge and dual-audience doctrine: [GEM_POSITION.md](GEM_POSITION.md).
+
+**Lead metaphor per surface:** indie/Cursor-facing copy leads with **pipe**
+(waste check → replay proof). Enterprise/directory copy leads with **chaos
+governor**. "AI traffic utility" is the category descriptor behind both, not
+a third competing tagline — do not introduce a fourth.
 
 ## Promise
 

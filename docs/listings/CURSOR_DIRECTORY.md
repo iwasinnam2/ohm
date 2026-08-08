@@ -26,7 +26,7 @@ Govern enterprise AI chaos: Redis prompt replay, compliant web ingest, SSO org l
 ## Long description (paste)
 
 ```
-withOhm is an AI traffic control plane — the entropy organizer for agent and enterprise AI chaos.
+withOhm is the metered pipe on wasted, repeated inference — for agent and enterprise AI chaos, the same pipe is a chaos governor.
 
 Not another chat UI. A governable ingress:
 

@@ -1,7 +1,9 @@
 # Ohm vision — enterprise chaos governor
 
-Ohm (withOhm) is an **AI traffic control plane** — the entropy organizer between
-enterprises (and builders) and upstream models plus the public web.
+Ohm (withOhm) is **the metered pipe on wasted, repeated inference**
+([GEM_POSITION.md](GEM_POSITION.md) is the canonical wedge) — for enterprises
+the same pipe is the **chaos governor** between them (and builders) and
+upstream models plus the public web.
 
 Cursor is an **optional client**. We do not depend on any single IDE for
 distribution or legitimacy. See [ENTERPRISE_CHAOS.md](ENTERPRISE_CHAOS.md).

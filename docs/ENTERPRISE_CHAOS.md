@@ -1,4 +1,4 @@
-# Enterprise chaos — withOhm as entropy organizer
+# Enterprise chaos — withOhm as chaos governor
 
 Canonical enterprise thesis. Companion: [VISION.md](VISION.md) · [GEM_POSITION.md](GEM_POSITION.md).
 

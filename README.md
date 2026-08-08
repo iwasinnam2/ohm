@@ -3,7 +3,7 @@
 [![CI](https://github.com/iwasinnam2/ohm/actions/workflows/ci.yml/badge.svg)](https://github.com/iwasinnam2/ohm/actions/workflows/ci.yml)
 [![Golden path (nightly, production)](https://github.com/iwasinnam2/ohm/actions/workflows/golden-path.yml/badge.svg)](https://github.com/iwasinnam2/ohm/actions/workflows/golden-path.yml)
 
-AI traffic control plane: OpenAI-compatible ingress, Redis prompt replay, compliant web ingest, SSO org tenancy, and a corporate clean ledger — the entropy organizer for enterprise AI chaos. Cursor/MCP are optional clients.
+The metered pipe on wasted, repeated inference: OpenAI-compatible ingress, Redis prompt replay, compliant web ingest, SSO org tenancy, and a corporate clean ledger. For enterprises the same pipe is a **chaos governor** for AI spend (canonical wedge: [docs/GEM_POSITION.md](docs/GEM_POSITION.md)). Cursor/MCP are optional clients.
 
 > **Exact-replay hits that cost zero upstream tokens. Cross-provider consistency. Locality — Redis edge reads. Replay and audit value.**
 > Point any OpenAI-compatible client (or the Ohm Agent Shell) at one base URL. Keep your keys or use a managed pool. Rent the plumbing; govern the chaos.

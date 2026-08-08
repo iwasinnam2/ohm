@@ -142,9 +142,9 @@ export function ConnectionsClient() {
       <div className="page-head">
         <h1>Connections</h1>
         <p>
-          Interconnectedness and accessibility — withOhm is a cog in your
-          workflow machine. Attach once to the tools you already use; every MCP
-          host below gets the same eight tools.
+          The metered pipe on wasted, repeated inference — withOhm is a cog in
+          your workflow machine. Attach once to the tools you already use;
+          every MCP host below gets the same eight tools.
         </p>
       </div>
 

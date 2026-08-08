@@ -69,7 +69,7 @@ export default function HomePage() {
             <OhmMark className="hero__mark" />
             <h1 className="hero__brand">withOhm.</h1>
           </div>
-          <p className="hero__strapline">Interconnectedness and accessibility.</p>
+          <p className="hero__strapline">The metered pipe on wasted, repeated inference.</p>
           <p className="hero__promise">
             Agent loops re-buy the same tokens. withOhm replays identical calls
             from cache — one OpenAI-compatible pipe, BYOK, $0 Intermediate seat.

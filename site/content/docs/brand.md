@@ -1,6 +1,9 @@
 # Brand
 
-**withOhm, an AI traffic utility governance moderator**
+**withOhm — the metered pipe on wasted, repeated inference.** For
+enterprises, the same pipe is a **chaos governor**: an AI traffic utility
+bringing SSO tenancy, compliant ingest, and a clean ledger to shadow AI
+spend.
 
 ## Promise
 
