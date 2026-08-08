@@ -26,7 +26,7 @@ Public distribution readiness for **withOhm** (Ohm). Hosted pipe is live; this c
 - [x] False claims removed (managed keys / 30-day trial)
 - [x] MCP: no forged legal acks; `OHM_API_KEY` required
 - [x] SSRF DNS re-check; robots fail-closed
-- [x] Checkout mint rate limit; Rust Redis auth errors → **Unverified** full-proxy (Python still authz); `/ready` sanitized
+- [x] Checkout mint rate limit; `/ready` sanitized; edge auth-degraded behavior per [listings/MARKETPLACE_AUDIT.md](listings/MARKETPLACE_AUDIT.md) (canonical wording — do not restate the Unverified/fail-closed detail here)
 - [x] Ingest NetworkPolicy; `request_cap` enforced
 - [x] Fetch toy labeled demo vs Ohm pipe
 - [x] Self-audit: [listings/MARKETPLACE_AUDIT.md](listings/MARKETPLACE_AUDIT.md)
