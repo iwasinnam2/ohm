@@ -10,6 +10,13 @@ Env:
   REDIS_RL_URL      (edge local writable Redis)
   AT_REGION
   ALLOTMENT_DEFAULT (fallback tokens if leader key missing)
+
+KNOWN GAP: this module correctly writes `at:global:allotment:{region}`, but
+the request-path token bucket (main.rate_limit -> RedisStore.eval_token_bucket)
+does not read it yet — it uses the fixed `Settings.at_rate_limit_rps` /
+`at_rate_limit_burst` for every region. Wiring `rate_limit()` to look up this
+key as a per-region rate/burst override is still open; until then this cron
+is deployed but its output has no consumer. See infra/README.md "Rate limits".
 """
 
 from __future__ import annotations

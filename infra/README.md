@@ -94,4 +94,4 @@ Prerequisites: ≥2 healthy regional NLBs, Phase 3 lag drill green, public API m
 
 ## Rate limits
 
-Gateways decrement **regional token buckets** (`at:{tenant}:rl:{region}`) on `REDIS_RL_URL`. The allotment refresher copies `at:global:quota:{region}` from the leader so edges never RTT to Virginia per request.
+Gateways decrement **regional token buckets** (`at:{tenant}:rl:{region}`) on `REDIS_RL_URL` using a fixed rate/burst from `Settings` (`at_rate_limit_rps` / `at_rate_limit_burst`) — not yet the allotment cron's output. The allotment refresher (`python -m at_utility.allotment`) already copies `at:global:quota:{region}` to `at:global:allotment:{region}` on the edge Redis every minute; wiring the token-bucket call to read that key as a per-region rate/burst override is still open (see `src/at_utility/allotment.py` module docstring).

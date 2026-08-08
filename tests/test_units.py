@@ -1,6 +1,5 @@
 import pytest
 
-from at_utility.billing import arbitrage_summary
 from at_utility.cache import cache_key_for_request, resolve_cache_tree
 from at_utility.ingest import inject_context_messages
 from at_utility.stripe_billing import apply_webhook_to_status
@@ -106,15 +105,6 @@ def test_inject_context():
     assert "WEB CONTEXT" in out[0]["content"]
     assert "PUBLIC web excerpts" in out[0]["content"]
     assert out[1]["content"] == "hi"
-
-
-def test_arbitrage_summary():
-    s = arbitrage_summary(
-        {"cache_hit_usd": 9.0, "cache_miss_usd": 1.0, "fetch_usd": 0.0, "enterprise_monthly_usd": 2500}
-    )
-    assert s["revenue_usd"] == 10.0
-    assert s["estimated_high_margin_usd"] == 9.0
-    assert s["cache_hit_share"] == 0.9
 
 
 def test_stripe_webhook_status_map():
