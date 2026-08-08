@@ -220,13 +220,38 @@ class AnthropicProvider:
         stream: bool,
         kwargs: dict[str, Any],
     ) -> dict[str, Any]:
-        system = ""
+        # `system` may be a content-block list carrying its own `cache_control`
+        # breakpoint (see docs prompt-caching "Structuring your prompt").
+        # Forcing it to str() here used to silently corrupt that breakpoint —
+        # forward block arrays verbatim instead, and only flatten plain
+        # strings the way we always have.
+        #
+        # Multiple system messages are unusual but must not silently drop
+        # content: if any of them carries block content, every system
+        # message is merged into one ordered block list (plain strings are
+        # wrapped as `{"type": "text", "text": ...}`); otherwise plain
+        # strings are joined as before.
+        system_blocks: list[Any] = []
+        system_parts: list[str] = []
+        has_block_content = False
         converted: list[dict[str, Any]] = []
         for m in messages:
             if m.get("role") == "system":
-                system = str(m.get("content") or "")
+                content = m.get("content")
+                if isinstance(content, list):
+                    has_block_content = True
+                    system_blocks.extend(content)
+                elif content:
+                    text = str(content)
+                    system_parts.append(text)
+                    system_blocks.append({"type": "text", "text": text})
             else:
                 converted.append({"role": m["role"], "content": m["content"]})
+        system: Any = None
+        if has_block_content:
+            system = system_blocks
+        elif system_parts:
+            system = "\n\n".join(system_parts)
         body: dict[str, Any] = {
             "model": model,
             "messages": converted,
@@ -235,6 +260,15 @@ class AnthropicProvider:
         }
         if system:
             body["system"] = system
+        # Tool definitions (and their own per-tool cache_control breakpoints)
+        # were previously unrepresentable — ChatCompletionRequest had no
+        # `tools` field at all, so they were dropped before ever reaching here.
+        tools = kwargs.get("tools")
+        if tools:
+            body["tools"] = tools
+        tool_choice = kwargs.get("tool_choice")
+        if tool_choice is not None:
+            body["tool_choice"] = tool_choice
         return body
 
     def _headers(self) -> dict[str, str]:
@@ -273,6 +307,10 @@ class AnthropicProvider:
         usage = anthropic_usage_to_openai(
             input_tokens=int(raw_usage.get("input_tokens") or 0),
             output_tokens=int(raw_usage.get("output_tokens") or 0),
+            cache_creation_input_tokens=int(
+                raw_usage.get("cache_creation_input_tokens") or 0
+            ),
+            cache_read_input_tokens=int(raw_usage.get("cache_read_input_tokens") or 0),
         )
         if usage["total_tokens"] == 0:
             return _openai_response(model, text)

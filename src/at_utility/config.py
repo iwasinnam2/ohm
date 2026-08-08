@@ -81,6 +81,10 @@ class Settings(BaseSettings):
     # Default $15/M ≈ mid-tier agent call (input+output avoided on full replay).
     # Override per deploy; always surfaced as estimate_only.
     at_provider_avoided_per_1k_tokens: float = 0.015
+    # Anthropic's documented cache-read discount (reads cost ~10% of a full
+    # input token, i.e. a 90% saving) — used to estimate the third savings
+    # rail (docs/CACHE_AUTOPILOT.md) distinct from Ohm's own exact-replay HITs.
+    at_provider_cache_discount_pct: float = 0.9
     at_enterprise_monthly_usd: float = 2500.0
     # When true, env OPENAI/ANTHROPIC keys may fill in if X-Ohm-Upstream-Key is
     # absent. Default OFF: silently burning operator keys for customer traffic
@@ -94,6 +98,19 @@ class Settings(BaseSettings):
     at_delinquent_suspend_days: int = 14
     # Force meter Prices on Intermediate checkout even outside production
     at_require_meter_prices: bool = False
+
+    # Breakpoint autopilot (docs/CACHE_AUTOPILOT.md) — auto-places Anthropic
+    # `cache_control` breakpoints for claude-* MISSes so naive agent clients
+    # (Cursor-style: resend the whole growing transcript every turn) still
+    # get prefix reuse without placing breakpoints themselves.
+    at_cache_autopilot_enabled: bool = True
+    # Prefix ledger TTL — mirrors Anthropic's default 5-minute cache TTL so
+    # we stop tracking a session exactly when their own cache entry expires.
+    at_cache_autopilot_ttl_seconds: int = 300
+    # Force a fresh breakpoint once unbroken growth since the last one
+    # reaches this many units, so Anthropic's own 20-block cache lookback
+    # window never has to look further back than this to find it.
+    at_cache_autopilot_lookback_units: int = 16
 
     # Shared secret for the Rust edge → /internal/edge-hit metering gate.
     # Empty disables edge HIT serving (edge falls back to full proxy).
@@ -138,6 +155,13 @@ class Settings(BaseSettings):
     stripe_meter_event_web_fetch: str = "ohm_web_fetch"
     stripe_meter_event_cache_hit: str = "ohm_cache_hit"
     stripe_meter_event_cache_miss: str = "ohm_cache_miss"
+    # Pre-warm (docs/CACHE_AUTOPILOT.md Phase 3) is billed like a cache_miss in
+    # Ohm's own ledger, but must never sync to Stripe under the *same* event
+    # name as real cache_miss traffic — a tenant reading raw Stripe usage
+    # records would then be unable to tell a real MISS from a deliberate
+    # keep-warm ping. Left empty (no Stripe sync) until an operator
+    # provisions a dedicated Billing Meter + Price for it.
+    stripe_meter_event_prewarm: str = ""
     stripe_checkout_success_url: str = (
         "https://www.withohm.dev/billing/success?session_id={CHECKOUT_SESSION_ID}"
     )

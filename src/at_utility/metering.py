@@ -109,6 +109,7 @@ class Meter:
             "cache_hit": s.stripe_meter_event_cache_hit,
             "cache_miss": s.stripe_meter_event_cache_miss,
             "fetch": s.stripe_meter_event_web_fetch,
+            "prewarm": s.stripe_meter_event_prewarm,
         }.get(kind, "")
         if not event_name:
             return False
@@ -194,6 +195,8 @@ class Meter:
         total_tokens: int,
         stripe_customer_id: str = "",
         event_id: str = "",
+        upstream_cache_read_tokens: int = 0,
+        upstream_cache_creation_tokens: int = 0,
     ) -> UsageEvent:
         if cache_hit:
             price = self._settings.at_price_per_1k_tokens_hit
@@ -208,6 +211,21 @@ class Meter:
         await self._bump(tenant, f"{kind}_tokens", float(total_tokens))
         await self._bump(tenant, f"{kind}_usd", billed)
         await self._bump(tenant, "requests", 1.0)
+        # Third ledger rail: distinct from Ohm's own HIT/MISS above. These
+        # only ever show up on a MISS (Ohm didn't have the exact-replay
+        # entry), but the upstream provider (Anthropic) itself served part of
+        # the prompt from *its* prompt cache — visible savings even when Ohm
+        # still had to make the call. See docs/GEM_POSITION.md third rail.
+        if upstream_cache_read_tokens > 0:
+            await self._bump(
+                tenant, "upstream_cache_read_tokens", float(upstream_cache_read_tokens)
+            )
+        if upstream_cache_creation_tokens > 0:
+            await self._bump(
+                tenant,
+                "upstream_cache_creation_tokens",
+                float(upstream_cache_creation_tokens),
+            )
         if cache_hit and total_tokens > 0:
             # Anonymous cross-tenant total behind GET /v1/public/stats.
             await self._store.incr_by_float(
@@ -227,6 +245,54 @@ class Meter:
         return UsageEvent(
             tenant=tenant,
             kind=kind,
+            tokens=total_tokens,
+            billed_usd=billed,
+            stripe_synced=synced,
+            billable_units=units,
+            event_id=resolved_id,
+        )
+
+    async def record_prewarm(
+        self,
+        tenant: str,
+        *,
+        total_tokens: int,
+        stripe_customer_id: str = "",
+        event_id: str = "",
+    ) -> UsageEvent:
+        """Session-aware pre-warm (docs/CACHE_AUTOPILOT.md Phase 3): a
+        deliberate `max_tokens: 1` call that refreshes an Anthropic cache
+        breakpoint before it expires. Tracked as its own ledger rail — priced
+        like a cache_miss (real upstream tokens, real pipe rent) but never
+        counted toward cache_hit/cache_miss so it can't skew the hit-ratio
+        story a tenant sees for their *real* conversational turns.
+        """
+        price = self._settings.at_price_per_1k_tokens_miss
+        units = billable_1k_units(total_tokens)
+        billed = units * price
+        await self._bump(tenant, "prewarm_tokens", float(total_tokens))
+        await self._bump(tenant, "prewarm_usd", billed)
+        await self._bump(tenant, "requests", 1.0)
+        resolved_id = (event_id or "").strip() or uuid.uuid4().hex
+        synced = False
+        if units > 0:
+            # Own Stripe meter event (`stripe_meter_event_prewarm`), priced
+            # the same as cache_miss but reported under a distinct event name
+            # so it never conflates with real cache_miss traffic on a
+            # tenant's raw Stripe usage records. Empty by default — no-ops
+            # (via _sync_stripe's event_name guard) until an operator
+            # provisions the dedicated meter/Price.
+            synced = await self._sync_stripe(
+                kind="prewarm",
+                value=units,
+                stripe_customer_id=stripe_customer_id,
+                identifier=f"{tenant}:prewarm:{resolved_id}",
+            )
+            if stripe_customer_id:
+                await self._mark_stripe_sync(tenant, synced)
+        return UsageEvent(
+            tenant=tenant,
+            kind="prewarm",
             tokens=total_tokens,
             billed_usd=billed,
             stripe_synced=synced,
@@ -306,6 +372,10 @@ class Meter:
             "fetches",
             "fetch_usd",
             "requests",
+            "upstream_cache_read_tokens",
+            "upstream_cache_creation_tokens",
+            "prewarm_tokens",
+            "prewarm_usd",
         ]
         out: dict[str, Any] = {
             "tenant": tenant,
@@ -329,6 +399,14 @@ class Meter:
         miss_tok = out["cache_miss_tokens"]
         denom = hit_tok + miss_tok
         out["cache_hit_ratio"] = (hit_tok / denom) if denom > 0 else 0.0
+        # Upstream provider's own prompt cache (e.g. Anthropic cache_control):
+        # what fraction of upstream-cache-eligible tokens were served from
+        # *their* cache rather than written fresh. Independent of Ohm's own
+        # exact-replay hit ratio above — this fires on MISSes too.
+        up_read = out["upstream_cache_read_tokens"]
+        up_write = out["upstream_cache_creation_tokens"]
+        up_denom = up_read + up_write
+        out["upstream_cache_hit_ratio"] = (up_read / up_denom) if up_denom > 0 else 0.0
         req = out["requests"]
         out["web_context_attach_rate"] = (
             (out["fetches"] / req) if req > 0 else 0.0

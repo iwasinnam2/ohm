@@ -46,7 +46,7 @@ Enterprise thesis: [ENTERPRISE_CHAOS.md](ENTERPRISE_CHAOS.md).
 
 > Exact-replay hits that cost zero upstream tokens. Cross-provider consistency. Locality — Redis edge reads. Replay and audit value.
 
-1. **Zero-token replay** — identical requests answer from Redis; the provider is never paid twice. Provider-native prompt caching discounts prefix *reuse*; only an external exact-replay cache makes the second identical call cost **zero** upstream tokens.
+1. **Zero-token replay** — identical requests answer from Redis; the provider is never paid twice. Provider-native prompt caching discounts prefix *reuse*; only an external exact-replay cache makes the second identical call cost **zero** upstream tokens. When the request isn't identical but its prefix is (the dominant agentic-IDE pattern), the [breakpoint autopilot](CACHE_AUTOPILOT.md) engineers that provider-native discount correctly instead — a second, smaller savings rail, never confused with zero-token replay.
 2. **Cross-provider consistency** — one OpenAI-shaped pipe and one cache contract across OpenAI, Anthropic, Gemini, DeepSeek, Moonshot/Kimi, Z.ai/GLM, Qwen, and xAI/Grok (BYOK).
 3. **Locality / latency** — cache GETs on the nearest Redis edge replica; pre-first-byte failover keeps the pipe honest.
 4. **Replay / audit value** — every hit is an auditable identical-request replay with a readable meter; never a training corpus.
@@ -59,5 +59,7 @@ Enterprise thesis: [ENTERPRISE_CHAOS.md](ENTERPRISE_CHAOS.md).
 ## Non-goals
 
 - PAYG wholesale reseller of OpenAI/Anthropic tokens for Intermediate
-- Semantic / fuzzy cache
+- Semantic / fuzzy cache — the breakpoint autopilot ([CACHE_AUTOPILOT.md](CACHE_AUTOPILOT.md))
+  is byte-exact prefix matching, not a reversal of this boundary; see that
+  doc's own non-goals.
 - Treating Cursor Marketplace as existential distribution

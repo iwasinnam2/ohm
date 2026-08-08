@@ -42,12 +42,35 @@ def anthropic_usage_to_openai(
     *,
     input_tokens: int = 0,
     output_tokens: int = 0,
-) -> dict[str, int]:
-    return {
-        "prompt_tokens": max(0, input_tokens),
-        "completion_tokens": max(0, output_tokens),
-        "total_tokens": max(0, input_tokens) + max(0, output_tokens),
+    cache_creation_input_tokens: int = 0,
+    cache_read_input_tokens: int = 0,
+) -> dict[str, Any]:
+    """Map Anthropic usage to an OpenAI-shaped usage object.
+
+    Anthropic's own `input_tokens` only counts tokens *after* the last cache
+    breakpoint — cache_creation/cache_read tokens are reported separately.
+    `prompt_tokens` here is the full input (input + cache_creation +
+    cache_read), matching `total_input_tokens` in the prompt-caching docs, so
+    it stays correct whether or not caching was used. When cache tokens are
+    present we also add OpenAI's own `prompt_tokens_details.cached_tokens`
+    shape so downstream metering can treat "served from cache" the same way
+    across vendors, without losing Anthropic's read/write split.
+    """
+    base_input = max(0, input_tokens)
+    cache_creation = max(0, cache_creation_input_tokens)
+    cache_read = max(0, cache_read_input_tokens)
+    prompt_tokens = base_input + cache_creation + cache_read
+    completion_tokens = max(0, output_tokens)
+    usage: dict[str, Any] = {
+        "prompt_tokens": prompt_tokens,
+        "completion_tokens": completion_tokens,
+        "total_tokens": prompt_tokens + completion_tokens,
     }
+    if cache_creation or cache_read:
+        usage["cache_creation_input_tokens"] = cache_creation
+        usage["cache_read_input_tokens"] = cache_read
+        usage["prompt_tokens_details"] = {"cached_tokens": cache_read}
+    return usage
 
 
 class AnthropicToOpenAIStreamTranslator:
@@ -59,6 +82,8 @@ class AnthropicToOpenAIStreamTranslator:
         self.created = int(time.time())
         self.input_tokens = 0
         self.output_tokens = 0
+        self.cache_creation_input_tokens = 0
+        self.cache_read_input_tokens = 0
         self._role_sent = False
         self._stopped = False
         self._finish_reason = "stop"
@@ -71,6 +96,10 @@ class AnthropicToOpenAIStreamTranslator:
             message = data.get("message") or {}
             usage = message.get("usage") or {}
             self.input_tokens = int(usage.get("input_tokens") or 0)
+            self.cache_creation_input_tokens = int(
+                usage.get("cache_creation_input_tokens") or 0
+            )
+            self.cache_read_input_tokens = int(usage.get("cache_read_input_tokens") or 0)
             if not self._role_sent:
                 self._role_sent = True
                 out.append(
@@ -112,6 +141,17 @@ class AnthropicToOpenAIStreamTranslator:
             usage = data.get("usage") or {}
             if "output_tokens" in usage:
                 self.output_tokens = int(usage.get("output_tokens") or 0)
+            # Cache token fields normally land on message_start, but some
+            # responses report them here instead — keep whichever is present
+            # rather than clobbering an earlier non-zero value with absence.
+            if "cache_creation_input_tokens" in usage:
+                self.cache_creation_input_tokens = int(
+                    usage.get("cache_creation_input_tokens") or 0
+                )
+            if "cache_read_input_tokens" in usage:
+                self.cache_read_input_tokens = int(
+                    usage.get("cache_read_input_tokens") or 0
+                )
             stop = (data.get("delta") or {}).get("stop_reason")
             # Anthropic end_turn → OpenAI stop; keep others as strings when present
             if stop == "end_turn":
@@ -137,6 +177,8 @@ class AnthropicToOpenAIStreamTranslator:
             usage = anthropic_usage_to_openai(
                 input_tokens=self.input_tokens,
                 output_tokens=self.output_tokens,
+                cache_creation_input_tokens=self.cache_creation_input_tokens,
+                cache_read_input_tokens=self.cache_read_input_tokens,
             )
             out.append(
                 _chunk(

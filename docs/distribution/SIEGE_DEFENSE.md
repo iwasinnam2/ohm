@@ -6,10 +6,16 @@ what is true immediately, correct what is false precisely, never get
 defensive, never argue tone. A concession delivered fast and plainly earns
 more than any rebuttal.
 
-Facts these responses rest on (verified against code, 2026-07-31):
+Facts these responses rest on (verified against code, 2026-08-08):
 
-- Cache key includes `temperature`, `max_tokens`, and `cache_control` in
-  extras (`src/at_utility/cache.py`, call site in `main.py`).
+- Cache key includes `temperature`, `max_tokens`, `cache_control`, and
+  (when present) `tools`/`tool_choice` in extras (`src/at_utility/cache.py`,
+  call site in `main.py`) — the last two only added when non-empty, so a
+  tool-less request's digest is unchanged from before that field existed.
+- Breakpoint autopilot (`src/at_utility/cache_autopilot.py`,
+  `docs/CACHE_AUTOPILOT.md`) auto-places Anthropic `cache_control` on the
+  longest byte-stable prefix across turns of a session, on the MISS path
+  only, never touching the exact-replay digest above.
 - Cached completions are TTL-bound: `at_cache_ttl_seconds`, default 3600s.
 - BYOK is a per-request header (`X-Ohm-Upstream-Key`), never persisted;
   cache hits require no upstream key.
@@ -18,10 +24,13 @@ Facts these responses rest on (verified against code, 2026-07-31):
 - The Rust edge supports Redis TLS (`rediss://`); production edge HITs go
   live when cluster secrets point at ElastiCache (see `docs/OPERATIONS.md`
   "Edge cache tier"). Until then the edge may full-proxy — correctness OK.
-- `/v1/savings` is a **dual ledger**: provider-list estimate
-  (`estimated_provider_avoided_usd`, default $15/M × hit tokens) vs
-  `pipe_rent_usd`, plus `roi_ratio`. Always `estimate_only: true` — not a
-  guaranteed savings promise. See `docs/GEM_POSITION.md`.
+- `/v1/savings` is a **triple ledger**: provider-list estimate
+  (`estimated_provider_avoided_usd`, default $15/M × Ohm's own exact-replay
+  hit tokens), `estimated_provider_cache_savings_usd` (breakpoint-autopilot
+  MISSes discounted by the upstream provider's own cache — a distinct rail,
+  never summed with the first), vs `pipe_rent_usd`, plus `roi_ratio`. Always
+  `estimate_only: true` — not a guaranteed savings promise. See
+  `docs/GEM_POSITION.md`.
 
 ---
 
@@ -62,14 +71,23 @@ Facts these responses rest on (verified against code, 2026-07-31):
 
 ### "Why not LiteLLM / Helicone / Portkey / provider-native prompt caching?"
 
-> Different jobs. Provider prompt caching discounts repeated *input prefix*
-> tokens on a continuation — it never replays a full response, doesn't work
-> cross-provider, and does nothing for web fetch. Gateway proxies like
-> LiteLLM are routing layers; their caching is best-effort and unbilled,
-> which is fine until you want to build a product on top of the cache.
-> withOhm's cache is billing-grade (digest-scoped meter event identifiers, parity-
-> pinned keys) and it ships the compliance fetch pipe and MCP tools in the
-> same pipe. If you just need routing, use LiteLLM — genuinely.
+> Different jobs, and as of the breakpoint autopilot, not purely a contrast
+> anymore. Provider prompt caching discounts repeated *input prefix* tokens
+> on a continuation — it never replays a full response, doesn't work
+> cross-provider, and does nothing for web fetch. Most naive clients
+> (Cursor-style agents included) place the breakpoint wrong or not at all,
+> so they don't even get that discount today. withOhm's exact-replay cache
+> still skips the call entirely on a byte-identical repeat; on top of that,
+> the breakpoint autopilot (docs/CACHE_AUTOPILOT.md) now *correctly places*
+> Anthropic's own `cache_control` on the longest stable prefix of a growing
+> conversation, so the provider's discount actually fires — engineering the
+> provider-native mechanism on the customer's behalf, not just replacing it.
+> Gateway proxies like LiteLLM are routing layers; their caching is
+> best-effort and unbilled, which is fine until you want to build a product
+> on top of the cache. withOhm's cache is billing-grade (digest-scoped meter
+> event identifiers, parity-pinned keys) and it ships the compliance fetch
+> pipe and MCP tools in the same pipe. If you just need routing, use
+> LiteLLM — genuinely.
 
 ---
 

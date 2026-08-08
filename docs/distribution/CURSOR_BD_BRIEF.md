@@ -15,7 +15,9 @@ Companion: [GEM_POSITION.md](../GEM_POSITION.md) · Marketplace draft: [../listi
 ## Problem (platform economics)
 
 Agent loops in Cursor amplify **repeat prefill**: retries, tool cycles, stable
-system+file pairs. Users hit compaction rituals and bill shock. Cursor bears
+system+file pairs, and — the dominant pattern — every turn resending the
+entire growing transcript, so cost scales combinatorially with conversation
+length. Users hit compaction rituals and bill shock. Cursor bears
 support/churn gravity when agent spend feels opaque or wasteful. Building
 billing-grade cache + robots-aware browse in-house is real engineering and
 compliance surface.
@@ -27,12 +29,19 @@ OpenAI-compatible **ingress pipe** attachable via local stdio MCP
 
 - **Exact-match Redis prompt replay** — identical agent calls replay without
   re-billing the provider; hits are metered (~$2/M) so incentives stay honest
+- **Breakpoint autopilot** — auto-places Anthropic `cache_control` prefix
+  breakpoints on the longest byte-stable prefix of a growing conversation, so
+  naive clients that resend the whole transcript every turn (Cursor's own
+  pattern) still get provider-side prefill discounting without placing a
+  breakpoint themselves ([CACHE_AUTOPILOT.md](../CACHE_AUTOPILOT.md))
 - **BYOK** — user/Cursor keeps the model relationship; Ohm does not float
-  wholesale tokens on Intermediate
+  wholesale tokens on Intermediate, and never stores the upstream key
 - **Compliant public web fetch** — purpose-bound, robots-gated, PII-redacted
   context for agents (`ohm_fetch_web`)
-- **Dual savings ledger** — `GET /v1/savings` shows estimated provider $
-  avoided vs Ohm pipe rent + `roi_ratio` (estimates labeled `estimate_only`)
+- **Triple savings ledger** — `GET /v1/savings` shows estimated provider $
+  avoided (Ohm's own replay HITs), estimated provider-cache savings
+  (breakpoint autopilot), and Ohm pipe rent + `roi_ratio` (estimates labeled
+  `estimate_only`)
 
 Site: https://www.withohm.dev · API: https://api.withohm.dev/v1  
 Repo: https://github.com/iwasinnam2/ohm · Privacy: https://www.withohm.dev/docs/privacy
@@ -79,6 +88,8 @@ is a separate purpose-limited worker. Edge HIT metering via
 {
   "cache_hit_ratio": 0.42,
   "estimated_provider_avoided_usd": 12.6,
+  "provider_cache_read_tokens": 48000,
+  "estimated_provider_cache_savings_usd": 0.65,
   "pipe_rent_usd": 0.85,
   "roi_ratio": 14.8,
   "estimate_only": true
@@ -86,4 +97,7 @@ is a separate purpose-limited worker. Edge HIT metering via
 ```
 
 Blended provider rate defaults to $15/M tokens (`AT_PROVIDER_AVOIDED_PER_1K_TOKENS`);
-always an estimate, never a guarantee.
+always an estimate, never a guarantee. `estimated_provider_cache_savings_usd`
+is a distinct rail (never summed with `estimated_provider_avoided_usd`) —
+it only fires when the breakpoint autopilot got the upstream provider itself
+to discount part of a MISS.

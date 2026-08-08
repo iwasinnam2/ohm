@@ -24,6 +24,11 @@ from starlette.responses import Response
 
 from at_utility.auth import extract_bearer
 from at_utility.cache import cache_key_for_request, resolve_cache_tree
+from at_utility.cache_autopilot import (
+    apply_cache_autopilot,
+    resolve_session_id,
+    session_status,
+)
 from at_utility.cache_trees import CacheTreeRegistry
 from at_utility import receipts
 from at_utility.compliance import web_bot_auth
@@ -48,6 +53,7 @@ from at_utility.stream_usage import (
     approx_tokens_from_sse_lines,
     assemble_completion_from_sse_lines,
     sse_lines_from_completion,
+    usage_dict_from_sse_line,
     usage_from_sse_line,
 )
 from at_utility import checkout_fulfill, stripe_billing
@@ -66,6 +72,10 @@ logging.basicConfig(level=logging.INFO)
 
 class ChatMessage(BaseModel):
     role: str
+    # str for plain-text turns, or an Anthropic-style content-block list
+    # (e.g. [{"type": "text", "text": ..., "cache_control": {"type": "ephemeral"}}])
+    # so prompt-caching breakpoints on system/user/assistant blocks survive
+    # the pass-through to AnthropicProvider (see providers.py _build_body).
     content: Any
 
 
@@ -75,6 +85,11 @@ class ChatCompletionRequest(BaseModel):
     stream: bool = False
     temperature: Optional[float] = None
     max_tokens: Optional[int] = None
+    # Tool definitions (OpenAI/Anthropic-shaped dicts). Forwarded verbatim so
+    # per-tool `cache_control` breakpoints (a primary caching use case) are
+    # expressible through Ohm, not silently dropped.
+    tools: Optional[list[dict[str, Any]]] = None
+    tool_choice: Optional[Any] = None
     fetch_web_context: bool = False
     web_query: Optional[str] = None
     web_urls: list[str] = Field(default_factory=list)
@@ -91,6 +106,10 @@ class ChatCompletionRequest(BaseModel):
     ohm_path: Optional[str] = None
     # Exact-replay tree (also accept X-Ohm-Cache-Tree header; header wins)
     cache_tree: Optional[str] = None
+    # Logical conversation id for the breakpoint autopilot (docs/CACHE_AUTOPILOT.md).
+    # Also accept X-Ohm-Session header; header wins. Optional — falls back to a
+    # content-derived anchor when omitted.
+    ohm_session: Optional[str] = None
 
 
 class AppState:
@@ -739,7 +758,13 @@ async def savings_dashboard(
     snap = await state.meter.snapshot(tenant.tenant_id)
     hit_tok = float(snap.get("cache_hit_tokens") or 0)
     ledger = dual_ledger(
-        hit_tokens=hit_tok, snap=snap, settings=state.settings
+        hit_tokens=hit_tok,
+        snap=snap,
+        settings=state.settings,
+        upstream_cache_read_tokens=float(snap.get("upstream_cache_read_tokens") or 0),
+        upstream_cache_creation_tokens=float(
+            snap.get("upstream_cache_creation_tokens") or 0
+        ),
     )
     return {
         "tenant": tenant.tenant_id,
@@ -2425,6 +2450,7 @@ async def chat_completions(
     x_ohm_upstream_key: Optional[str] = Header(default=None, alias="X-Ohm-Upstream-Key"),
     x_ohm_path: Optional[str] = Header(default=None, alias="X-Ohm-Path"),
     x_ohm_cache_tree: Optional[str] = Header(default=None, alias="X-Ohm-Cache-Tree"),
+    x_ohm_session: Optional[str] = Header(default=None, alias="X-Ohm-Session"),
 ):
     api_key, tenant_rec = auth
     await rate_limit(api_key, tenant_rec.tenant_id)
@@ -2572,6 +2598,15 @@ async def chat_completions(
         "max_tokens": body.max_tokens,
         "cache_control": body.cache_control,
     }
+    if body.tools:
+        # Only added when present so the common tool-less request keeps the
+        # exact same digest (and Rust edge parity) as before this field
+        # existed. Tool definitions materially change the completion, so two
+        # requests with identical messages but different tools must never
+        # collide on the same exact-replay cache entry.
+        extras["tools"] = body.tools
+    if body.tool_choice is not None:
+        extras["tool_choice"] = body.tool_choice
     ckey = cache_key_for_request(
         tenant=tenant,
         model=body.model,
@@ -2730,6 +2765,36 @@ async def chat_completions(
         kwargs["temperature"] = body.temperature
     if body.max_tokens is not None:
         kwargs["max_tokens"] = body.max_tokens
+    if body.tools:
+        kwargs["tools"] = body.tools
+    if body.tool_choice is not None:
+        kwargs["tool_choice"] = body.tool_choice
+
+    # Breakpoint autopilot (docs/CACHE_AUTOPILOT.md): only ever mutates the
+    # copy of `messages`/`tools` sent upstream from here on — the exact-
+    # replay `ckey` above was already computed from the client's original
+    # request, so this never perturbs Ohm's own hit rate.
+    if model.lower().startswith("claude") and state.settings.at_cache_autopilot_enabled:
+        session_id = resolve_session_id(
+            header=x_ohm_session,
+            body_session=body.ohm_session,
+            tenant=tenant,
+            model=model,
+            messages=messages,
+        )
+        autopilot = await apply_cache_autopilot(
+            store=state.store,
+            settings=state.settings,
+            tenant=tenant,
+            model=model,
+            session_id=session_id,
+            tools=kwargs.get("tools"),
+            messages=messages,
+        )
+        messages = autopilot.messages
+        if autopilot.tools:
+            kwargs["tools"] = autopilot.tools
+        cache_headers = {**cache_headers, "X-Ohm-Cache-Autopilot": autopilot.status}
 
     # Frozen trees may still HIT via COW; new writes / upstream MISS are denied.
     if not no_store:
@@ -2748,12 +2813,28 @@ async def chat_completions(
             async def event_stream() -> AsyncIterator[bytes]:
                 collected: list[str] = []
                 usage_total: int | None = None
+                upstream_cache_read = 0
+                upstream_cache_creation = 0
+
+                def _track_cache_usage(text: str) -> None:
+                    nonlocal upstream_cache_read, upstream_cache_creation
+                    usage_dict = usage_dict_from_sse_line(text)
+                    if usage_dict is None:
+                        return
+                    read = int(usage_dict.get("cache_read_input_tokens") or 0)
+                    creation = int(usage_dict.get("cache_creation_input_tokens") or 0)
+                    if read:
+                        upstream_cache_read = read
+                    if creation:
+                        upstream_cache_creation = creation
+
                 try:
                     if first_line is not None:
                         collected.append(first_line)
                         parsed_first = usage_from_sse_line(first_line)
                         if parsed_first is not None:
                             usage_total = parsed_first
+                        _track_cache_usage(first_line)
                         yield first_line.encode("utf-8")
                     async for line in stream:  # type: ignore[union-attr]
                         text = line if isinstance(line, str) else line.decode("utf-8", errors="replace")
@@ -2761,6 +2842,7 @@ async def chat_completions(
                         parsed = usage_from_sse_line(text)
                         if parsed is not None:
                             usage_total = parsed
+                        _track_cache_usage(text)
                         yield text.encode("utf-8")
                 except ProviderUpstreamError as exc:
                     payload = json.dumps(
@@ -2792,6 +2874,8 @@ async def chat_completions(
                     total_tokens=total_tokens,
                     stripe_customer_id=stripe_customer,
                     event_id=miss_eid,
+                    upstream_cache_read_tokens=upstream_cache_read,
+                    upstream_cache_creation_tokens=upstream_cache_creation,
                 )
                 await _append_ledger(
                     tenant_rec,
@@ -2871,6 +2955,10 @@ async def chat_completions(
         total_tokens=total,
         stripe_customer_id=stripe_customer,
         event_id=miss_eid,
+        upstream_cache_read_tokens=int(usage.get("cache_read_input_tokens") or 0),
+        upstream_cache_creation_tokens=int(
+            usage.get("cache_creation_input_tokens") or 0
+        ),
     )
     await _append_ledger(
         tenant_rec,
@@ -2891,6 +2979,208 @@ async def chat_completions(
             "X-AT-Billed-USD": f"{event.billed_usd:.6f}",
         },
     )
+
+
+@app.post("/v1/chat/completions/prewarm")
+async def chat_completions_prewarm(
+    body: ChatCompletionRequest,
+    auth: tuple[str, TenantRecord] = Depends(auth_tenant),
+    x_ohm_upstream_key: Optional[str] = Header(default=None, alias="X-Ohm-Upstream-Key"),
+    x_ohm_session: Optional[str] = Header(default=None, alias="X-Ohm-Session"),
+):
+    """Session-aware pre-warm (docs/CACHE_AUTOPILOT.md Phase 3).
+
+    A deliberate `max_tokens: 1` call that refreshes an about-to-expire
+    Anthropic cache breakpoint so a user's *next real* turn never eats a
+    fresh cache-write penalty. Client-triggered by design (e.g. an IDE idle
+    timer calling this after `GET /v1/cache/sessions/{id}` shows the TTL
+    running low) — Ohm never autonomously stores or replays prompt content
+    to fire this on its own; the caller sends its own current transcript and
+    its own upstream key, exactly like a normal chat completion. Never
+    touches Ohm's own exact-replay cache — the response is throwaway.
+    """
+    api_key, tenant_rec = auth
+    await rate_limit(api_key, tenant_rec.tenant_id)
+    await _org_policy_gate(tenant_rec, body)
+    tenant = tenant_rec.tenant_id
+    stripe_customer = tenant_rec.stripe_customer_id or ""
+
+    if not (body.model or "").lower().startswith("claude"):
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "code": "prewarm_unsupported_model",
+                "message": (
+                    "Pre-warm only applies to claude-* models — Anthropic is "
+                    "the only upstream with explicit cache_control breakpoints. "
+                    "OpenAI's own prompt caching is automatic and needs no priming."
+                ),
+            },
+        )
+    if not state.settings.at_cache_autopilot_enabled:
+        # With autopilot off, apply_cache_autopilot injects no cache_control
+        # breakpoint at all — firing pre-warm would just be a real, billed
+        # upstream call that accomplishes nothing. Fail fast instead.
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "code": "cache_autopilot_disabled",
+                "message": (
+                    "Pre-warm requires AT_CACHE_AUTOPILOT_ENABLED — without it, "
+                    "no cache_control breakpoint is placed and pre-warming would "
+                    "just spend real upstream tokens for no caching benefit."
+                ),
+            },
+        )
+
+    upstream_key = (x_ohm_upstream_key or "").strip()
+    org_managed = False
+    if tenant_rec.org_id:
+        _org = await state.orgs.get(tenant_rec.org_id)
+        org_managed = bool(_org and _org.policy_obj().managed_keys)
+    allow_fallback = state.settings.at_byok_allow_env_fallback or (
+        tenant_rec.plan in ("enterprise", "dev")
+    ) or (
+        org_managed and state.settings.at_enterprise_managed_keys
+    )
+    if not provider_key_available(
+        body.model,
+        upstream_key=upstream_key,
+        openai=state.openai,
+        anthropic=state.anthropic,
+        allow_env_fallback=allow_fallback,
+        compat=state.compat,
+    ):
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "code": "upstream_key_required",
+                "message": (
+                    "BYOK required: send your provider API key as "
+                    "X-Ohm-Upstream-Key to pre-warm."
+                ),
+                "header": "X-Ohm-Upstream-Key",
+            },
+        )
+
+    # Pre-warm is optional, non-user-visible spend — subject to the same
+    # org spend-cap gate a real MISS would hit (hard mode blocks outright).
+    await _spend_cap_on_miss(tenant_rec)
+
+    messages = [m.model_dump() for m in body.messages]
+    session_id = resolve_session_id(
+        header=x_ohm_session,
+        body_session=body.ohm_session,
+        tenant=tenant,
+        model=body.model,
+        messages=messages,
+    )
+    provider, model = resolve_provider(
+        body.model,
+        openai=state.openai,
+        anthropic=state.anthropic,
+        mock=state.mock,
+        fallback=state.settings.at_fallback_model,
+        upstream_key=upstream_key,
+        allow_env_fallback=allow_fallback,
+        compat=state.compat,
+    )
+    kwargs: dict[str, Any] = {"max_tokens": 1}
+    if body.tools:
+        kwargs["tools"] = body.tools
+    if body.tool_choice is not None:
+        kwargs["tool_choice"] = body.tool_choice
+
+    autopilot = await apply_cache_autopilot(
+        store=state.store,
+        settings=state.settings,
+        tenant=tenant,
+        model=model,
+        session_id=session_id,
+        tools=kwargs.get("tools"),
+        messages=messages,
+    )
+    messages = autopilot.messages
+    if autopilot.tools:
+        kwargs["tools"] = autopilot.tools
+
+    try:
+        result = await provider.chat_completion(
+            model=model, messages=messages, stream=False, **kwargs
+        )
+    except ProviderUpstreamError as exc:
+        return JSONResponse(
+            {
+                "error": {
+                    "message": f"{exc.provider} upstream error",
+                    "type": "provider_upstream_error",
+                    "provider": exc.provider,
+                    "upstream": exc.body,
+                }
+            },
+            status_code=exc.status_code if 400 <= exc.status_code < 600 else 502,
+            headers={"X-Ohm-Cache-Autopilot": autopilot.status},
+        )
+
+    assert isinstance(result, dict)
+    usage = result.get("usage") or {}
+    total = int(usage.get("total_tokens") or 0)
+    prewarm_eid = stable_meter_event_id(
+        kind="prewarm", request_digest=session_id, plane="python"
+    )
+    event = await state.meter.record_prewarm(
+        tenant,
+        total_tokens=total,
+        stripe_customer_id=stripe_customer,
+        event_id=prewarm_eid,
+    )
+    await _append_ledger(
+        tenant_rec,
+        kind="prewarm",
+        model=body.model,
+        tokens=total,
+        pipe_usd=event.billed_usd,
+        cache_hit=False,
+        path=normalize_path(body.ohm_path),
+        request_id=prewarm_eid,
+    )
+    return JSONResponse(
+        {
+            "status": "warmed",
+            "session_id": session_id,
+            "cache_control": autopilot.status,
+            "stable_prefix_units": autopilot.stable_prefix_units,
+            "usage": usage,
+            "billed_usd": event.billed_usd,
+        },
+        headers={
+            "X-Ohm-Cache-Autopilot": autopilot.status,
+            "X-AT-Billed-USD": f"{event.billed_usd:.6f}",
+        },
+    )
+
+
+@app.get("/v1/cache/sessions/{session_id}")
+async def cache_session_status(
+    session_id: str,
+    auth: tuple[str, TenantRecord] = Depends(auth_tenant),
+) -> dict[str, Any]:
+    """Cheap read so a client's own idle timer can decide whether a session
+    is worth pre-warming (docs/CACHE_AUTOPILOT.md) before ever paying for a
+    POST /v1/chat/completions/prewarm call."""
+    api_key, tenant = auth
+    await rate_limit(api_key, tenant.tenant_id)
+    st = await session_status(
+        store=state.store, tenant=tenant.tenant_id, session_id=session_id
+    )
+    return {
+        "session_id": session_id,
+        "tracked": st.tracked,
+        "stable_prefix_units": st.stable_prefix_units,
+        "last_breakpoint": st.last_breakpoint,
+        "ttl_seconds": st.ttl_seconds,
+        "ttl_remaining_seconds": round(st.ttl_remaining_seconds, 1),
+    }
 
 
 def run() -> None:

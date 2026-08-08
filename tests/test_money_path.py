@@ -64,6 +64,37 @@ async def test_zero_token_chat_records_request_but_bills_zero():
     assert snap["cache_miss_usd"] == 0.0
 
 
+@pytest.mark.asyncio
+async def test_upstream_cache_tokens_tracked_independently_of_hit_miss():
+    """Anthropic-side cache read/write tokens are a third ledger rail —
+    visible even on an Ohm MISS, and never conflated with Ohm's own
+    exact-replay hit/miss pricing."""
+    meter = main_mod.state.meter
+    event = await meter.record_chat(
+        "tenant_upstream_cache",
+        cache_hit=False,
+        total_tokens=2050,
+        upstream_cache_read_tokens=1800,
+        upstream_cache_creation_tokens=200,
+    )
+    # Billing kind/price untouched by the new counters.
+    assert event.kind == "cache_miss"
+    snap = await meter.snapshot("tenant_upstream_cache")
+    assert snap["upstream_cache_read_tokens"] == 1800.0
+    assert snap["upstream_cache_creation_tokens"] == 200.0
+    assert snap["upstream_cache_hit_ratio"] == pytest.approx(1800 / 2000)
+
+
+@pytest.mark.asyncio
+async def test_upstream_cache_tokens_absent_by_default():
+    meter = main_mod.state.meter
+    await meter.record_chat("tenant_no_cache", cache_hit=False, total_tokens=100)
+    snap = await meter.snapshot("tenant_no_cache")
+    assert snap["upstream_cache_read_tokens"] == 0.0
+    assert snap["upstream_cache_creation_tokens"] == 0.0
+    assert snap["upstream_cache_hit_ratio"] == 0.0
+
+
 # ---------------------------------------------------------------------------
 # Stripe meter idempotency identifier
 # ---------------------------------------------------------------------------
@@ -123,6 +154,41 @@ async def test_meter_passes_idempotency_identifier(monkeypatch):
     assert e1.event_id == eid == e2.event_id
     assert captured[2]["identifier"] == captured[3]["identifier"]
     assert captured[2]["identifier"].endswith(eid)
+
+
+@pytest.mark.asyncio
+async def test_prewarm_never_syncs_under_cache_miss_stripe_event(monkeypatch):
+    """Pre-warm must never report to Stripe under the same event name as a
+    real cache_miss — otherwise a tenant reading raw Stripe usage records
+    can't tell a keep-warm ping from real MISS traffic (billing-visible
+    overclaim). Default config leaves stripe_meter_event_prewarm empty, so
+    the sync should simply no-op rather than fall back to cache_miss."""
+    calls: list[str] = []
+
+    def fake_report(settings, *, event_name, stripe_customer_id, value, identifier=""):
+        calls.append(event_name)
+        return True
+
+    monkeypatch.setattr(metering_mod.stripe_billing, "report_meter_event", fake_report)
+    meter = main_mod.state.meter
+    event = await meter.record_prewarm(
+        "tenant_prewarm_stripe", total_tokens=500, stripe_customer_id="cus_x"
+    )
+    assert event.kind == "prewarm"
+    assert event.stripe_synced is False
+    assert calls == []
+
+    # Once an operator configures a dedicated meter, it syncs under its own
+    # distinct event name — never "ohm_cache_miss".
+    main_mod.state.settings.stripe_meter_event_prewarm = "ohm_prewarm"
+    try:
+        event2 = await meter.record_prewarm(
+            "tenant_prewarm_stripe", total_tokens=500, stripe_customer_id="cus_x"
+        )
+        assert event2.stripe_synced is True
+        assert calls == ["ohm_prewarm"]
+    finally:
+        main_mod.state.settings.stripe_meter_event_prewarm = ""
 
 
 @pytest.mark.asyncio

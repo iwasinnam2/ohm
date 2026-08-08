@@ -46,6 +46,58 @@ async def test_chat_cache_hit():
 
 
 @pytest.mark.asyncio
+async def test_tools_are_forwarded_and_change_the_cache_key():
+    """Regression guard for the tools passthrough fix: two requests with
+    identical messages but different tool definitions must never collide on
+    the same exact-replay cache entry, and requests without tools at all
+    must keep the exact same digest/HIT behavior as before tools existed."""
+    transport = ASGITransport(app=app)
+    headers = {"Authorization": "Bearer sk-at-dev"}
+    base_messages = [{"role": "user", "content": "what's the weather"}]
+    tool_a = [{"name": "get_weather", "description": "a", "input_schema": {"type": "object"}}]
+    tool_b = [{"name": "get_weather", "description": "b", "input_schema": {"type": "object"}}]
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        no_tools = await client.post(
+            "/v1/chat/completions",
+            headers=headers,
+            json={"model": "mock", "messages": base_messages},
+        )
+        assert no_tools.headers.get("x-at-cache") == "MISS"
+
+        with_tool_a = await client.post(
+            "/v1/chat/completions",
+            headers=headers,
+            json={"model": "mock", "messages": base_messages, "tools": tool_a},
+        )
+        # Different extras (tools present) than the tool-less call above —
+        # must not spuriously HIT against it.
+        assert with_tool_a.headers.get("x-at-cache") == "MISS"
+
+        with_tool_a_again = await client.post(
+            "/v1/chat/completions",
+            headers=headers,
+            json={"model": "mock", "messages": base_messages, "tools": tool_a},
+        )
+        assert with_tool_a_again.headers.get("x-at-cache") == "HIT"
+
+        with_tool_b = await client.post(
+            "/v1/chat/completions",
+            headers=headers,
+            json={"model": "mock", "messages": base_messages, "tools": tool_b},
+        )
+        # Different tool definitions → different digest, never a HIT against tool_a.
+        assert with_tool_b.headers.get("x-at-cache") == "MISS"
+
+        no_tools_again = await client.post(
+            "/v1/chat/completions",
+            headers=headers,
+            json={"model": "mock", "messages": base_messages},
+        )
+        # Tool-less requests are unaffected by any of the above.
+        assert no_tools_again.headers.get("x-at-cache") == "HIT"
+
+
+@pytest.mark.asyncio
 async def test_rate_limit_and_usage():
     transport = ASGITransport(app=app)
     headers = {"Authorization": "Bearer sk-at-dev"}
@@ -155,6 +207,52 @@ async def test_savings_dashboard():
         assert body["estimated_provider_avoided_usd"] >= body.get(
             "estimated_pipe_proxy_avoided_usd", 0
         )
+        # Third ledger rail (docs/CACHE_AUTOPILOT.md) present even at zero.
+        assert body["provider_cache_read_tokens"] == 0.0
+        assert body["estimated_provider_cache_savings_usd"] == 0.0
+
+
+@pytest.mark.asyncio
+async def test_savings_dashboard_reports_upstream_provider_cache_rail():
+    import httpx
+
+    import at_utility.main as main_mod
+    from at_utility.providers import AnthropicProvider
+
+    async def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            200,
+            json={
+                "content": [{"type": "text", "text": "ok"}],
+                "usage": {
+                    "input_tokens": 5,
+                    "output_tokens": 2,
+                    "cache_read_input_tokens": 4000,
+                },
+            },
+        )
+
+    main_mod.state.anthropic = AnthropicProvider(
+        "sk-ant-env", client=httpx.AsyncClient(transport=httpx.MockTransport(handler))
+    )
+    transport = ASGITransport(app=app)
+    headers = {"Authorization": "Bearer sk-at-dev", "X-Ohm-Upstream-Key": "sk-ant-byok"}
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        res = await client.post(
+            "/v1/chat/completions",
+            headers=headers,
+            json={
+                "model": "claude-3-5-sonnet-latest",
+                "messages": [{"role": "user", "content": "hi"}],
+            },
+        )
+        assert res.status_code == 200
+        sav = await client.get("/v1/savings", headers=headers)
+        body = sav.json()
+        assert body["provider_cache_read_tokens"] == 4000.0
+        assert body["estimated_provider_cache_savings_usd"] > 0
+        # Distinct from — never summed with — Ohm's own exact-replay rail.
+        assert body["estimated_provider_avoided_usd"] == 0.0
 
 
 @pytest.mark.asyncio

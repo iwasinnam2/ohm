@@ -44,6 +44,28 @@ def usage_from_sse_line(line: str) -> Optional[int]:
     return usage_total_from_dict(payload.get("usage"))
 
 
+def usage_dict_from_sse_line(line: str) -> Optional[dict[str, Any]]:
+    """Like usage_from_sse_line, but returns the full usage object instead of
+    just the token total — so callers can read cache_read_input_tokens /
+    cache_creation_input_tokens (Anthropic) when the upstream reports them.
+    """
+    text = line.strip()
+    if not text or text == "data: [DONE]" or text == "[DONE]":
+        return None
+    if text.startswith("data:"):
+        text = text[5:].strip()
+    if not text or text == "[DONE]":
+        return None
+    try:
+        payload = json.loads(text)
+    except json.JSONDecodeError:
+        return None
+    if not isinstance(payload, dict):
+        return None
+    usage = payload.get("usage")
+    return usage if isinstance(usage, dict) else None
+
+
 def approx_tokens_from_sse_lines(lines: list[str]) -> int:
     """Last-resort estimate when upstream never returned usage."""
     return max(1, sum(len(x) for x in lines) // 4)

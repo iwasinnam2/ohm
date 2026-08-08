@@ -679,11 +679,24 @@ async fn handle_inner(
         .and_then(|v| v.get("cache_control").and_then(|c| c.as_str()))
         .map(|s| s.eq_ignore_ascii_case("no_store"))
         .unwrap_or(false);
+    // `cache_key_structured` does not hash `tools` (Python's does, see
+    // cache.py extras handling) — two requests with identical messages but
+    // different tool definitions would otherwise collide on the same edge
+    // Redis key and the edge could release a completion generated against
+    // the wrong tool schema without ever consulting Python. Route tool-
+    // bearing requests through the full-proxy path instead; Python's own
+    // cache lookup (which does hash tools) still applies correctly there.
+    let wants_tools = body_json
+        .as_ref()
+        .and_then(|v| v.get("tools"))
+        .map(|t| matches!(t, serde_json::Value::Array(arr) if !arr.is_empty()))
+        .unwrap_or(false);
 
     // Edge cache serving requires verified identity (Redis-confirmed key)
     // and a resolved tenant namespace. Unverified auth or unresolved tenant
     // → full-proxy so Python owns auth and caching (never invent tenant_*).
-    if edge_verified && is_chat && !wants_stream && !wants_web && tenant.is_some() {
+    if edge_verified && is_chat && !wants_stream && !wants_web && !wants_tools && tenant.is_some()
+    {
         let tenant = tenant.as_deref().expect("checked is_some");
         let header_tree = headers
             .get("x-ohm-cache-tree")
