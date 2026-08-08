@@ -5,7 +5,7 @@
 > below is retained as the re-enable playbook. See
 > [infra/runbooks/SINGLE_REGION.md](../infra/runbooks/SINGLE_REGION.md).
 
-Source of truth for leader/replica/global distribution. Consistency rules: [CONSISTENCY.md](CONSISTENCY.md). Topology playbook: [infra/README.md](../infra/README.md).
+Source of truth for leader/replica/global distribution. Consistency rules: [REDIS_CONSISTENCY.md](REDIS_CONSISTENCY.md). Topology playbook: [infra/README.md](../infra/README.md).
 
 ## Verdict (live now)
 
