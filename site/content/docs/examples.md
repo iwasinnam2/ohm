@@ -2,7 +2,7 @@
 
 withOhm’s distribution channel is the OpenAI-compatible API. No new protocol.
 
-Keys use legacy prefix `sk-at-…`. Public base: `https://api.withohm.dev/v1`. Local edge: `http://localhost:8081/v1`. Templates: LangChain / Vercel AI SDK under `examples/templates/` (see [PLATFORM](https://withohm.dev/docs) / repository `docs/PLATFORM.md`).
+Keys use legacy prefix `sk-at-…`. Public base: `https://api.withohm.dev/v1`. Local edge: `http://localhost:8081/v1`. Templates: LangChain / Vercel AI SDK under `examples/templates/` — see [docs/PLATFORM.md](https://github.com/iwasinnam2/ohm/blob/master/docs/PLATFORM.md) (source is open).
 
 ## Local (supported)
 

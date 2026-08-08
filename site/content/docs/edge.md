@@ -30,4 +30,4 @@ Public deck is single-region today with a documented playbook to re-enable multi
 
 ## Operator pointers
 
-Env patterns and phase table live in the repository runbooks (`docs/REDIS_MESH.md`). Status of public limits: [Status](/docs/status). Verify plane health with `/health` and `/ready` on `api.withohm.dev`.
+Env patterns and phase table live in [docs/REDIS_MESH.md](https://github.com/iwasinnam2/ohm/blob/master/docs/REDIS_MESH.md) (source is open). Status of public limits: [Status](/docs/status). Verify plane health with `/health` and `/ready` on `api.withohm.dev`.

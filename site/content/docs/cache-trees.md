@@ -11,7 +11,7 @@ Fork, promote, freeze, and reset are available on `/v1/cache/trees`.
 
 Tips isolate exact-replay inventory per PR or agent run. For pairing tips with
 a database preview branch in CI, see [Compose with Neon](/docs/compose-neon).
-Full ADR: repository `docs/CACHE_TREES.md`.
+Full design note: [docs/CACHE_TREES.md](https://github.com/iwasinnam2/ohm/blob/master/docs/CACHE_TREES.md) (source is open).
 
 ## Select a tree
 
@@ -28,7 +28,7 @@ still serve HITs.
 
 COW reads may serve a parent blob without copying into the child tip. That is
 not yet a single shared content-addressed store with many refs — Promote still
-copies child-local digests. See repository `docs/CACHE_TREES.md` (Storage honesty).
+copies child-local digests. See [docs/CACHE_TREES.md](https://github.com/iwasinnam2/ohm/blob/master/docs/CACHE_TREES.md) ("Storage honesty" section).
 
 ## Fork, promote, freeze
 

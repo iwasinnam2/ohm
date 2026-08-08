@@ -101,6 +101,18 @@ export const DOC_GROUPS: DocGroup[] = [
         title: "Trust — verify it yourself",
         description: "Waste demo, meters, and public keys for the pipe.",
       },
+      {
+        slug: "honesty",
+        title: "Honesty map",
+        description:
+          "Every non-goal ships with the endpoint or artifact that proves the limit.",
+      },
+      {
+        slug: "status",
+        title: "Status & limits",
+        description:
+          "Surfaces, hosts, defaults, and compliance gates — the live map.",
+      },
     ],
   },
   {
@@ -139,7 +151,7 @@ export const DOC_GROUPS: DocGroup[] = [
         slug: "brand",
         title: "Brand",
         description:
-          "withOhm promise and value system — AI traffic utility governance moderator.",
+          "withOhm promise and value system — the metered pipe on wasted, repeated inference.",
       },
     ],
   },

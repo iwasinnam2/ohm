@@ -8,7 +8,7 @@ Identical chat completion requests (per tenant) may store the model response in 
 
 ## Retention
 
-- Default TTL via `AT_CACHE_TTL_SECONDS` (3600 locally)
+- Default TTL is operator-configurable (3600s locally)
 - Ledger counters persist for metering; aggregates, not full prompts
 - Opt-out: `cache_control: "no_store"` or enterprise no-store arrangements
 

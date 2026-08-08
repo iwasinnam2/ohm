@@ -14,7 +14,7 @@ See [/subscriptions](/subscriptions): **Intermediate (usage-led, $0 membership +
 | Cache miss | per 1k tokens | `$0.001` |
 | Web fetch | per URL | `$0.003` |
 
-Hits are priced against the inference they replace (still ~90% below re-running the call); misses are priced low — they are pipe rent while your cache builds. A soft daily fetch cap applies until the first paid invoice unlocks the account (`AT_FREE_TIER_FETCH_CAP_DAY`).
+Hits are priced against the inference they replace (still ~90% below re-running the call); misses are priced low — they are pipe rent while your cache builds. A soft daily fetch cap applies until the first paid invoice unlocks the account (operator-configurable, not a hard product limit).
 
 ## Commit tiers (optional)
 

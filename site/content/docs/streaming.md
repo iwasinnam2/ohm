@@ -16,10 +16,10 @@ Two planes cooperate:
 
 | Plane | What it retries | When |
 | --- | --- | --- |
-| **Rust edge** (`api.withohm.dev` → `gateway-rs`) | Control-plane URL (`AT_RS_PRIMARY` → `AT_RS_FALLBACK`) | Connect error, or 5xx before any body byte is forwarded |
+| **Rust edge** (`api.withohm.dev` → `gateway-rs`) | Control-plane URL (primary → operator-configured fallback) | Connect error, or 5xx before any body byte is forwarded |
 | **Python control plane** | Same resolved provider, fresh connection (one retry) | Upstream connect / HTTP error before the first SSE line |
 
-Neither path is multi-vendor racing. `AT_FALLBACK_MODEL` is resolve-time model routing when a model cannot be served — it is **not** stream failover.
+Neither path is multi-vendor racing. An operator-configured fallback model is resolve-time model routing when a model cannot be served — it is **not** stream failover.
 
 ## Non-streaming
 
@@ -39,7 +39,7 @@ Use non-streaming when the path is critical and you cannot tolerate a truncated 
 
 **Python:** the control plane eagerly pulls the first SSE line before returning the `StreamingResponse`. If the provider fails before emitting anything, it retries once on a fresh connection. A second failure returns an **honest non-200 HTTP status** — never a `200` stream that only carries an error frame.
 
-**Rust:** pass-through requests fail over to `AT_RS_FALLBACK` on connect error **or** a 5xx status read before any body byte is forwarded.
+**Rust:** pass-through requests fail over to the configured fallback URL on connect error **or** a 5xx status read before any body byte is forwarded.
 
 Successful stream responses advertise the capability:
 

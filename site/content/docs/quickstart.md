@@ -42,4 +42,4 @@ curl -s https://api.withohm.dev/v1/chat/completions \
   -d '{"model":"mock","messages":[{"role":"user","content":"ohm-self-proof-v1"}]}'
 ```
 
-Self-proof runbook: repo `docs/SELF_PROOF.md`.
+Self-proof runbook: [docs/SELF_PROOF.md](https://github.com/iwasinnam2/ohm/blob/master/docs/SELF_PROOF.md) (source is open).

@@ -42,4 +42,11 @@ export const PRODUCT_INDEX: ProductMeta[] = [
       "AI traffic utility — metered pipe on wasted and repeated inference.",
     eyebrow: "Position",
   },
+  {
+    slug: "trust",
+    title: "Trust",
+    description:
+      "Prove the pipe yourself — waste demo, meters, savings, and account custody. No marketing theatre.",
+    eyebrow: "Proof",
+  },
 ];
