@@ -18,3 +18,11 @@ Env for MCP hosts: `OHM_API_KEY` (required), optional `OHM_UPSTREAM_KEY` (BYOK o
 
 Deep-dive configs for each coding agent are on [/connections](/connections).
 Shortcut: [Cursor / MCP](/docs/cursor).
+
+### JetBrains (AI Assistant)
+
+Install the thin withOhm plugin (Marketplace or Install Plugin from Disk), then open
+**Settings → Tools → withOhm**, paste your `sk-at-…` key, and Apply. The plugin
+registers stdio `ohm-mcp` for AI Assistant (IDE 2025.1+). You still need
+`pip install withohm-mcp` on PATH. Source and build:
+[`ide-plugins/jetbrains/`](https://github.com/iwasinnam2/ohm/tree/master/ide-plugins/jetbrains).

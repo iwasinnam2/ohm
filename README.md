@@ -74,6 +74,7 @@ pip install withohm-mcp
 # monorepo dev alternative: pip install -e ".[mcp]"
 # stdio (Cursor local attach): set OHM_API_KEY (required). Optional: OHM_UPSTREAM_KEY, OHM_BASE_URL
 # Plugin: .cursor-plugin/ + mcp.json — see docs/CURSOR.md
+# JetBrains AI Assistant: ide-plugins/jetbrains/ (./gradlew buildPlugin → Marketplace zip)
 
 # Remote (stateless streamable HTTP at /mcp, default port 8091):
 #   OHM_MCP_TRANSPORT=http ohm-mcp     (or: ohm-mcp-http)
@@ -114,7 +115,8 @@ Inspect live policy: `GET /v1/compliance/policy`. Templates: Terms, DPA, upstrea
 | Python gateway (`:8080`) | OpenAI-compatible API, providers, rate limits, metering, tenancy, compliance gates |
 | Ingest worker (`:8090`) | Meta-search + public page fetch → redacted markdown/JSON for `fetch_web_context` |
 | `src/at_utility/compliance/` | Purpose matrix, URL gate, robots.txt, PII redaction |
-| `src/ohm_mcp/` | Cursor MCP attach (`ohm_fetch_web`, `ohm_usage`, `ohm_chat`) |
+| `src/ohm_mcp/` | MCP attach (`ohm_fetch_web`, `ohm_usage`, `ohm_chat`) for Cursor and other hosts |
+| `ide-plugins/jetbrains/` | Thin AI Assistant plugin (registers `ohm-mcp`; Marketplace zip via `./gradlew buildPlugin`) |
 | Redis leader / replica | Cache + RL; GET on replica/reader, SET on leader — [docs/REDIS_MESH.md](docs/REDIS_MESH.md) |
 | `infra/` | Terraform + Kubernetes: single-region EKS (mesh retained behind flags) |
 | `site/` | Marketing + docs + self-serve `/billing` |

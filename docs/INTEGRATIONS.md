@@ -80,6 +80,30 @@ claude mcp add ohm --env OHM_API_KEY=sk-at-… -- ohm-mcp
 }
 ```
 
+## JetBrains (AI Assistant)
+
+Thin Marketplace / Install-from-Disk plugin under [`ide-plugins/jetbrains/`](../ide-plugins/jetbrains/). Requires IDE **2025.1+** with AI Assistant enabled and `pip install withohm-mcp`.
+
+1. Build: `cd ide-plugins/jetbrains && ./gradlew buildPlugin` → `build/distributions/withohm-jetbrains-0.1.0.zip`
+2. Install the zip (**Settings → Plugins → Install Plugin from Disk…**) or from JetBrains Marketplace when published.
+3. Open **Settings → Tools → withOhm**, enable, paste `sk-at-…`, Apply.
+4. Confirm `ohm` under **Settings → Tools → AI Assistant → Model Context Protocol**.
+
+Manual fallback (same stdio shape as Cursor):
+
+```json
+{
+  "mcpServers": {
+    "ohm": {
+      "command": "ohm-mcp",
+      "env": { "OHM_API_KEY": "sk-at-…" }
+    }
+  }
+}
+```
+
+Listing draft: [`docs/listings/JETBRAINS_MARKETPLACE.md`](listings/JETBRAINS_MARKETPLACE.md).
+
 ## Verify
 
 Ask the agent to call `ohm_usage` — a JSON usage snapshot means the pipe is live.
