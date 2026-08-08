@@ -1,28 +1,27 @@
-# partner_hit_list.csv — TEMPLATE (not a live roster)
+# partner_hit_list.csv — TEMPLATE + seeded architecture peers from WARM_LEAD_LISTS
 #
-# Status: aspirational scaffold. Every row below is a [fill] placeholder.
-# Do NOT claim "20 real rows" until person + pain + channel are filled from
-# public signals. Operator fills rows; agents do not invent contacts.
-# See PARTNER_HIT_LIST.md.
+# Honesty: seeded rows are research hypotheses (queued). Not contacted.
+# Replace remaining [fill] rows from public pain signals per PARTNER_HIT_LIST.md.
+# See WARM_LEAD_LISTS.md List B for full profiles.
 #
 company_or_handle,pain_observed,source_link,person,channel,research_urls,personalization_hook,status,date_touched,replied,key_issued,quote_captured,notes
+Zapid AI / ex-Adobe Sensei,agentic orchestration + GenAI platform cost,https://www.linkedin.com/in/atuljain70/,Atul Jain,email,https://www.linkedin.com/in/atuljain70/,Ex-Adobe Sensei now shipping agentic product — exact agent-loop waste ICP,queued,,,,n,WARM_LEAD_LISTS B3 — design_partner seat ask
+Adobe Firefly / agentic builder,Firefly-scale training + agentic multi-agent spend on AWS,https://www.linkedin.com/in/gauravright85/,Gaurav Gupta,email,https://www.linkedin.com/in/gauravright85/,Built Firefly CDM on AWS ML stack — enterprise chaos-governor framing,queued,,,,n,WARM_LEAD_LISTS B4
+simonwillison.net,LLM agent cost / tooling educator audience,https://simonwillison.net/,Simon Willison,email,https://simonwillison.net/,Offer waste-check demo + estimate_only dual ledger — no savings SLA,queued,,,,n,WARM_LEAD_LISTS B6
+Tokio / AWS Rust,Rust async edge peer for gateway-rs,https://www.linkedin.com/in/carllerche/,Carl Lerche,email,https://www.linkedin.com/in/carllerche/|https://www.heavybit.com/library/podcasts/high-leverage/ep-6-async-runtime-for-rust-with-carl-lerche-of-tokio,Lead with concrete Rust edge / HIT FSM question not pitch deck,queued,,,,n,WARM_LEAD_LISTS B1 — technical peer first
+Cloudflare Workers,edge locality / serverless compute isomorphism,https://www.linkedin.com/in/kenton-varda-5b96a2a4/,Kenton Varda,email,https://research.cloudflare.com/people/kenton-varda/,Compose/locality peer — corporate BD not personal angel,queued,,,,n,WARM_LEAD_LISTS B2
+antirez / Redis,exact-replay hot path is Redis RESP,http://www.invece.org/,Salvatore Sanfilippo,email,http://www.invece.org/|https://antirez.com/,Precise mesh/CAS/tree question only — never generic raise,queued,,,,n,WARM_LEAD_LISTS B5
+Envoy / proxy architecture,L3-L7 proxy + Redis filter history ↔ Ohm dual-plane,https://www.envoyproxy.io/,Matt Klein,email,https://speakerdeck.com/datawire/lyfts-envoy-from-monolith-to-service-mesh-matt-klein-lyft,Admit-fencing / HIT FSM peer review ask,queued,,,,n,WARM_LEAD_LISTS B7
+ex-Adobe Sensei / Google ML,enterprise AI platform governance,https://www.linkedin.com/in/brunno-attorre/,Brunno Attorre,email,https://www.linkedin.com/in/brunno-attorre/,Enterprise receipts + chaos governor framing,queued,,,,n,WARM_LEAD_LISTS B8
 "[fill] warm commenter — r/mcp",,,,"reddit_dm",,,queued,,,,,"TEMPLATE — replace with real handle from your r/mcp thread"
 "[fill] warm commenter — r/LLMDevs",,,,"reddit_dm",,,queued,,,,,"TEMPLATE"
 "[fill] warm commenter — r/AI_Agents",,,,"reddit_dm",,,queued,,,,,"TEMPLATE"
 "[fill] warm commenter — r/cursor (after post)",,,,"reddit_dm",,,queued,,,,,"TEMPLATE — after GAP_SURFACES r/cursor goes live"
 "[fill] Cursor Forum pain thread 1",,,,"forum_dm",,,queued,,,,,"TEMPLATE — reply then DM"
 "[fill] Cursor Forum pain thread 2",,,,"forum_dm",,,queued,,,,,"TEMPLATE"
-"[fill] Cursor Forum pain thread 3",,,,"forum_dm",,,queued,,,,,"TEMPLATE"
 "[fill] X / agent-cost complaint",,,,"x_dm",,,queued,,,,,"TEMPLATE"
 "[fill] X / MCP browse pain",,,,"x_dm",,,queued,,,,,"TEMPLATE"
 "[fill] Discord MCP / Cursor room",,,,"discord",,,queued,,,,,"TEMPLATE — only after they stated a problem"
-"[fill] agent startup eng (product-shaped)",,,,"email",,,queued,,,,,"TEMPLATE"
-"[fill] research-copilot / agent SaaS eng",,,,"email",,,queued,,,,,"TEMPLATE"
 "[fill] Cursor-heavy indie hacker",,,,"x_dm",,,queued,,,,,"TEMPLATE"
-"[fill] Cursor-heavy indie hacker 2",,,,"forum_dm",,,queued,,,,,"TEMPLATE"
 "[fill] compliance-aware scrape/fetch builder",,,,"email",,,queued,,,,,"TEMPLATE — robots/PII angle"
-"[fill] HN Who's Hiring — agent infra",,,,"email",,,queued,,,,,"TEMPLATE — Show HN blocked; monthly Who's Hiring only"
-"[fill] warm public thread commenter",,,,"email",,,queued,,,,,"TEMPLATE — do not invent Show HN commenters (HN banned)"
-"[fill] warm public thread commenter 2",,,,"email",,,queued,,,,,"TEMPLATE"
 "[fill] awesome-mcp / framework issue author",,,,"email",,,queued,,,,,"TEMPLATE"
-"[fill] cold email — cited public pain only",,,,"email",,,queued,,,,,"TEMPLATE — OUTREACH §5 only with public work email + cite"
