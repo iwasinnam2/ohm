@@ -61,3 +61,8 @@ infra/terraform/*.log
 infra/terraform/plan-*.log
 infra/terraform/apply-*.log
 
+# IDE project state (JetBrains / VS Code) — never commit local workspace metadata
+.idea/
+*.iml
+.vscode/
+
