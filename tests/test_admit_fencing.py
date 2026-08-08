@@ -64,6 +64,14 @@ def test_mint_verify_roundtrip_and_rejects():
             request_sha256=digest,
             now=1_700_000_000 + 120,
         )
+    with pytest.raises(ValueError, match="tenant"):
+        admit_fencing.verify_admit_token(
+            token,
+            secret=secret,
+            request_sha256=digest,
+            tenant_id="tenant_other",
+            now=1_700_000_000,
+        )
 
 
 @pytest.mark.asyncio

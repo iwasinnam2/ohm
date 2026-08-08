@@ -451,7 +451,13 @@ async fn resolve_tenant(app: &App, token: &str) -> Option<String> {
 }
 
 /// Verify control-plane HMAC admit token (ohm_admit.v1) before RELEASE.
-fn verify_admit_token(token: &str, secret: &str, request_sha256: &str) -> bool {
+///
+/// Binds MAC + digest + tenant + exp. Tenant must match the resolved edge
+/// namespace so a token minted for tenant A cannot RELEASE tenant B's bytes.
+fn verify_admit_token(token: &str, secret: &str, request_sha256: &str, tenant_id: &str) -> bool {
+    if tenant_id.is_empty() {
+        return false;
+    }
     let parts: Vec<&str> = token.split('.').collect();
     if parts.len() != 4 || parts[0] != "ohm_admit" || parts[1] != "v1" {
         return false;
@@ -483,6 +489,10 @@ fn verify_admit_token(token: &str, secret: &str, request_sha256: &str) -> bool {
         .unwrap_or("")
         .to_ascii_lowercase();
     if digest != request_sha256.to_ascii_lowercase() {
+        return false;
+    }
+    let token_tenant = payload.get("tenant").and_then(|v| v.as_str()).unwrap_or("");
+    if token_tenant != tenant_id {
         return false;
     }
     let exp = payload.get("exp").and_then(|v| v.as_i64()).unwrap_or(0);
@@ -804,7 +814,14 @@ async fn handle_inner(
                             let token_ok = gate_json
                                 .as_ref()
                                 .and_then(|v| v.get("admit_token").and_then(|t| t.as_str()))
-                                .map(|t| verify_admit_token(t, &cfg.edge_secret, &request_sha256))
+                                .map(|t| {
+                                    verify_admit_token(
+                                        t,
+                                        &cfg.edge_secret,
+                                        &request_sha256,
+                                        tenant,
+                                    )
+                                })
                                 .unwrap_or(false);
                             if !token_ok {
                                 warn!(
@@ -1114,6 +1131,59 @@ mod tests {
         assert_eq!(normalize_content("  a\r\nb  "), "a\nb");
         // Interior whitespace (code indentation) is significant and kept.
         assert_eq!(normalize_content("def f():\n    pass"), "def f():\n    pass");
+    }
+
+    fn mint_admit_token_for_test(
+        secret: &str,
+        tenant_id: &str,
+        digest: &str,
+        exp: i64,
+    ) -> String {
+        let payload = serde_json::json!({
+            "v": 1,
+            "kind": "admit",
+            "tenant": tenant_id,
+            "digest": digest,
+            "iat": exp - 30,
+            "exp": exp,
+            "jti": "testjti01",
+        });
+        let body = URL_SAFE_NO_PAD.encode(serde_json::to_vec(&payload).expect("json"));
+        let mut mac = HmacSha256::new_from_slice(secret.as_bytes()).expect("hmac key");
+        mac.update(format!("ohm_admit.v1.{body}").as_bytes());
+        let sig = URL_SAFE_NO_PAD.encode(mac.finalize().into_bytes());
+        format!("ohm_admit.v1.{body}.{sig}")
+    }
+
+    #[test]
+    fn admit_token_accepts_matching_tenant_digest() {
+        let secret = "edge-secret-test";
+        let digest = "ab".repeat(32);
+        let tenant = "tenant_t1";
+        let now = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_secs() as i64;
+        let token = mint_admit_token_for_test(secret, tenant, &digest, now + 60);
+        assert!(verify_admit_token(&token, secret, &digest, tenant));
+    }
+
+    #[test]
+    fn admit_token_rejects_tenant_mismatch() {
+        let secret = "edge-secret-test";
+        let digest = "ab".repeat(32);
+        let now = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_secs() as i64;
+        let token = mint_admit_token_for_test(secret, "tenant_t1", &digest, now + 60);
+        assert!(!verify_admit_token(
+            &token,
+            secret,
+            &digest,
+            "tenant_other"
+        ));
+        assert!(!verify_admit_token(&token, secret, &digest, ""));
     }
 
     #[test]

@@ -21,8 +21,8 @@ two concurrent HIT admits on the same digest must not both RELEASE.
 2. Acquire Redis/Memory `SET NX` lease `admit:{tenant}:{digest}` for the gate
    call duration (released in `finally`) — fences concurrent in-flight admits.
 3. Response includes `admit_token` when fencing is on.
-4. Rust edge (`AT_RS_ADMIT_REQUIRE=1`): verify MAC + digest + exp **before**
-   attaching body; failure → DENY without completion body.
+4. Rust edge (`AT_RS_ADMIT_REQUIRE=1`): verify MAC + digest + **tenant** + exp
+   **before** attaching body; failure → DENY without completion body.
 
 ## Env
 
