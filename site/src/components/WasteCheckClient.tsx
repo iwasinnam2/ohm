@@ -148,7 +148,7 @@ export function WasteCheckClient() {
   const [busy, setBusy] = useState(false);
   const [meta, setMeta] = useState("Loading public proof session…");
   const [proof, setProof] = useState<Proof | null>(null);
-  const [receiptName, setReceiptName] = useState("Cursor Pro+ waste check");
+  const [receiptName, setReceiptName] = useState("Agent loop waste check");
   const [receipt, setReceipt] = useState<ReceiptMint | null>(null);
   const [mintBusy, setMintBusy] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -344,7 +344,8 @@ export function WasteCheckClient() {
             <p className="demo-result__punchline">
               Call 2 did not re-buy the model. That&apos;s the waste your agent
               loops are printing — retries, research re-fetches, identical
-              prompts — the same pattern that burns a Cursor Pro+ quota mid-month.
+              prompts — the same pattern that burns your monthly agent quota
+              mid-month.
             </p>
           ) : (
             <p className="demo-result__punchline">
