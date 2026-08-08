@@ -25,6 +25,13 @@ attach over MCP; SDKs and the Shell use the same pipe.
 | Client lock-in | “We depend on one IDE” | Agent Shell + `base_url` + integrations board |
 | Procurement fear | No admin / audit / DPA | Org console, audit log, enterprise pack |
 
+**Opaque vendors, precisely:** cost-center attribution and the FinOps export
+are real and tested (`GET /v1/org/ledger/export`) — every Ohm-metered event
+is attributed. The "avoided spend" figure on that export is a blended
+estimate against Ohm's own cache hits; **provider invoice import /
+reconciliation against actual lab bills is not shipped** (see `ledger.py`).
+Do not represent this thesis row as multi-vendor invoice reconciliation.
+
 ## Product surfaces
 
 | Surface | Role |
