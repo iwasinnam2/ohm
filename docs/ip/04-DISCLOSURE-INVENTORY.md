@@ -33,14 +33,20 @@ Do **not** publish casually if counsel later wants a narrow filing on gap-closes
 - Any **unpublished** single-CAS blob store redesign (gap-close for trees)
 - Receipt key seeds and infra credentials (always secret)
 
-## Freeze rule (until Phase B)
+## Freeze rule (until Phase B binary)
 
-Counsel briefs are **sent** (Phase B in flight). Until Traffic Lights return:
+Counsel briefs are **sent** (Phase B in flight). File-lean (~80%) engineering
+may land **flag-off** admit fencing in-repo; keep blog/Show HN RFCs quiet.
 
-1. Do not blog deeper protocol RFCs that invent new unpublished mechanisms (admit-token / CAS redesign).
+1. Do not blog deeper protocol RFCs that invent new unpublished mechanisms beyond what is already in code + `PREFILE-ADMIT-FENCING.md`.
 2. Safe to keep marketing on exact-replay × pipeline (already public).
-3. Tranche 1 dual-use hardening (HIT states, digest-scoped meter ids, receipt bind, bleed tests) may ship publicly — it documents behaviour already implied by the gate.
+3. Tranche 1 dual-use hardening may ship publicly.
+4. Defensive publication tag: follow [DEFENSIVE-PUBLICATION.md](DEFENSIVE-PUBLICATION.md) only on Do-not-file / post-priority (~20% track).
 
 ## Dated snapshot (optional defensive publication)
 
-If Phase B = **Do not file**, create a version-pinned archive (git tag + PDF export of this `docs/ip/` pack + ARCHITECTURE/RECEIPTS/CACHE_TREES) for easy citation. Not done in Phase A.
+If Phase B = **Do not file**, see [DEFENSIVE-PUBLICATION.md](DEFENSIVE-PUBLICATION.md). **Not done.**
+
+## Pre-filing engineering (File-lean)
+
+- [PREFILE-ADMIT-FENCING.md](PREFILE-ADMIT-FENCING.md) — A4 admit token + lease (flag-off)

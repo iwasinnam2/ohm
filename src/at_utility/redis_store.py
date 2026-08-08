@@ -40,6 +40,7 @@ class CacheStore(Protocol):
 
     async def get(self, key: str) -> Optional[str]: ...
     async def set(self, key: str, value: str, ttl_seconds: int) -> None: ...
+    async def set_nx(self, key: str, value: str, ttl_seconds: int) -> bool: ...
     async def delete(self, key: str) -> None: ...
     async def incr_by_float(self, key: str, amount: float) -> float: ...
     async def eval_token_bucket(self, key: str, rate: float, burst: float, now: float) -> bool: ...
@@ -121,6 +122,13 @@ class RedisStore:
         else:
             await self._write.set(key, value)
 
+    async def set_nx(self, key: str, value: str, ttl_seconds: int) -> bool:
+        if ttl_seconds and ttl_seconds > 0:
+            ok = await self._write.set(key, value, nx=True, ex=ttl_seconds)
+        else:
+            ok = await self._write.set(key, value, nx=True)
+        return bool(ok)
+
     async def delete(self, key: str) -> None:
         await self._write.delete(key)
 
@@ -188,6 +196,12 @@ class MemoryStore:
 
     async def set(self, key: str, value: str, ttl_seconds: int) -> None:
         self._data[key] = value
+
+    async def set_nx(self, key: str, value: str, ttl_seconds: int) -> bool:
+        if key in self._data or key in self._counters:
+            return False
+        self._data[key] = value
+        return True
 
     async def delete(self, key: str) -> None:
         self._data.pop(key, None)

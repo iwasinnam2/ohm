@@ -26,6 +26,7 @@ from at_utility.auth import extract_bearer
 from at_utility.cache import cache_key_for_request, resolve_cache_tree
 from at_utility.cache_trees import CacheTreeRegistry
 from at_utility import receipts
+from at_utility import admit_fencing
 from at_utility.compliance import web_bot_auth
 from at_utility.compliance.policy import ALLOWED_PURPOSES, BLOCKED_PURPOSES, PURPOSE_RISK
 from at_utility.compliance.terms import assert_cache_training_denied, terms_metadata
@@ -2368,53 +2369,102 @@ async def edge_hit_meter(
         (body.request_sha256 or "")[:16],
     )
     await rate_limit(api_key, tenant_rec.tenant_id)
-    meter_eid = stable_meter_event_id(
-        kind="cache_hit",
-        request_digest=body.request_sha256,
-        plane="rust-edge",
-    )
-    event = await state.meter.record_chat(
-        tenant_rec.tenant_id,
-        cache_hit=True,
-        total_tokens=max(0, int(body.total_tokens)),
-        stripe_customer_id=tenant_rec.stripe_customer_id or "",
-        event_id=meter_eid,
-    )
-    await _append_ledger(
-        tenant_rec,
-        kind="cache_hit",
-        tokens=max(0, int(body.total_tokens)),
-        pipe_usd=event.billed_usd,
-        cache_hit=True,
-        request_id=meter_eid,
-    )
-    out: dict[str, Any] = {
-        "ok": True,
-        "billed_usd": event.billed_usd,
-        "stripe_synced": event.stripe_synced,
-        "hit_state": receipts.HIT_STATE_RELEASE,
-        "meter_event_id": event.event_id,
-    }
-    receipt_jws = receipts.mint_receipt(
-        tenant=tenant_rec.tenant_id,
-        model=body.model,
-        tokens_replayed=body.total_tokens,
-        pipe_usd=event.billed_usd,
-        request_sha256=body.request_sha256,
-        region=state.settings.at_region,
-        plane="rust-edge",
-        admit="allow",
-        meter_event_id=event.event_id,
-    )
-    if receipt_jws:
-        out["receipt"] = receipt_jws
-    log.info(
-        "hit_fsm state=%s endpoint=edge_hit_meter tenant=%s digest=%s",
-        receipts.HIT_STATE_RELEASE,
-        tenant_rec.tenant_id,
-        (body.request_sha256 or "")[:16],
-    )
-    return out
+    fencing_on = bool(s.at_admit_fencing)
+    admit_token: Optional[str] = None
+    lease_held = False
+    lease_digest = (body.request_sha256 or "").strip()
+    if fencing_on:
+        jti = secrets.token_hex(8)
+        try:
+            admit_token = admit_fencing.mint_admit_token(
+                secret=s.at_edge_shared_secret,
+                tenant_id=tenant_rec.tenant_id,
+                request_sha256=lease_digest,
+                ttl_seconds=s.at_admit_token_ttl_seconds,
+                jti=jti,
+            )
+        except ValueError as exc:
+            raise HTTPException(
+                status_code=403,
+                detail={"code": "admit_token_invalid", "message": str(exc)},
+            ) from exc
+        lease_held = await admit_fencing.try_acquire_lease(
+            state.store,
+            tenant_id=tenant_rec.tenant_id,
+            digest=lease_digest,
+            jti=jti,
+            ttl_seconds=s.at_admit_lease_ttl_seconds,
+        )
+        if not lease_held:
+            log.info(
+                "hit_fsm state=%s endpoint=edge_hit_meter reason=lease_held tenant=%s digest=%s",
+                receipts.HIT_STATE_DENY,
+                tenant_rec.tenant_id,
+                lease_digest[:16],
+            )
+            raise HTTPException(
+                status_code=409,
+                detail={
+                    "code": "admit_lease_held",
+                    "message": "concurrent HIT admit lease held for digest",
+                },
+            )
+    try:
+        meter_eid = stable_meter_event_id(
+            kind="cache_hit",
+            request_digest=body.request_sha256,
+            plane="rust-edge",
+        )
+        event = await state.meter.record_chat(
+            tenant_rec.tenant_id,
+            cache_hit=True,
+            total_tokens=max(0, int(body.total_tokens)),
+            stripe_customer_id=tenant_rec.stripe_customer_id or "",
+            event_id=meter_eid,
+        )
+        await _append_ledger(
+            tenant_rec,
+            kind="cache_hit",
+            tokens=max(0, int(body.total_tokens)),
+            pipe_usd=event.billed_usd,
+            cache_hit=True,
+            request_id=meter_eid,
+        )
+        out: dict[str, Any] = {
+            "ok": True,
+            "billed_usd": event.billed_usd,
+            "stripe_synced": event.stripe_synced,
+            "hit_state": receipts.HIT_STATE_RELEASE,
+            "meter_event_id": event.event_id,
+        }
+        if admit_token:
+            out["admit_token"] = admit_token
+        receipt_jws = receipts.mint_receipt(
+            tenant=tenant_rec.tenant_id,
+            model=body.model,
+            tokens_replayed=body.total_tokens,
+            pipe_usd=event.billed_usd,
+            request_sha256=body.request_sha256,
+            region=state.settings.at_region,
+            plane="rust-edge",
+            admit="allow",
+            meter_event_id=event.event_id,
+        )
+        if receipt_jws:
+            out["receipt"] = receipt_jws
+        log.info(
+            "hit_fsm state=%s endpoint=edge_hit_meter tenant=%s digest=%s fencing=%s",
+            receipts.HIT_STATE_RELEASE,
+            tenant_rec.tenant_id,
+            (body.request_sha256 or "")[:16],
+            fencing_on,
+        )
+        return out
+    finally:
+        if lease_held:
+            await state.store.delete(
+                admit_fencing.lease_key(tenant_rec.tenant_id, lease_digest)
+            )
 
 
 @app.post("/v1/chat/completions")

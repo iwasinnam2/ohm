@@ -98,6 +98,10 @@ class Settings(BaseSettings):
     # Shared secret for the Rust edge → /internal/edge-hit metering gate.
     # Empty disables edge HIT serving (edge falls back to full proxy).
     at_edge_shared_secret: str = ""
+    # Tranche 2 / A4: digest-bound admit token + optional Redis lease (default off).
+    at_admit_fencing: bool = False
+    at_admit_token_ttl_seconds: int = 15
+    at_admit_lease_ttl_seconds: int = 8
     # Fernet wrap for Intermediate API keys (email/password login restore).
     at_account_secret: str = ""
 

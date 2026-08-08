@@ -72,44 +72,55 @@ Legend: **I** = Implemented · **P** = Partial · **M** = Missing
 | Tree bleed tests: no ambient cross-tree GET; fork isolation; freeze write deny | B4 | Tip honesty |
 | Document shared-CAS reality vs COW parent walk (B3 audit note in CACHE_TREES / honesty) | B3 | Stop overclaim |
 
-### Tranche 2 — Next (still dual-use)
+### Tranche 2 — File-lean bifurcation (80% File / 20% defensive)
+
+**Allocation:** ~80% engineering toward **File** (A4 admit fencing, flag-off);
+~20% keep a ready **Do-not-file** path ([DEFENSIVE-PUBLICATION.md](DEFENSIVE-PUBLICATION.md)).
 
 | Work | Closes | Outcome |
 |------|--------|---------|
-| Short-lived admit token: control plane returns `admit_token` (digest + tenant + exp + sig); edge checks before RELEASE | A4 | Race-hardened release |
-| Optional Redis lease key `admit:{tenant}:{digest}` with TTL | A4 | Fence concurrent HIT serves |
-| Shared blob key layout investigation → migrate named trees to pointer-to-CAS where safe | B2 | Memory + cleaner Promote |
+| Short-lived admit token: control plane returns `admit_token` (digest + tenant + exp + HMAC); edge checks before RELEASE when `AT_RS_ADMIT_REQUIRE` | A4 | Race-hardened release |
+| Redis/Memory lease key `admit:{tenant}:{digest}` for in-flight gate (released in `finally`) | A4 | Fence concurrent HIT admits |
+| Pre-filing note [PREFILE-ADMIT-FENCING.md](PREFILE-ADMIT-FENCING.md) | A4 counsel | Claim-oriented summary without Show HN RFC |
+| Defensive publication checklist (tag + PDF) — **not executed** while File-lean | Do-not-file prep | 20% track |
+| Shared blob key layout investigation → migrate named trees to pointer-to-CAS where safe | B2 | Next after A4 green |
 | Prod receipts: enable seed in staging/prod checklist; feature flag “receipts required” for enterprise | C4 | Trust without mandating in all envs |
 
-### Tranche 3 — Defer (patent-aspirational or low ROI now)
+### Tranche 3 — Explicitly deferred (do not build unless counsel Green *depends* on it)
 
-| Work | Why defer |
-|------|-----------|
-| A3 OS socket buffer locks | No product need; await-before-build suffices |
-| A6 Mid-stream HIT revoke | No streaming edge HIT yet |
-| B5 Novel fork collision structure | Commodity key layout is enough |
-| Broad “always on” receipts with no escape hatch | Breaks local/dev; prefer C4 flag |
+| Work | Why deferred | Revisit trigger |
+|------|--------------|-----------------|
+| **A3** OS / socket egress buffer locks | Await-before-build + admit token already prevent body release without admit; kernel buffer tricks are low ROI and weak product value | Concrete residual race that survives A4 in production traces |
+| **A6** Mid-stream HIT revoke | No streaming edge-HIT product path yet; revoke needs a live stream handle | Edge serves cached SSE/chunked HIT and product needs cancel-on-suspend |
+| **B5** Novel fork / collision structures beyond key+digest | Commodity namespacing is enough; novelty theater burns counsel time | Never for patent theatre; only if a real tip-isolation bug needs a new structure |
+| Broad “always-on receipts, no escape hatch” | Breaks local/dev and smoke; prefer C4 enterprise flag | Enterprise contract that forbids HIT without JWS |
+
+Tranche 3 is **not** “nice to have later” backlog — it is **parked with kill criteria**. Default action: do nothing.
 
 ### Sequencing diagram
 
 ```mermaid
 flowchart TD
-  T1[Tranche1_FSM_tests_receipts_bleed]
-  T2[Tranche2_admit_token_CAS]
-  T3[Tranche3_defer]
+  T1[Tranche1_done_merged]
+  Bifurcate{File_lean_80_20}
+  T1 --> Bifurcate
+  Bifurcate -->|80pct_File| A4[Admit_token_lease_flag_off]
+  Bifurcate -->|20pct_defensive| DefPrep[DEFENSIVE_PUBLICATION_checklist]
   PhaseB{Counsel_Traffic_Light}
-  T1 --> PhaseB
-  PhaseB -->|File| T2file[Prioritize_A4_C2_unpublished_then_file]
-  PhaseB -->|DoNotFile| DefPub[Defensive_publication_tag]
-  PhaseB -->|Either| T2
-  T2 --> T3
+  A4 --> PhaseB
+  DefPrep --> PhaseB
+  PhaseB -->|File| Protect[Keep_CAS_RFCs_private_then_file]
+  PhaseB -->|DoNotFile| Tag[Run_defensive_pub_tag]
+  PhaseB -->|Either| T2rest[CAS_probe_plus_receipts_required]
+  T2rest --> T3park[Tranche3_parked]
 ```
 
 ### Effort sketch (engineering, not calendar)
 
-- Tranche 1: concentrated changes in `gateway-rs`, `main.py` edge-hit, `receipts.py`, `metering.py`, pytest + a few Rust parity tests
-- Tranche 2: Redis schema + migration care for CAS; admit token crypto aligned with existing Ed25519 machinery
-- Tranche 3: skip unless counsel Green depends on it
+- Tranche 1: done (`#42`)
+- Tranche 2 File-lean: `admit_fencing.py`, edge-hit lease, Rust `AT_RS_ADMIT_REQUIRE`, pytest; neon rail widen (product)
+- Tranche 2 rest: Redis schema care for CAS; receipts-required flag
+- Tranche 3: skip unless Green depends on A3/A6
 
 ---
 
@@ -122,10 +133,10 @@ Bring forward from the last session (IP assessment → Phase A pack → site UI 
 | # | Loop | Status | Next action |
 |---|------|--------|-------------|
 | 1 | **Phase B — attorney Traffic Light** | Briefs **sent**; awaiting Red/Amber/Green per A/B/C | After opinions → File vs Do-not-file binary |
-| 2 | **Phase C-1 / C-2** | Blocked on #1 | File narrow claims **or** defensive-publication git tag + PDF snapshot |
-| 3 | **Disclosure freeze** | In force until #1 returns | Keep Tranche 2 admit-token / shared-CAS designs private until binary |
-| 4 | **Defensive publication snapshot** | Explicitly “Not done” | Do after Do-not-file **or** after filing priority date |
-| 5 | **Amplify deploy confirmation** | Pushed `e7f0e5b` to `master`; deploy success **not verified** here | Check Amplify console / www.withohm.dev for enablement grid + rail shape (+ later Tranche 1 merge) |
+| 2 | **Phase C-1 / C-2** | Blocked on #1 | File narrow claims **or** run [DEFENSIVE-PUBLICATION.md](DEFENSIVE-PUBLICATION.md) |
+| 3 | **Disclosure freeze on unpublished CAS RFCs** | Softened for flag-off A4 code + PREFILE note | Still no blog RFC on shared-CAS redesign until binary |
+| 4 | **Defensive publication snapshot** | Checklist ready; **not tagged** (File-lean) | Execute only on Do-not-file / post-priority |
+| 5 | **Amplify deploy confirmation** | Pushed enablement + Tranche 1; verify www | Check rails width after this neon widen lands |
 
 ### Closed or parked
 
@@ -135,22 +146,22 @@ Bring forward from the last session (IP assessment → Phase A pack → site UI 
 | Aerotel → Emotional Perception [2026] UKSC 3 | Pack updated |
 | Single-file BRIEF | Done |
 | Enablement UI + payload/rail polish | Committed and pushed |
-| Contacting attorneys on your behalf | Out of scope unless you ask |
-| Tranche 1 dual-use eng (H1/C2/C3, A2/A5, B3/B4, SIEGE) | On `cursor/dual-use-gap-close-8d0e` |
-| Meter `event_id` / SIEGE overstatement | Fixed: digest-scoped ids + honest SIEGE wording |
-| Shared-CAS honesty (B3) + bleed tests (B4) | CACHE_TREES Storage honesty + pytest invariants |
+| Tranche 1 dual-use eng | Merged `#42` |
+| Meter `event_id` / SIEGE overstatement | Fixed |
+| Shared-CAS honesty (B3) + bleed tests (B4) | Done |
+| Tranche 3 A3/A6/B5/always-on | **Parked** — see table above |
 
 ### Soft risks to remember
 
 - Public repo + site already **defensive prior art** (and novelty clock against yourselves).
 - Digest-scoped meter ids make **retry sync** idempotent per plane — not “never bill two distinct HIT crossings.”
-- Plan-mode IP assessment lived in `.cursor/plans/`; durable artifacts are under `docs/ip/`.
+- Merging flag-off A4 code is enablement disclosure — counsel should treat PREFILE note as part of the File pack.
 
 ---
 
 ## 4. Recommended immediate order
 
 1. **Counsel:** return Traffic Lights (Phase B in flight).  
-2. **Eng:** ship **Tranche 1** on `cursor/dual-use-gap-close-8d0e` (dual-use; valuable File or not).  
-3. **You:** confirm Amplify/`www` shows enablement grid + new rails.  
-4. After Traffic Lights: either file (protect unpublished Tranche 2 pieces first) or tag defensive publication and continue Tranche 2 in the open.
+2. **Eng:** File-lean Tranche 2a (admit fencing flag-off) + wider neon rails — this branch.  
+3. **You:** confirm Amplify/`www` after merge.  
+4. After Traffic Lights: **File** (protect remaining CAS unpublished pieces) or run defensive-pub checklist; Tranche 3 stays parked.
